@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#10b981">
+    <title>Adaptify – Lösungs-Check & Selbstkontrolle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .speak-btn.speaking {
+            animation: pulse 1s infinite alternate;
+            background-color: #10b981 !important;
+            color: white !important;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.15); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-emerald-200">
+
+    <!-- Top Navigation -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                    <i class="fa-solid fa-check-double"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-900 leading-none text-base">Lösungs-Check</h1>
+                    <p class="text-xs text-slate-500 font-medium">Adaptify Selbstkontrolle</p>
+                </div>
+            </div>
+            <div id="session-badge" class="hidden bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-mono font-semibold border border-emerald-200">
+                PIN: <span id="pin-display">----</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-3xl w-full mx-auto p-4 md:p-6 space-y-6">
+
+        <!-- Loading State -->
+        <div id="loading-state" class="text-center py-16 space-y-4">
+            <div class="inline-block w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-slate-600 font-medium text-sm">Lade Musterlösungen...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-state" class="hidden bg-rose-50 border border-rose-200 text-rose-800 p-6 rounded-2xl text-center space-y-3">
+            <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h2 class="font-bold text-lg text-rose-900">Lösung nicht gefunden</h2>
+            <p id="error-message" class="text-sm text-rose-700">Der Lösungs-Code ist ungültig oder abgelaufen.</p>
+            <div class="pt-2">
+                <a href="play.html" class="inline-block bg-white text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm border border-slate-200 shadow-sm hover:bg-slate-50">
+                    Zurück zum Direktspiel
+                </a>
+            </div>
+        </div>
+
+        <!-- Content Container -->
+        <div id="content-container" class="hidden space-y-6">
+
+            <!-- Title & Info Banner -->
+            <div class="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-3xl p-6 text-white shadow-lg space-y-2 relative overflow-hidden">
+                <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                <div class="flex items-center justify-between">
+                    <span id="subject-badge" class="bg-white/20 text-white text-xs px-3 py-1 rounded-full font-medium backdrop-blur-sm">
+                        Unterrichtsmaterial
+                    </span>
+                    <button id="btn-read-title" class="speak-btn text-white/80 hover:text-white p-1.5 rounded-full hover:bg-white/20 transition-all text-sm" title="Titel vorlesen">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                </div>
+                <h2 id="task-title" class="text-xl md:text-2xl font-bold tracking-tight text-white leading-snug">
+                    Titel der Aufgabe
+                </h2>
+                <p class="text-emerald-100 text-xs md:text-sm">
+                    Vergleiche deine eigenen Aufschriebe mit den folgenden Musterlösungen.
+                </p>
+            </div>
+
+            <!-- Merkkasten / Hefteintrag Section -->
+            <div id="hefteintrag-card" class="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-sm space-y-3">
+                <div class="flex items-center justify-between border-b border-amber-200/80 pb-3">
+                    <div class="flex items-center gap-2 font-bold text-amber-900 text-base">
+                        <i class="fa-solid fa-thumbtack text-amber-600"></i>
+                        <span id="hefteintrag-title">📌 Merkkasten / Hefteintrag</span>
+                    </div>
+                    <button id="btn-read-hefteintrag" class="speak-btn bg-amber-100 hover:bg-amber-200 text-amber-800 p-2 rounded-xl text-xs flex items-center gap-1.5 transition-all font-semibold">
+                        <i class="fa-solid fa-volume-high"></i>
+                        <span>Vorlesen</span>
+                    </button>
+                </div>
+                <div id="hefteintrag-body" class="text-sm text-amber-950 whitespace-pre-line leading-relaxed font-sans">
+                </div>
+            </div>
+
+            <!-- Level Selector Tabs -->
+            <div class="flex items-center p-1.5 bg-slate-200/80 rounded-2xl gap-1">
+                <button id="tab-level-a" class="flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-white text-emerald-700 shadow-sm">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span>Level A (Grundlagen)</span>
+                </button>
+                <button id="tab-level-b" class="flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                    <span>Level B (Vertiefung)</span>
+                </button>
+            </div>
+
+            <!-- Level A Solutions Container -->
+            <div id="section-level-a" class="space-y-4">
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold">A</span>
+                        Musterlösungen: Level A
+                    </h3>
+                    <span class="text-xs text-slate-500 font-medium">Förderniveau</span>
+                </div>
+                <div id="tasks-container-a" class="space-y-4"></div>
+            </div>
+
+            <!-- Level B Solutions Container -->
+            <div id="section-level-b" class="hidden space-y-4">
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-bold">B</span>
+                        Musterlösungen: Level B
+                    </h3>
+                    <span class="text-xs text-slate-500 font-medium">Forderniveau</span>
+                </div>
+                <div id="tasks-container-b" class="space-y-4"></div>
+            </div>
+
+            <!-- Experten-Zusatzaufgaben -->
+            <div id="zusatzaufgaben-card" class="hidden bg-purple-50 border border-purple-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b border-purple-200/80 pb-3">
+                    <div class="flex items-center gap-2 font-bold text-purple-900 text-base">
+                        <i class="fa-solid fa-star text-purple-600"></i>
+                        <span>⭐ Experten-Aufgaben (Zusatz)</span>
+                    </div>
+                </div>
+                <div id="zusatzaufgaben-body" class="space-y-3 text-sm text-purple-950">
+                </div>
+            </div>
+
+            <!-- Self-Reflection / Feedback Box -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 text-center">
+                <h4 class="font-bold text-slate-900 text-sm">
+                    😊 Wie gut bist du mit den Aufgaben zurechtgekommen?
+                </h4>
+                <div class="flex items-center justify-center gap-3">
+                    <button onclick="sendStudentFeedback('leicht', this)" class="flex-1 py-3 px-2 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl transition-all flex flex-col items-center gap-1 group">
+                        <span class="text-2xl group-hover:scale-110 transition-transform">🟢</span>
+                        <span class="text-xs font-semibold text-slate-700 group-hover:text-emerald-800">Leicht</span>
+                    </button>
+                    <button onclick="sendStudentFeedback('mittel', this)" class="flex-1 py-3 px-2 bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 rounded-xl transition-all flex flex-col items-center gap-1 group">
+                        <span class="text-2xl group-hover:scale-110 transition-transform">🟡</span>
+                        <span class="text-xs font-semibold text-slate-700 group-hover:text-amber-800">Genau richtig</span>
+                    </button>
+                    <button onclick="sendStudentFeedback('schwer', this)" class="flex-1 py-3 px-2 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-300 rounded-xl transition-all flex flex-col items-center gap-1 group">
+                        <span class="text-2xl group-hover:scale-110 transition-transform">🔴</span>
+                        <span class="text-xs font-semibold text-slate-700 group-hover:text-rose-800">Schwer</span>
+                    </button>
+                </div>
+                <p id="feedback-acknowledgement" class="hidden text-xs text-emerald-600 font-semibold pt-1">
+                    ✓ Danke für deine Rückmeldung!
+                </p>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-6 text-xs text-slate-400 font-medium">
+        Adaptify · Didaktische Differenzierung & Selbstkontrolle
+    </footer>
+
+    <!-- Logic Script -->
+    <script>
+        let currentSessionData = null;
+        let currentPIN = null;
+        let activeSpeakerBtn = null;
+
+        // ----------------------------------------------------
+        // TEXT-TO-SPEECH (AUDIO VORLESEFUNKTION)
+        // ----------------------------------------------------
+        function speakText(text, btnElement) {
+            if (!('speechSynthesis' in window)) {
+                alert("Sprachausgabe wird von diesem Browser nicht unterstützt.");
+                return;
+            }
+
+            // Stop if already speaking this button
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                if (activeSpeakerBtn) {
+                    activeSpeakerBtn.classList.remove('speaking');
+                }
+                if (activeSpeakerBtn === btnElement) {
+                    activeSpeakerBtn = null;
+                    return;
+                }
+            }
+
+            // Clean text (remove asterisks, html tags)
+            const clean = text.replace(/\*/g, '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            const utterance = new SpeechSynthesisUtterance(clean);
+            utterance.lang = 'de-DE';
+            utterance.rate = 0.95;
+
+            if (btnElement) {
+                activeSpeakerBtn = btnElement;
+                btnElement.classList.add('speaking');
+                utterance.onend = () => {
+                    btnElement.classList.remove('speaking');
+                    activeSpeakerBtn = null;
+                };
+                utterance.onerror = () => {
+                    btnElement.classList.remove('speaking');
+                    activeSpeakerBtn = null;
+                };
+            }
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Format solutions with highlighted green keywords
+        function renderSolutionText(rawText) {
+            if (!rawText) return "";
+            // Replace *word* with bold green highlight badge
+            let formatted = rawText.replace(/\*([^*]+)\*/g, (match, p1) => {
+                return `<span class="inline-block bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold px-1.5 py-0.5 rounded mx-0.5 text-xs md:text-sm underline decoration-emerald-500 underline-offset-2">${p1}</span>`;
+            });
+            return formatted.replace(/\n/g, '<br/>');
+        }
+
+        // ----------------------------------------------------
+        // LOAD & RENDER SOLUTION DATA
+        // ----------------------------------------------------
+        async function loadSolution() {
+            const params = new URLSearchParams(window.location.search);
+            currentPIN = params.get('pin');
+
+            const loadingState = document.getElementById('loading-state');
+            const errorState = document.getElementById('error-state');
+            const contentContainer = document.getElementById('content-container');
+
+            if (!currentPIN) {
+                loadingState.classList.add('hidden');
+                errorState.classList.remove('hidden');
+                document.getElementById('error-message').textContent = "Kein Lösungs-PIN in der URL angegeben.";
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/sessions/${currentPIN.toUpperCase()}`);
+                if (!response.ok) {
+                    throw new Error("Lösungs-Sitzung konnte nicht geladen werden.");
+                }
+
+                const data = await response.json();
+                currentSessionData = data;
+
+                // Set Header info
+                document.getElementById('pin-display').textContent = currentPIN.toUpperCase();
+                document.getElementById('session-badge').classList.remove('hidden');
+                document.getElementById('task-title').textContent = data.title || "Differenzierte Übung";
+
+                // Audio button for Title
+                document.getElementById('btn-read-title').onclick = function() {
+                    speakText(data.title, this);
+                };
+
+                // Merkkasten / Hefteintrag
+                const hefteintrag = data.hefteintrag;
+                const hefteintragCard = document.getElementById('hefteintrag-card');
+                const hefteintragBody = document.getElementById('hefteintrag-body');
+                if (hefteintrag && (hefteintrag.level_a_notes || hefteintrag.summary || hefteintrag.level_b_notes)) {
+                    const notes = hefteintrag.level_a_notes || hefteintrag.summary || hefteintrag.level_b_notes;
+                    hefteintragBody.innerHTML = notes.replace(/\n/g, '<br/>');
+                    document.getElementById('btn-read-hefteintrag').onclick = function() {
+                        speakText(notes, this);
+                    };
+                    hefteintragCard.classList.remove('hidden');
+                } else {
+                    hefteintragCard.classList.add('hidden');
+                }
+
+                // Level A Tasks
+                const tasksA = (data.level_a && data.level_a.tasks) ? data.level_a.tasks : [];
+                const containerA = document.getElementById('tasks-container-a');
+                containerA.innerHTML = '';
+                tasksA.forEach((task, idx) => {
+                    const card = createTaskSolutionCard(task, idx + 1, 'A');
+                    containerA.appendChild(card);
+                });
+
+                // Level B Tasks
+                const tasksB = (data.level_b && data.level_b.tasks) ? data.level_b.tasks : [];
+                const containerB = document.getElementById('tasks-container-b');
+                containerB.innerHTML = '';
+                tasksB.forEach((task, idx) => {
+                    const card = createTaskSolutionCard(task, idx + 1, 'B');
+                    containerB.appendChild(card);
+                });
+
+                // Experten-Zusatzaufgaben
+                const zusatz = data.zusatzaufgaben || [];
+                const zusatzCard = document.getElementById('zusatzaufgaben-card');
+                const zusatzBody = document.getElementById('zusatzaufgaben-body');
+                if (zusatz.length > 0) {
+                    zusatzBody.innerHTML = '';
+                    zusatz.forEach((z, idx) => {
+                        const row = document.createElement('div');
+                        row.className = "bg-white/80 border border-purple-100 rounded-xl p-3.5 space-y-1.5";
+                        row.innerHTML = `
+                            <div class="font-bold text-purple-900 text-xs md:text-sm flex items-center justify-between">
+                                <span>${z.title || `Aufgabe ${idx+1}`}</span>
+                                <button class="speak-btn text-purple-600 hover:text-purple-900 p-1" onclick="speakText('${z.task.replace(/'/g, "\\'")}', this)" title="Vorlesen">
+                                    <i class="fa-solid fa-volume-high text-xs"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs md:text-sm text-slate-700 leading-relaxed">${z.task}</p>
+                        `;
+                        zusatzBody.appendChild(row);
+                    });
+                    zusatzCard.classList.remove('hidden');
+                } else {
+                    zusatzCard.classList.add('hidden');
+                }
+
+                // Show Content
+                loadingState.classList.add('hidden');
+                contentContainer.classList.remove('hidden');
+
+            } catch (err) {
+                console.error("Error loading solution:", err);
+                loadingState.classList.add('hidden');
+                errorState.classList.remove('hidden');
+                document.getElementById('error-message').textContent = err.message || "Fehler beim Laden der Lösungen.";
+            }
+        }
+
+        function createTaskSolutionCard(task, num, level) {
+            const card = document.createElement('div');
+            card.className = "bg-white border border-slate-200 rounded-2xl p-4 md:p-5 shadow-sm space-y-3";
+
+            const isLevelA = (level === 'A');
+            const badgeClass = isLevelA ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-blue-50 text-blue-800 border-blue-200";
+
+            const rawText = task.text || "";
+            const cleanTextForAudio = rawText.replace(/\*/g, '');
+
+            card.innerHTML = `
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                    <div class="flex items-center gap-2 font-bold text-slate-900 text-sm">
+                        <span class="px-2 py-0.5 rounded-md text-xs font-mono font-bold border ${badgeClass}">#${num}</span>
+                        <span>${task.title || `Aufgabe ${num}`}</span>
+                    </div>
+                    <button class="speak-btn bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-800 p-1.5 rounded-lg text-xs transition-all" title="Lösung vorlesen">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                </div>
+                
+                <div class="text-sm md:text-base text-slate-800 leading-relaxed font-sans bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+                    ${renderSolutionText(rawText)}
+                </div>
+
+                ${task.hint ? `
+                    <div class="text-xs bg-amber-50 text-amber-900 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+                        <span class="text-amber-600 font-bold">💡 Tipp:</span>
+                        <span>${task.hint.replace('💡 Tipp:', '').trim()}</span>
+                    </div>
+                ` : ''}
+
+                ${task.explanation ? `
+                    <div class="text-xs bg-slate-100 text-slate-700 border border-slate-200 rounded-xl p-3 flex items-start gap-2">
+                        <span class="text-slate-500 font-bold">ℹ️ Erklärung:</span>
+                        <span>${task.explanation}</span>
+                    </div>
+                ` : ''}
+            `;
+
+            // Attach Audio listener
+            const btnSpeak = card.querySelector('.speak-btn');
+            btnSpeak.onclick = function() {
+                speakText(cleanTextForAudio, this);
+            };
+
+            return card;
+        }
+
+        // Tab Switching
+        const tabA = document.getElementById('tab-level-a');
+        const tabB = document.getElementById('tab-level-b');
+        const sectionA = document.getElementById('section-level-a');
+        const sectionB = document.getElementById('section-level-b');
+
+        tabA.addEventListener('click', () => {
+            tabA.className = "flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-white text-emerald-700 shadow-sm";
+            tabB.className = "flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900";
+            sectionA.classList.remove('hidden');
+            sectionB.classList.add('hidden');
+        });
+
+        tabB.addEventListener('click', () => {
+            tabB.className = "flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-white text-blue-700 shadow-sm";
+            tabA.className = "flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900";
+            sectionB.classList.remove('hidden');
+            sectionA.classList.add('hidden');
+        });
+
+        // Student Self-Reflection Feedback
+        function sendStudentFeedback(feeling, btn) {
+            document.getElementById('feedback-acknowledgement').classList.remove('hidden');
+            btn.classList.add('ring-2', 'ring-emerald-500');
+            // Log to server if pin exists
+            if (currentPIN) {
+                fetch(`/api/sessions/${currentPIN}/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        student_name: `Feedback (${feeling})`,
+                        score: feeling === 'leicht' ? 2 : (feeling === 'mittel' ? 1 : 0),
+                        max_score: 2,
+                        level_reached: feeling,
+                        answers_detail: [{ question: "Selbstreflexion", feeling: feeling }]
+                    })
+                }).catch(() => {});
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', loadSolution);
+    </script>
+</body>
+</html>

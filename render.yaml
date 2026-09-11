@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: adaptify
+    env: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: REQUIRE_USER_KEY_OR_PROMO
+        value: "False"
+      - key: GEMINI_API_KEY
+        sync: false

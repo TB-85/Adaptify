@@ -1,0 +1,156 @@
+{
+  "D4HF": {
+    "title": "Mittelschule - Deutsch: 2 Textverständnis, 2 Fremdwörter, 2 Grafik auswerten",
+    "data": {
+      "title": "Mittelschule - Deutsch: 2 Textverständnis, 2 Fremdwörter, 2 Grafik auswerten",
+      "data": {
+        "title": "Mittelschule - Deutsch: 2 Textverständnis, 2 Fremdwörter, 2 Grafik auswerten",
+        "target_format": "KI-Mix",
+        "lehrplan_code": "",
+        "lehrplan_competency": "",
+        "diagnostic": {
+          "questions": [
+            {
+              "question": "Wie wird der große Müllstrudel im Pazifischen Ozean im Text noch genannt?",
+              "options": [
+                "Der achte Kontinent",
+                "Die blaue Lagune"
+              ],
+              "correct": 0
+            },
+            {
+              "question": "Welche Information lässt sich direkt der Grafik M3 entnehmen?",
+              "options": [
+                "Der genaue Fischbestand im Mittelmeer",
+                "Der Plastiktütenverbrauch pro Person im EU-Vergleich"
+              ],
+              "correct": 1
+            }
+          ],
+          "threshold_pass_percent": 60
+        },
+        "hefteintrag": {
+          "title": "Wie werte ich eine Grafik aus?",
+          "summary": "1. MERKREGEL: Eine Grafik veranschaulicht Zahlen, Daten oder Vergleiche übersichtlich. 2. SCHRITTE ZUR ANWENDUNG: Erstens den Titel und die Achsenbeschriftungen lesen. Zweitens die auffälligsten Werte (Maximum und Minimum) suchen. Drittens den Durchschnitt oder Gesamttrend erkennen. 3. MUSTERBEISPIEL: Wenn in einem Diagramm Bulgarien mit 421 Plastiktüten ganz oben steht und Irland mit 18 ganz unten, vergleiche ich diese Extremwerte.",
+          "level_a_notes": "1. MERKREGEL: Eine Grafik veranschaulicht Zahlen, Daten oder Vergleiche übersichtlich. 2. SCHRITTE ZUR ANWENDUNG: Erstens den Titel und die Achsenbeschriftungen lesen. Zweitens die auffälligsten Werte (Maximum und Minimum) suchen. Drittens den Durchschnitt oder Gesamttrend erkennen. 3. MUSTERBEISPIEL: Wenn in einem Diagramm Bulgarien mit 421 Plastiktüten ganz oben steht und Irland mit 18 ganz unten, vergleiche ich diese Extremwerte.",
+          "level_b_notes": "1. MERKREGEL: Eine Grafik veranschaulicht Zahlen, Daten oder Vergleiche übersichtlich. 2. SCHRITTE ZUR ANWENDUNG: Erstens den Titel und die Achsenbeschriftungen lesen. Zweitens die auffälligsten Werte (Maximum und Minimum) suchen. Drittens den Durchschnitt oder Gesamttrend erkennen. 3. MUSTERBEISPIEL: Wenn in einem Diagramm Bulgarien mit 421 Plastiktüten ganz oben steht und Irland mit 18 ganz unten, vergleiche ich diese Extremwerte."
+        },
+        "zusatzaufgaben": [
+          {
+            "title": "Experten-Aufgabe 1 (Transfer)",
+            "task": "Überlege dir drei konkrete Maßnahmen, wie du deinen eigenen Plastikmüll im Alltag in der Schule reduzieren kannst."
+          },
+          {
+            "title": "Experten-Aufgabe 2 (Erweiterung)",
+            "task": "Recherchiere, welche Alternativen es zu Plastiktüten gibt und bewähren sie sich im Alltag?"
+          }
+        ],
+        "level_c": {
+          "title": "Level C - Inklusion & DaZ",
+          "tasks": []
+        },
+        "level_a": {
+          "title": "Level A - Grundlagen",
+          "tasks": [
+            {
+              "title": "Textverständnis 1: Der Müll im Meer",
+              "text": "Aussage: Der Text behauptet, dass der achte Kontinent im Pazifischen Ozean nur aus Abfall besteht.\nAntwort: Wahr",
+              "format": "Wahr/Falsch",
+              "hint": "Tipp: Schau im ersten Abschnitt des Textes nach, woraus der Müllteppich besteht.",
+              "explanation": "Richtig! Der Text beschreibt den Müllteppich als eine Ansammlung von Abfall."
+            },
+            {
+              "title": "Textverständnis 2: Ursachen der Verschmutzung",
+              "text": "Woher stammt der Großteil des Plastikmülls in den Meeren?\n[ ] 20 Prozent stammen vom Festland und 80 Prozent von Schiffen.\n[X] Rund 20 Prozent stammen von Schiffen und 80 Prozent vom Festland.\n[ ] 50 Prozent stammen aus Flüssen und 50 Prozent aus der Arktis.",
+              "format": "Multiple Choice",
+              "hint": "Tipp: Suche im zweiten Absatz nach den Prozentangaben für Schiffe und Festland.",
+              "explanation": "Falsch. Der Großteil (80 Prozent) kommt vom Festland, während Schiffe rund 20 Prozent ausmachen."
+            },
+            {
+              "title": "Fremdwörter 1: Fachbegriffe im Text",
+              "text": "Plastik ist extrem langlebig und braucht viele Jahre bis zur *Zersetzung/Auflösung/Verrottung*. Giftstoffe wie *Weichmacher/Zusatzstoffe* gelangen in die Meere. Der NABU hat die Initiative *Fishing for Litter* gestartet. Das schäddet vor allem die *Tierwelt/Fauna* im Wasser. Am Ende landet das Gift auf unserem *Teller/Esstisch*.",
+              "format": "Drag the Words",
+              "hint": "Tipp: Achte auf die Erklärungen im Text zu Plastik und Giftstoffen.",
+              "explanation": "Diese Begriffe sind wichtige Fachwörter zum Thema Umweltschutz."
+            },
+            {
+              "title": "Fremdwörter 2: Erkennen von Begriffen",
+              "text": "Was bedeutet das Wort 'Illusion' im Kontext des Textes (Experten halten den Müll herauszufischen für eine Illusion)?\n[ ] Ein leicht erreichbares Ziel\n[X] Eine Wunschvorstellung, die sich nicht verwirklichen lässt\n[ ] Eine wissenschaftliche Formel",
+              "format": "Multiple Choice",
+              "hint": "Tipp: Experten meinen damit, dass man den Müll unmöglich komplett wieder herausfischen kann.",
+              "explanation": "Eine Illusion ist etwas, das man sich nur einbildet oder wünscht, was aber in Wirklichkeit unmöglich ist."
+            },
+            {
+              "title": "Grafik auswerten 1: Das Diagramm M3",
+              "text": "Aussage: Laut Grafik M3 hat Bulgarien den höchsten Plastiktüten-Verbrauch pro Person.\nAntwort: Wahr",
+              "format": "Wahr/Falsch",
+              "hint": "Tipp: Suche in der Grafik M3 den Balken mit dem höchsten Wert ganz links.",
+              "explanation": "Richtig! Bulgarien steht mit 421 Tüten ganz an der Spitze."
+            },
+            {
+              "title": "Grafik auswerten 2: EU-Durchschnitt in M3",
+              "text": "Welcher Wert wird in der Grafik M3 für den EU-Durchschnitt angegeben?\n[ ] 40\n[X] 198\n[ ] 421",
+              "format": "Multiple Choice",
+              "hint": "Tipp: Suche in der Grafik nach der gestrichelten Linie für den EU-Durchschnitt.",
+              "explanation": "Der EU-Durchschnitt liegt laut Grafik bei 198 Plastiktüten pro Person und Jahr."
+            }
+          ]
+        },
+        "level_b": {
+          "title": "Level B - Vertiefung",
+          "tasks": [
+            {
+              "title": "Textverständnis 1: Folgen für Tiere",
+              "text": "Aussage: Tiere verwechseln den zu Granulat zerkleinerten Müll mit Nahrung und verhungern mit einem Magen voller Plastik.\nAntwort: Wahr",
+              "format": "Wahr/Falsch",
+              "hint": "",
+              "explanation": "Genau, der Text beschreibt detailliert, wie Tiere den Müll fressen und daran verenden."
+            },
+            {
+              "title": "Textverständnis 2: Die Initiative des NABU",
+              "text": "Wie funktioniert die Initiative 'Fishing for Litter'?\n[ ] Fischer werfen den Müll direkt wieder ins offene Meer.\n[X] Fischer sammeln Müll als Beifang an Bord und entsorgen ihn in speziellen Hafen-Containern.\n[ ] Fischer reinigen nur die arktische Tiefsee mit Netzen.",
+              "format": "Multiple Choice",
+              "hint": "",
+              "explanation": "Die Initiative sorgt dafür, dass Fischer ihren Müllbeifang mit an Land bringen und dort fachgerecht entsorgen."
+            },
+            {
+              "title": "Fremdwörter 1: Kontext und Bedeutung",
+              "text": "Im Text tauchen verschiedene *Fachbegriffe/Ausdrücke* auf. Das Wort *Deponien* bezeichnet Müllkippen an Land. Der Begriff *Globalisierung* wird hier nicht genannt, aber der weltweite *Konsum/Verbrauch* ist ein Kernproblem. Die Zersetzung von Plastik dauert Jahrhunderte. Gifte wie *Weichmacher* reichern sich in der Nahrungskette an.",
+              "format": "Lückentext",
+              "hint": "",
+              "explanation": "Achte darauf, wie Fachbegriffe im Textzusammenhang verwendet werden."
+            },
+            {
+              "title": "Fremdwörter 2: Wortbedeutung anwenden",
+              "text": "Was versteht man unter dem im Text genannten Begriff 'Wegwerfmentalität'?\n[ ] Eine besondere Art des Recycling\n[X] Die Einstellung, Dinge schnell wegzuwerfen, anstatt sie zu reparieren oder wiederzuverwenden\n[ ] Ein Gesetz gegen Plastiktüten",
+              "format": "Multiple Choice",
+              "hint": "",
+              "explanation": "Die Wegwerfmentalität beschreibt unser gedankenloses Verhalten gegenüber Konsumgütern."
+            },
+            {
+              "title": "Grafik auswerten 1: Extreme Werte in M3",
+              "text": "Welches Land hat laut der Grafik M3 den geringsten Plastiktüten-Verbrauch pro Person im EU-Vergleich?\n[ ] Österreich\n[X] Irland\n[ ] Deutschland",
+              "format": "Multiple Choice",
+              "hint": "",
+              "explanation": "Irland liegt mit nur 18 Plastiktüten am Ende der Skala."
+            },
+            {
+              "title": "Transfer & Anwendung - Grafikanalyse",
+              "text": "Aussage: Deutschland liegt laut der Grafik M3 genau im europäischen Durchschnitt beim Plastiktütenverbrauch.\nAntwort: Falsch",
+              "format": "Wahr/Falsch",
+              "hint": "",
+              "explanation": "Falsch! Deutschland liegt mit 71 Tüten deutlich unter dem EU-Durchschnitt von 198."
+            }
+          ]
+        },
+        "pdf_teacher_name": "",
+        "pdf_class_name": "",
+        "pdf_accent_color": "#4f46e5",
+        "pdf_include_lehrplan": false,
+        "pdf_include_level_c": false,
+        "pdf_logo_base64": null
+      }
+    },
+    "results": []
+  }
+}

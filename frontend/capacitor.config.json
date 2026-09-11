@@ -1,0 +1,8 @@
+{
+  "appId": "com.adaptify.app",
+  "appName": "Adaptify",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

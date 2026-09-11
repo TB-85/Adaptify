@@ -1,0 +1,17 @@
+{
+  "name": "Adaptify – Differenzierung für Schulen",
+  "short_name": "Adaptify",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "description": "KI-gestützte Unterrichtsdifferenzierung für Tabletklassen",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/8074/8074788.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

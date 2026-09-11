@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Disable Stale Browser Caching -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Adaptify – KI-gestützter H5P-Differenzierungs-Generator</title>
+    <!-- PWA Support -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8074/8074788.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => {
+                        reg.update();
+                        console.log('ServiceWorker registered & updated', reg.scope);
+                    })
+                    .catch(err => console.error('ServiceWorker registration failed', err));
+            });
+        }
+    </script>
+    <!-- Tailwind Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f5f7ff',
+                            100: '#ebf0fe',
+                            200: '#dce5fe',
+                            300: '#c2d2fd',
+                            400: '#9db6fc',
+                            500: '#6366f1', // Indigo
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        },
+                        success: {
+                            DEFAULT: '#0f766e', // Teal
+                            light: '#f0fdfa'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Outfit', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #4f46e5 0%, #0f766e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .pulse-soft {
+            animation: pulseSoft 2s infinite ease-in-out;
+        }
+        @keyframes pulseSoft {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.02); opacity: 0.95; }
+        }
+    </style>
+</head>
+<body class="flex flex-col text-slate-800">
+
+    <!-- Header Navigation -->
+    <header class="w-full glass-panel sticky top-0 z-50 shadow-sm transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-brand-600 to-teal-500 p-2.5 rounded-xl shadow-md text-white flex items-center justify-center">
+                    <i class="fa-solid fa-graduation-cap text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-1.5">
+                        <span>Adapt</span><span class="text-brand-600 font-extrabold">ify</span>
+                        <span class="text-[9px] font-bold bg-brand-50 border border-brand-100 text-brand-700 px-1.5 py-0.5 rounded-md uppercase tracking-wide">Beta</span>
+                    </h1>
+                    <p class="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-school text-[9px]"></i> <span id="header-school-name">Schullizenz Bayern</span>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Persistent Navigation Menu -->
+            <nav class="hidden md:flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-2xl border border-slate-200/50">
+                <button onclick="navigateToScreen('upload')" class="px-4 py-2 text-xs font-extrabold text-slate-600 rounded-xl transition-all" id="nav-btn-upload">Startseite</button>
+                <button onclick="navigateToScreen('editor')" class="px-4 py-2 text-xs font-extrabold text-slate-400 cursor-not-allowed rounded-xl transition-all" id="nav-btn-editor" disabled>Editor</button>
+                <button onclick="navigateToScreen('export')" class="px-4 py-2 text-xs font-extrabold text-slate-400 cursor-not-allowed rounded-xl transition-all" id="nav-btn-export" disabled>Teilen & Live</button>
+                <button onclick="navigateToScreen('analytics')" class="px-4 py-2 text-xs font-extrabold text-slate-600 rounded-xl transition-all" id="nav-btn-analytics">Statistiken</button>
+            </nav>
+            
+            <div class="flex items-center gap-3">
+                <!-- Install App Button (PWA) -->
+                <button id="btn-open-settings" onclick="openSettingsModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold transition-all shadow-sm focus:outline-none" title="Einstellungen & Keys">
+                    <i class="fa-solid fa-gear text-slate-500"></i>
+                    <span class="hidden sm:inline">Einstellungen</span>
+                </button>
+
+                <button id="btn-install-app" onclick="promptInstallApp()" class="hidden items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 text-xs font-bold transition-all shadow-sm focus:outline-none">
+                    <i class="fa-solid fa-download text-brand-600"></i>
+                    <span class="hidden sm:inline">App installieren</span>
+                </button>
+
+                <!-- Glowing Live Session Indicator Badge -->
+                <button id="nav-live-session-indicator" onclick="navigateToScreen('export')" class="hidden items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 cursor-pointer shadow-sm pulse-soft transition-all">
+                    <span class="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                    <span>Live-Sitzung aktiv (PIN: <span id="nav-live-session-pin" class="font-black text-rose-800">CODE</span>)</span>
+                </button>
+                
+                <!-- User Profile dropdown -->
+                <div class="relative inline-block text-left" id="user-profile-menu">
+                    <button onclick="toggleUserProfileDropdown(event)" class="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-white border border-slate-200/80 hover:bg-slate-50 hover:border-slate-300 shadow-sm transition-all text-xs font-bold text-slate-700 focus:outline-none">
+                        <div class="h-6 w-6 rounded-full bg-brand-600 text-white flex items-center justify-center font-extrabold text-[9px] shadow-sm uppercase">TB</div>
+                        <span class="hidden sm:inline">Hr. Benke</span>
+                        <i class="fa-solid fa-chevron-down text-[8px] text-slate-400"></i>
+                    </button>
+                    
+                    <!-- Dropdown Panel -->
+                    <div id="user-dropdown-panel" class="hidden absolute right-0 mt-2 w-52 rounded-2xl bg-white border border-slate-200 shadow-xl py-2 z-50 text-[10px] font-bold text-slate-700 divide-y divide-slate-100">
+                        <div class="px-4 py-2 text-slate-500 font-semibold leading-tight">
+                            <p class="text-[10px] text-slate-800 font-black">Thomas Benke</p>
+                            <p class="text-[9px] text-slate-400 font-medium truncate">thomas.benke@schule.bayern.de</p>
+                        </div>
+                        <div class="py-1">
+                            <div class="flex items-center gap-2 px-4 py-2 text-slate-400 cursor-default select-none"><i class="fa-solid fa-school text-slate-400"></i> Schullizenz aktiv</div>
+                            <button onclick="openBrandingSettingsModal(event)" class="w-full text-left flex items-center gap-2 px-4 py-2 hover:bg-slate-50 hover:text-brand-600 transition-all"><i class="fa-solid fa-sliders text-slate-400"></i> Branding-Zentrale</button>
+                        </div>
+                        <div class="py-1">
+                            <span class="flex items-center gap-1.5 px-4 py-2 text-emerald-600 font-bold"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Premium-Abo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
+        
+        <!-- ==================== SCREEN 1: UPLOAD & SETUP ==================== -->
+        <section id="screen-upload" class="space-y-8 max-w-5xl mx-auto">
+            <!-- Hero Header & 3-Step Visual Guide -->
+            <div class="text-center space-y-4">
+                <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-tight">
+                    Unterrichtsmaterial in <span class="gradient-text">Sekunden</span> differenzieren
+                </h2>
+                
+                <!-- 3-Step Visual Onboarding Badges -->
+                <div class="flex flex-wrap justify-center items-center gap-2.5 sm:gap-3 text-xs md:text-sm font-bold text-slate-700 select-none">
+                    <span class="bg-white border border-slate-200 px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-black">1</span>
+                        📸 Buchseite hochladen
+                    </span>
+                    <i class="fa-solid fa-arrow-right text-slate-300 text-xs hidden sm:inline-block"></i>
+                    <span class="bg-white border border-slate-200 px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-black">2</span>
+                        🪄 KI differenziert (Level A & B)
+                    </span>
+                    <i class="fa-solid fa-arrow-right text-slate-300 text-xs hidden sm:inline-block"></i>
+                    <span class="bg-white border border-slate-200 px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-black">3</span>
+                        🚀 Live-Spiel, H5P oder PDF
+                    </span>
+                </div>
+            </div>
+
+            <!-- Balanced 2-Column Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                <!-- LEFT COLUMN (Col-Span-6): Upload Dropzone & Demo Presets (Upload First!) -->
+                <div class="lg:col-span-6 space-y-6">
+                    <!-- Drag & Drop Upload Zone Card -->
+                    <div class="glass-panel p-6 rounded-3xl shadow-xl flex flex-col justify-center items-center border-2 border-dashed border-brand-300 hover:border-brand-500 transition-all group relative cursor-pointer min-h-[320px]" id="drop-zone">
+                        <input type="file" id="file-input" accept="image/*,application/pdf" class="hidden">
+                        
+                        <div class="text-center space-y-4 flex flex-col items-center">
+                            <div class="h-16 w-16 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center shadow-inner group-hover:scale-110 transition-all duration-300">
+                                <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                            </div>
+                            
+                            <div class="space-y-1">
+                                <p class="text-base font-bold text-slate-900">
+                                    Buchseite / PDF hier reinziehen
+                                </p>
+                                <p class="text-xs text-slate-500">
+                                    Unterstützt Fotos (PNG, JPG) und PDF-Seiten bis 10MB
+                                </p>
+                            </div>
+                            
+                            <div class="flex flex-wrap items-center justify-center gap-2">
+                                <button type="button" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-2">
+                                    <i class="fa-solid fa-file-import"></i> Datei auswählen
+                                </button>
+                                <button type="button" onclick="openCameraCapture(event)" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-2">
+                                    <i class="fa-solid fa-camera"></i> Foto knipsen
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Selected file info overlay -->
+                        <div id="file-info" class="hidden absolute inset-0 bg-white/95 rounded-3xl p-6 flex flex-col justify-center items-center gap-3 select-none z-10">
+                            <!-- Thumbnail Preview or PDF Icon -->
+                            <div id="file-preview-container" class="relative group">
+                                <img id="file-preview-thumb" src="" alt="Vorschau" class="hidden h-32 w-auto max-w-[220px] object-contain rounded-xl border border-slate-200 shadow-md bg-slate-50">
+                                <div id="file-icon-placeholder" class="bg-teal-50 text-teal-700 p-4 rounded-full">
+                                    <i class="fa-solid fa-file-circle-check text-3xl"></i>
+                                </div>
+                            </div>
+
+                            <div class="text-center">
+                                <p id="file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs md:max-w-md"></p>
+                                <p id="file-size" class="text-[11px] text-slate-500 font-medium"></p>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex flex-wrap items-center justify-center gap-2 mt-1">
+                                <button id="btn-edit-current-image" onclick="reopenImageEditor()" type="button" class="hidden px-3.5 py-2 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+                                    <i class="fa-solid fa-crop-simple text-brand-600"></i> Foto anpassen
+                                </button>
+                                <button id="btn-remove-file" type="button" class="px-3.5 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600 transition-all">
+                                    Anderes Dokument
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DSGVO & Bayerisches Schulrecht Badge -->
+                    <div class="flex items-center justify-between bg-emerald-50/90 border border-emerald-200 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-emerald-900 shadow-sm">
+                        <span class="flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved text-emerald-600 text-sm"></i>
+                            <span>100% DSGVO &amp; ByCS-konform: Keine Schülerdaten verarbeitet.</span>
+                        </span>
+                        <button type="button" onclick="openDSGVOModal()" class="text-[11px] font-extrabold text-emerald-700 hover:text-emerald-900 underline shrink-0">
+                            Details
+                        </button>
+                    </div>
+
+                    <!-- 1-Click Demo Presets Box (Instant Onboarding) -->
+                    <div class="bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-200/80 rounded-2xl p-4 space-y-2.5 shadow-sm">
+                        <div class="flex items-center gap-2 font-bold text-amber-900 text-xs">
+                            <i class="fa-solid fa-lightbulb text-amber-500"></i>
+                            <span>Jetzt direkt ausprobieren (1-Klick Demos):</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <button type="button" onclick="loadDemoPreset('deutsch')" class="p-2.5 bg-white hover:bg-amber-100/50 border border-amber-200 rounded-xl text-xs font-semibold text-slate-700 hover:text-amber-900 text-left transition-all shadow-sm flex items-center gap-2">
+                                <span class="text-base">📘</span>
+                                <div>
+                                    <span class="font-bold block text-xs">Deutsch</span>
+                                    <span class="text-[9px] text-slate-500">Lesetext Fabeln</span>
+                                </div>
+                            </button>
+                            <button type="button" onclick="loadDemoPreset('mathe')" class="p-2.5 bg-white hover:bg-amber-100/50 border border-amber-200 rounded-xl text-xs font-semibold text-slate-700 hover:text-amber-900 text-left transition-all shadow-sm flex items-center gap-2">
+                                <span class="text-base">📙</span>
+                                <div>
+                                    <span class="font-bold block text-xs">Mathe</span>
+                                    <span class="text-[9px] text-slate-500">Bruchrechnen</span>
+                                </div>
+                            </button>
+                            <button type="button" onclick="loadDemoPreset('englisch')" class="p-2.5 bg-white hover:bg-amber-100/50 border border-amber-200 rounded-xl text-xs font-semibold text-slate-700 hover:text-amber-900 text-left transition-all shadow-sm flex items-center gap-2">
+                                <span class="text-base">🟪</span>
+                                <div>
+                                    <span class="font-bold block text-xs">Englisch</span>
+                                    <span class="text-[9px] text-slate-500">Simple Past</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN (Col-Span-6): Educational Smart Controls -->
+                <div class="lg:col-span-6 glass-panel p-6 rounded-3xl shadow-xl space-y-5">
+                    <h3 class="text-base font-bold text-slate-900 flex items-center justify-between border-b pb-3 border-slate-100">
+                        <span class="flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-brand-600"></i> Didaktische Einstellungen
+                        </span>
+                        <span class="text-[10px] text-slate-400 font-semibold">Anpassbar</span>
+                    </h3>
+
+                    <!-- School Type & Target Format Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- School Type Selection -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-slate-700">Schulart</label>
+                            <select id="input-school-type" onchange="handleSchoolTypeChange()" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm">
+                                <option value="Grundschule" selected>Grundschule</option>
+                                <option value="Mittelschule">Mittelschule</option>
+                                <option value="Realschule">Realschule</option>
+                                <option value="Gymnasium">Gymnasium</option>
+                                <option value="Förderschule">Förderschule</option>
+                            </select>
+                        </div>
+
+                        <!-- Target Format -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-slate-700">Aufgaben-Format</label>
+                            <select id="input-format" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm" required>
+                                <option value="KI-Mix" selected>✨ KI-Mix (Automatisch passend)</option>
+                                <option value="Lückentext">📝 Lückentext (Blanks)</option>
+                                <option value="Drag the Words">🧩 Wörter ziehen (Drag Text)</option>
+                                <option value="Wahr/Falsch">☑️ Wahr/Falsch (True/False)</option>
+                                <option value="Multiple Choice">🔘 Multiple Choice</option>
+                                <option value="Vokabelkarten">🃏 Vokabelkarten (Dialogcards)</option>
+                                <option value="Wörter markieren">🖍️ Wörter markieren</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Subject Selection (Colorful Touch Pills) -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-xs font-bold text-slate-700">Schulfach / Fächer</label>
+                            <span class="text-[9px] text-brand-600 font-bold">Mehrfachauswahl möglich</span>
+                        </div>
+                        <div id="subject-chips-container" class="flex flex-wrap gap-1.5 p-2.5 bg-slate-50/80 border border-slate-200 rounded-2xl min-h-[44px]">
+                            <!-- Dynamic Subject Chips will be rendered here -->
+                        </div>
+                        
+                        <!-- Cross-Curricular Notification Badge -->
+                        <div id="cross-curricular-badge" class="hidden text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-xl p-2.5 leading-tight flex items-start gap-1.5 transition-all">
+                            <i class="fa-solid fa-layer-group text-indigo-600 mt-0.5"></i>
+                            <div>
+                                <span class="font-extrabold block">Fächerübergreifend aktiv:</span>
+                                <span id="cross-curricular-text" class="font-medium text-indigo-600">Die KI verknüpft die Kompetenzen der gewählten Fächer didaktisch sinnvoll.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Intuitive & Flexibler Didaktischer Schwerpunkte Builder -->
+                    <div class="space-y-3 bg-slate-50/90 p-4 rounded-2xl border border-slate-200 shadow-inner">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-sliders text-brand-600"></i>
+                                <span>Didaktische Aufgaben-Verteilung</span>
+                            </label>
+                            <span id="label-total-task-count" class="text-xs font-extrabold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-0.5 rounded-full">Gesamt: 3 Aufgaben</span>
+                        </div>
+
+                        <!-- Dynamic Topic Rows (Vertical List - Zero Clipping) -->
+                        <div id="topic-rows-list" class="space-y-2">
+                            <!-- Dynamic topic rows rendered by JS -->
+                        </div>
+
+                        <!-- Add Custom Topic & Reset Buttons -->
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-200/80">
+                            <button type="button" onclick="addCustomTopicRow()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-brand-700 border border-brand-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-plus text-brand-600"></i> Schwerpunkt hinzufügen (z. B. Wortarten)
+                            </button>
+                            <button type="button" onclick="resetDefaultTopics()" class="text-[11px] font-semibold text-slate-400 hover:text-slate-600 underline">
+                                Standard
+                            </button>
+                        </div>
+
+                        <input type="hidden" id="input-focus-topic" value="1 Textverständnis, 1 Fremdwörter, 1 Grafik auswerten">
+                        <input type="hidden" id="input-task-count" value="3">
+                    </div>
+
+                    <!-- Thema für Merkkasten / Hefteintrag -->
+                    <div class="space-y-1.5 bg-amber-50/40 p-3.5 rounded-2xl border border-amber-200 shadow-sm">
+                        <label class="block text-xs font-extrabold text-amber-900 flex items-center gap-1.5">
+                            <i class="fa-solid fa-bookmark text-amber-500"></i>
+                            <span>Thema / W-Frage für den Merkkasten (Tafelbild)</span>
+                        </label>
+                        <input type="text" id="input-hefteintrag-topic" placeholder="z. B. Wie werte ich eine Grafik aus? (Optional: KI ermittelt sonst automatisch)" class="w-full px-3 py-2.5 border border-amber-300 bg-white rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all shadow-sm">
+                    </div>
+
+                    <!-- Context Textfield (Collapsible / Compact) -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700">Zusätzlicher Hinweis für die KI (Optional)</label>
+                        <input type="text" id="input-context" placeholder="z. B. Sprachlich vereinfachen, DaZ-Klasse" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm">
+                    </div>
+
+                    <!-- Level C Opt-in Checkbox -->
+                    <div class="flex items-center gap-2.5 p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl shadow-sm">
+                        <input type="checkbox" id="input-include-level-c" class="w-4 h-4 text-emerald-600 rounded border-emerald-300 focus:ring-emerald-500 cursor-pointer">
+                        <label for="input-include-level-c" class="text-xs font-bold text-emerald-900 cursor-pointer select-none">
+                            🟢 Level C (Inklusion &amp; DaZ in Leichter Sprache) mit generieren
+                        </label>
+                    </div>
+
+                    <!-- MAIN ACTION BUTTON -->
+                    <div class="pt-2">
+                        <button id="btn-submit" type="button" class="w-full py-4 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-extrabold text-base rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-2.5 group">
+                            <span>Unterrichtsmaterial jetzt differenzieren</span>
+                            <i class="fa-solid fa-wand-magic-sparkles group-hover:scale-125 transition-transform"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Section -->
+            <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-4">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3 border-slate-100">
+                    <i class="fa-solid fa-clock-rotate-left text-brand-600"></i> Meine Übungen (Verlauf)
+                </h3>
+                <div id="history-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <!-- History cards will be rendered here dynamically -->
+                    <div class="col-span-full py-8 text-center text-slate-400 text-xs font-semibold">
+                        <i class="fa-solid fa-folder-open text-2xl mb-2 block text-slate-300"></i>
+                        Noch keine Übungen gespeichert. Sie werden hier nach der Generierung automatisch abgelegt.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading overlay -->
+            <div id="loader" class="hidden glass-panel fixed inset-0 z-50 bg-slate-900/60 flex flex-col justify-center items-center gap-4 text-white">
+                <div class="relative flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-16 w-16 border-4 border-white/20 border-t-brand-500"></div>
+                    <i class="fa-solid fa-wand-magic-sparkles text-xl absolute text-brand-400 pulse-soft"></i>
+                </div>
+                <div class="text-center space-y-1">
+                    <p class="font-bold text-lg">Analysiere Dokument...</p>
+                    <p class="text-xs text-slate-300 max-w-sm">Das Dokument wird per OCR eingelesen und die differenzierten Aufgaben werden generiert (ca. 10-15 Sek.)</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SCREEN 2: PREVIEW & EDITOR ==================== -->
+        <section id="screen-editor" class="hidden space-y-8">
+            <div class="flex items-center justify-between border-b pb-4 border-slate-200">
+                <div>
+                    <button id="btn-back-to-upload" class="text-slate-500 hover:text-brand-600 text-sm font-semibold flex items-center gap-1.5 transition-all">
+                        <i class="fa-solid fa-chevron-left"></i> Zurück zum Upload
+                    </button>
+                    <h2 class="text-2xl font-black text-slate-900 mt-2">Vorschau &amp; Feinschliff</h2>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button id="btn-simulate-preview" class="px-5 py-3 bg-white hover:bg-slate-50 text-slate-800 rounded-xl text-sm font-bold shadow-md border border-slate-200 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-play text-brand-600"></i> Live-Vorschau
+                    </button>
+                    <button id="btn-pack-h5p" class="px-6 py-3 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white rounded-xl text-sm font-bold shadow-lg transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-box-open"></i> H5P-Paket schnüren <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Left Pane: Source view / Live pupil preview split tab -->
+                <div class="lg:col-span-5 glass-panel p-6 rounded-3xl shadow-xl flex flex-col gap-4">
+                    <!-- Tab menu -->
+                    <div class="flex border-b border-slate-200 pb-2 gap-4">
+                        <button id="editor-tab-source" onclick="switchEditorTab('source')" class="pb-1 text-xs font-extrabold text-brand-600 border-b-2 border-brand-500 transition-all">
+                            <i class="fa-solid fa-file-invoice"></i> Original-Quelle
+                        </button>
+                        <button id="editor-tab-preview" onclick="switchEditorTab('preview')" class="pb-1 text-xs font-extrabold text-slate-400 hover:text-slate-600 border-b-2 border-transparent transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-mobile-screen-button"></i> Schüler-Vorschau (Live)
+                        </button>
+                    </div>
+                    
+                    <!-- Content Wrapper for Tab 1: Source -->
+                    <div id="editor-content-source" class="flex-1 flex flex-col gap-4">
+                        <!-- Image Preview Container -->
+                        <div id="editor-image-preview-container" class="hidden border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center h-[180px]">
+                            <img id="editor-image-preview" src="" class="max-h-full max-w-full object-contain">
+                        </div>
+                        <div class="flex-1 flex flex-col">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Erkannter Text &amp; Bildbeschreibungen</label>
+                            <textarea id="editor-source-text" class="flex-1 w-full p-4 border border-slate-200 rounded-2xl font-mono text-xs text-slate-600 bg-slate-50/50 focus:outline-none min-h-[220px] lg:min-h-[300px]" readonly></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Content Wrapper for Tab 2: Live Preview -->
+                    <div id="editor-content-preview" class="hidden flex-1 flex flex-col gap-3 min-h-[400px]">
+                        <div class="flex justify-between items-center bg-slate-100 p-2.5 rounded-xl border border-slate-200/50">
+                            <span id="editor-preview-path" class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Startbildschirm</span>
+                            <span id="editor-preview-score" class="text-[9px] font-bold text-slate-400 uppercase">Ergebnis: -</span>
+                        </div>
+                        
+                        <!-- Simulated Tablet Screen Frame -->
+                        <div class="flex-1 border border-slate-200 rounded-2xl shadow-inner bg-slate-50 p-4 overflow-y-auto max-h-[500px]" id="editor-preview-sim-frame">
+                            <!-- Live simulator appends here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Pane: Editable cards -->
+                <div class="lg:col-span-7 space-y-6">
+                    <!-- Title Input -->
+                    <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-3">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Aufgabentitel</label>
+                        <input type="text" id="editor-title" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl font-bold text-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all">
+                        
+                        <!-- LehrplanPlus Teacher Info Badge -->
+                        <div id="editor-lehrplan-badge" class="hidden text-xs font-bold text-indigo-900 bg-indigo-50/90 border border-indigo-200 rounded-2xl p-3 flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-graduation-cap text-indigo-600 text-sm"></i>
+                                <span>LehrplanPlus Bayern: <span id="editor-lehrplan-code" class="font-mono underline">M6 EG 2</span> – <span id="editor-lehrplan-text" class="font-semibold text-slate-700">Kompetenzbeschreibung</span></span>
+                            </span>
+                            <span class="text-[9px] bg-indigo-200/60 text-indigo-900 px-2 py-0.5 rounded-md uppercase tracking-wider">Nur für Lehrkräfte</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 1: Diagnose -->
+                    <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-4">
+                        <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+                            <h3 class="font-extrabold text-slate-900 flex items-center gap-2">
+                                <span class="bg-indigo-100 text-indigo-700 h-6 w-6 rounded-full inline-flex items-center justify-center text-xs font-bold">1</span>
+                                Diagnose (Einstiegsfragen)
+                            </h3>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs text-slate-500 font-medium">B-Schwelle:</span>
+                                <input type="number" id="editor-threshold" value="60" min="1" max="100" class="w-14 text-center px-1.5 py-1 border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:ring-1 focus:ring-brand-500">
+                                <span class="text-xs text-slate-500 font-bold">%</span>
+                            </div>
+                        </div>
+                        <div id="editor-questions" class="space-y-4">
+                            <!-- Dynamic Questions go here -->
+                        </div>
+                    </div>
+
+                    <!-- Card: Hefteintrag / Merkkasten -->
+                    <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-4 border-l-4 border-amber-400">
+                        <div class="flex items-center justify-between border-b pb-3 border-amber-100">
+                            <h3 class="font-extrabold text-amber-900 flex items-center gap-2">
+                                <i class="fa-solid fa-bookmark text-amber-500"></i>
+                                📌 Klassen-Hefteintrag / Merkkasten (Tafelbild)
+                            </h3>
+                            <span class="text-[10px] font-bold text-amber-800 bg-amber-100/70 border border-amber-200 px-2 py-0.5 rounded-full">Frage-Format</span>
+                        </div>
+                        <p class="text-xs text-slate-500">
+                            Einheitlicher Merkkasten für die gesamte Klasse mit W-Frage als Überschrift.
+                        </p>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Hefteintrag-Überschrift (Als W-Frage formuliert)</label>
+                                <input type="text" id="editor-hefteintrag-title" class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-extrabold text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="z. B. Wie werte ich eine Grafik aus?">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-amber-900 mb-1">Tafelbild / Mitschrift (1:1 fürs Merkheft)</label>
+                                <textarea id="editor-hefteintrag-summary" class="w-full p-3.5 border border-amber-300 rounded-xl font-mono text-xs text-slate-800 bg-amber-50/50 focus:outline-none focus:ring-2 focus:ring-amber-400 leading-relaxed" rows="8" placeholder="1. MERKREGEL:
+...
+
+2. SCHRITTE ZUR ANWENDUNG:
+• Schritt 1: ...
+
+3. MUSTERBEISPIEL:
+..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 0: Level C (Inklusion & DaZ) -->
+                    <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-4 border-l-4 border-emerald-500">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-extrabold text-emerald-900 flex items-center gap-2">
+                                <span class="bg-emerald-100 text-emerald-800 h-6 w-6 rounded-full inline-flex items-center justify-center text-xs font-bold">C</span>
+                                Level C - Inklusion & DaZ (Leichte Sprache)
+                            </h3>
+                            <button type="button" onclick="addTask('C')" class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-plus"></i> Aufgabe hinzufügen
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-500">
+                            Aufgaben in Leichter Sprache mit Wortschatz-Hilfen für Förderschüler und Deutsch-Lernende.
+                        </p>
+                        <div id="editor-level-c-tasks" class="space-y-4">
+                            <!-- Dynamic Tasks for Level C go here -->
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Level A (Fördern) -->
+                    <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-4 border-l-4 border-teal-500">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-extrabold text-teal-800 flex items-center gap-2">
+                                <span class="bg-teal-100 text-teal-700 h-6 w-6 rounded-full inline-flex items-center justify-center text-xs font-bold">A</span>
+                                Level A - Grundlagen (Fördern)
+                            </h3>
+                            <button type="button" onclick="addTask('A')" class="px-3 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-plus"></i> Aufgabe hinzufügen
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-500">
+                            Passe die Aufgaben für Schüler mit Unterstützungsbedarf an. Lücken mit *Sternchen* markieren.
+                        </p>
+                        <div id="editor-level-a-tasks" class="space-y-4">
+                            <!-- Dynamic Tasks for Level A go here -->
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Level B (Fordern) -->
+                    <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-4 border-l-4 border-indigo-500">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-extrabold text-indigo-800 flex items-center gap-2">
+                                <span class="bg-indigo-100 text-indigo-700 h-6 w-6 rounded-full inline-flex items-center justify-center text-xs font-bold">B</span>
+                                Level B - Vertiefung (Fordern)
+                            </h3>
+                            <button type="button" onclick="addTask('B')" class="px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-plus"></i> Aufgabe hinzufügen
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-500">
+                            Anspruchsvollere Aufgaben für Schüler mit sicherem Wissensstand. Lücken mit *Sternchen* markieren.
+                        </p>
+                        <div id="editor-level-b-tasks" class="space-y-4">
+                            <!-- Dynamic Tasks for Level B go here -->
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Zusatzaufgaben (Experten-Aufgaben) -->
+                    <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-4 border-l-4 border-amber-500">
+                        <h3 class="font-extrabold text-amber-800 flex items-center gap-2">
+                            <i class="fa-solid fa-star text-amber-500"></i>
+                            Experten-Aufgaben (Zusatzaufgaben für Schnellarbeiter)
+                        </h3>
+                        <div id="editor-zusatzaufgaben" class="space-y-3">
+                            <!-- Dynamic Zusatzaufgaben go here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SCREEN 3: EXPORT ==================== -->
+        <section id="screen-export" class="hidden max-w-2xl mx-auto space-y-8 text-center py-12">
+            <div class="bg-teal-50 text-teal-700 h-20 w-20 rounded-full flex items-center justify-center mx-auto shadow-inner text-3xl pulse-soft">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            
+            <div class="space-y-3">
+                <h2 class="text-3xl font-black text-slate-900">Das Paket ist fertig geschnürt!</h2>
+                <p class="text-slate-600 max-w-lg mx-auto">
+                    Lade jetzt die .h5p-Datei für dein LMS herunter oder exportiere das passende zweiseitige PDF-Notfall-Arbeitsblatt.
+                </p>
+            </div>
+
+            <!-- PDF Customization Settings -->
+            <div class="glass-panel p-6 rounded-3xl shadow-lg text-left space-y-4 max-w-lg mx-auto border-t-4 border-brand-500">
+                <h4 class="font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-palette text-brand-600"></i> PDF-Design anpassen (Optional)
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Klasse</label>
+                        <input type="text" id="pdf-class-name" placeholder="z.B. 6a" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Lehrkraft</label>
+                        <input type="text" id="pdf-teacher-name" placeholder="z.B. Frau Schmidt" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Akzentfarbe</label>
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="pdf-accent-color" value="#4f46e5" class="h-8 w-10 border border-slate-200 rounded-lg cursor-pointer">
+                            <span class="text-[10px] font-semibold text-slate-500">Farbe für Titel & Linien</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Schullogo (PNG/JPG)</label>
+                        <input type="file" id="pdf-logo-file" accept="image/png, image/jpeg" class="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 transition-all">
+                    </div>
+                </div>
+                <div class="pt-2 border-t border-slate-100 flex flex-col gap-2">
+                    <div class="flex items-center gap-2.5">
+                        <input type="checkbox" id="pdf-include-qr" checked class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer">
+                        <label for="pdf-include-qr" class="text-xs font-semibold text-slate-700 cursor-pointer flex items-center gap-1.5">
+                            <i class="fa-solid fa-qrcode text-emerald-600"></i>
+                            Lösungs-QR-Code für digitale Schüler-Selbstkontrolle aufdrucken
+                        </label>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <input type="checkbox" id="pdf-include-level-c" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer">
+                        <label for="pdf-include-level-c" class="text-xs font-semibold text-slate-700 cursor-pointer flex items-center gap-1.5">
+                            <i class="fa-solid fa-hands-holding-child text-emerald-600"></i>
+                            Level C (Inklusion &amp; DaZ in Leichter Sprache) im PDF aufdrucken (Opt-in)
+                        </label>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <input type="checkbox" id="pdf-include-lehrplan" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer">
+                        <label for="pdf-include-lehrplan" class="text-xs font-semibold text-slate-700 cursor-pointer flex items-center gap-1.5">
+                            <i class="fa-solid fa-graduation-cap text-indigo-600"></i>
+                            LehrplanPlus-Kompetenzcode klein im Header aufdrucken (Opt-in)
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Buttons Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto">
+                <button id="btn-download-h5p" class="flex flex-col items-center gap-2 p-5 bg-gradient-to-b from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white rounded-3xl shadow-xl transition-all duration-300 group hover:-translate-y-1">
+                    <i class="fa-solid fa-file-zipper text-3xl group-hover:scale-110 transition-all"></i>
+                    <span class="font-bold text-sm">H5P-Datei laden</span>
+                    <span class="text-xxs text-brand-200">Für Moodle, mebis, ByCS</span>
+                </button>
+
+                <button id="btn-download-pdf" class="flex flex-col items-center gap-2 p-5 bg-white hover:bg-slate-50 text-slate-800 rounded-3xl border border-slate-200 shadow-xl transition-all duration-300 group hover:-translate-y-1">
+                    <i class="fa-solid fa-file-pdf text-3xl text-red-500 group-hover:scale-110 transition-all"></i>
+                    <span class="font-bold text-sm">Arbeitsblatt (PDF)</span>
+                    <span class="text-xxs text-slate-400">Mit QR-Lösung & Red-Ink</span>
+                </button>
+
+                <button id="btn-download-scorm" onclick="downloadSCORMPackage()" class="flex flex-col items-center gap-2 p-5 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 rounded-3xl border border-indigo-200 shadow-md transition-all duration-300 group hover:-translate-y-1">
+                    <i class="fa-solid fa-box-archive text-3xl text-indigo-600 group-hover:scale-110 transition-all"></i>
+                    <span class="font-bold text-sm">SCORM 1.2 Paket (.zip)</span>
+                    <span class="text-xxs text-indigo-600">Mit Moodle-Notenübermittlung</span>
+                </button>
+
+                <button id="btn-copy-embed" onclick="copyIframeEmbedCode()" class="flex flex-col items-center gap-2 p-5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-3xl border border-amber-200 shadow-md transition-all duration-300 group hover:-translate-y-1">
+                    <i class="fa-solid fa-code text-3xl text-amber-600 group-hover:scale-110 transition-all"></i>
+                    <span class="font-bold text-sm">mebis / ByCS iFrame</span>
+                    <span class="text-xxs text-amber-700">1-Klick Einbettungscode</span>
+                </button>
+            </div>
+
+            <!-- Schüler-Direktspiel (Live-Session) Panel -->
+            <div class="glass-panel p-6 rounded-3xl shadow-lg text-left space-y-4 max-w-lg mx-auto border-t-4 border-emerald-500">
+                <h4 class="font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-gamepad text-emerald-600 animate-pulse"></i> Schüler-Direktspiel (Klassenzimmer Live)
+                </h4>
+                <p class="text-xs text-slate-500 font-medium">
+                    Lass deine Schüler diese Übung live am Tablet oder Smartphone machen. Sie scannen einfach den QR-Code und spielen los. Du siehst ihre Ergebnisse in Echtzeit!
+                </p>
+                
+                <div id="live-session-setup" class="text-center py-2">
+                    <button id="btn-start-live-session" onclick="startLiveSession()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 text-xs">
+                        <i class="fa-solid fa-play"></i> Live-Sitzung starten (QR-Code generieren)
+                    </button>
+                </div>
+                
+                <div id="live-session-active" class="hidden space-y-4 border-t pt-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                        <div class="flex flex-col items-center p-3 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                            <img id="live-session-qrcode" src="" alt="Sitzungs-QR-Code" class="h-44 w-44 object-contain">
+                            <a id="live-session-link" href="#" target="_blank" class="text-[10px] text-brand-600 font-bold hover:underline mt-2 truncate max-w-[200px]">Link öffnen</a>
+                        </div>
+                        <div class="text-center space-y-2">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Verbindungscode (PIN)</span>
+                            <span id="live-session-pin" class="text-4xl font-black text-emerald-600 tracking-wider">CODE</span>
+                            <p class="text-xxs text-slate-500 max-w-xs mx-auto leading-relaxed mt-2">
+                                Schüler rufen <b>http://<span id="live-session-ip-label">...</span>:8080/play.html</b> auf und geben den Code ein.
+                            </p>
+                            <div class="text-[9px] text-slate-400 font-bold bg-slate-50 border border-slate-100/60 p-2.5 rounded-xl mt-3 max-w-[220px] mx-auto text-left leading-tight">
+                                <i class="fa-solid fa-circle-info text-brand-500"></i> <span class="text-slate-600 font-extrabold">Inklusions-Tipp:</span><br>
+                                Hänge ein <b>A</b> oder <b>B</b> an den Code an (z. B. <span id="live-session-pin-tip" class="font-extrabold text-emerald-600">XXXX</span><b>A</b>), um Schüler ohne Diagnose direkt auf Level A oder B einzustufen.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Live Error Heatmap Alert -->
+                    <div id="live-heatmap-alert" class="hidden text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 rounded-2xl p-3.5 space-y-1">
+                        <div class="flex items-center gap-2 text-rose-900">
+                            <i class="fa-solid fa-triangle-exclamation text-rose-600 text-sm animate-pulse"></i>
+                            <span>Live-Fehler-Heatmap:</span>
+                        </div>
+                        <p id="live-heatmap-text" class="text-[11px] font-medium text-rose-700"></p>
+                    </div>
+
+                    <!-- Live Sentiment Breakdown -->
+                    <div id="live-sentiment-bar" class="flex items-center justify-between bg-slate-50 border border-slate-200/80 p-3 rounded-2xl text-xs font-bold text-slate-700">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-face-smile text-emerald-500"></i> Schüler-Feedback:</span>
+                        <div class="flex items-center gap-3 text-[11px]">
+                            <span class="text-emerald-700 font-bold"><span id="sentiment-easy">0</span>% Leicht</span>
+                            <span class="text-amber-700 font-bold"><span id="sentiment-ok">0</span>% Passend</span>
+                            <span class="text-rose-700 font-bold"><span id="sentiment-hard">0</span>% Schwer</span>
+                        </div>
+                    </div>
+
+                    <!-- Classroom Team Goal Progress Bar -->
+                    <div id="live-team-goal-container" class="bg-gradient-to-r from-brand-50 to-indigo-50 border border-brand-200/80 p-3.5 rounded-2xl space-y-2">
+                        <div class="flex items-center justify-between text-xs font-extrabold text-brand-900">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-rocket text-brand-600 text-sm"></i>
+                                <span>Gemeinsames Klassen-Ziel:</span>
+                            </span>
+                            <span id="live-team-goal-text" class="font-mono text-brand-700">0% gemeistert</span>
+                        </div>
+                        <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden p-0.5 shadow-inner">
+                            <div id="live-team-goal-bar" class="bg-gradient-to-r from-brand-500 to-indigo-600 h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Scoreboard table -->
+                    <div class="space-y-2">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                            <h5 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                Schüler-Ergebnisse (<span id="live-results-count">0</span>)
+                                <button onclick="downloadResultsCSV()" class="p-1 text-slate-400 hover:text-brand-600 transition-all flex items-center justify-center" title="Ergebnisse als CSV exportieren">
+                                    <i class="fa-solid fa-file-csv text-sm"></i>
+                                </button>
+                            </h5>
+                            <div class="flex items-center gap-3 justify-between sm:justify-end">
+                                <!-- Anonymize Toggle Switch -->
+                                <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                                    <input type="checkbox" id="toggle-anonymize" class="sr-only peer" onchange="toggleAnonymizeNames()">
+                                    <div class="w-6 h-3.5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+                                    <span class="text-[9px] font-bold text-slate-400">Projektions-Modus (Anonym)</span>
+                                </label>
+                                <span class="flex h-1.5 w-1.5 relative">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="max-h-48 overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-inner">
+                            <table class="w-full text-xxs text-left text-slate-600">
+                                <thead class="bg-slate-50 text-[9px] font-bold text-slate-400 uppercase tracking-wider sticky top-0">
+                                    <tr>
+                                        <th class="px-3 py-2">Schüler</th>
+                                        <th class="px-3 py-2">Pfad</th>
+                                        <th class="px-3 py-2 text-right">Punkte</th>
+                                        <th class="px-3 py-2 text-right">Zeit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="live-results-table-body">
+                                    <tr id="live-results-empty">
+                                        <td colspan="4" class="px-3 py-6 text-center text-slate-400 font-semibold">
+                                            Warten auf erste Abgaben...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="openProjectorView(event)" class="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold rounded-xl transition-all text-xxs flex items-center justify-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-desktop"></i> Smartboard-Großansicht
+                        </button>
+                        <button onclick="stopLiveSession()" class="flex-1 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl transition-all text-xxs">
+                            Sitzung beenden
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integration Instructions -->
+            <div class="glass-panel p-6 rounded-3xl shadow-lg text-left space-y-4 max-w-lg mx-auto">
+                <h4 class="font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-brand-600"></i> Kurzanleitung zur Einbindung
+                </h4>
+                <ol class="list-decimal list-inside text-sm text-slate-600 space-y-2">
+                    <li>Öffne deinen Kurs in <b>Moodle / ByCS / Canvas</b>.</li>
+                    <li>Erstelle eine neue Aktivität vom Typ <b>H5P</b> oder öffne den <b>Inhaltsspeicher</b>.</li>
+                    <li>Lade die soeben heruntergeladene <b>.h5p-Datei</b> hoch und speichere.</li>
+                    <li>Fertig! Der Schüler durchläuft die Fragen und landet auf dem passenden Niveau.</li>
+                </ol>
+            </div>
+
+            <div>
+                <button id="btn-restart" class="px-5 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-semibold transition-all">
+                    Neue Differenzierung starten
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== SCREEN 4: ANALYTICS & STATS ==================== -->
+        <section id="screen-analytics" class="hidden space-y-8">
+            <div class="border-b pb-4 border-slate-200">
+                <h2 class="text-2xl font-black text-slate-900">Langfristige Lernstands-Analysen</h2>
+                <p class="text-xs text-slate-500 font-medium">Behalte den Überblick über den Lernfortschritt deiner Klasse im Zeitverlauf.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Left column: Student list -->
+                <div class="lg:col-span-4 glass-panel p-6 rounded-3xl shadow-xl flex flex-col gap-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Schülerliste</h3>
+                    <div id="analytics-student-list" class="space-y-2 overflow-y-auto max-h-[500px]">
+                        <!-- Dynamic student cards go here -->
+                        <div class="text-center text-slate-400 py-8 text-xxs font-semibold">
+                            <i class="fa-solid fa-users text-2xl text-slate-300 mb-2 block"></i>
+                            Noch keine Abgaben verzeichnet.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right column: Selected student detail view -->
+                <div class="lg:col-span-8">
+                    <!-- Empty State -->
+                    <div id="analytics-detail-empty" class="glass-panel p-12 rounded-3xl shadow-xl text-center space-y-3 min-h-[400px] flex flex-col justify-center items-center">
+                        <div class="h-14 w-14 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center shadow-inner">
+                            <i class="fa-solid fa-chart-line text-2xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-700">Kein Schüler ausgewählt</h4>
+                            <p class="text-[10px] text-slate-400 font-medium max-w-xs leading-relaxed">
+                                Wähle links einen Namen aus, um den Entwicklungsverlauf und Detailberichte einzusehen.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Details Dashboard -->
+                    <div id="analytics-detail-dashboard" class="hidden space-y-6">
+                        <!-- Student Profile Header card -->
+                        <div class="glass-panel p-6 rounded-3xl shadow-xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-l-4 border-brand-500 bg-white">
+                            <div>
+                                <h3 id="analytics-student-name" class="text-xl font-black text-slate-900">Name</h3>
+                                <p class="text-[10px] text-slate-400 font-bold mt-0.5"><i class="fa-solid fa-user-graduate"></i> Angemeldet in deiner Klasse</p>
+                            </div>
+                            <div class="flex gap-4">
+                                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                                    <span id="analytics-stat-completed" class="block text-lg font-black text-brand-600">0</span>
+                                    <span class="text-[8px] font-bold text-slate-400 uppercase">Übungen</span>
+                                </div>
+                                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                                    <span id="analytics-stat-avg-score" class="block text-lg font-black text-teal-600">0%</span>
+                                    <span class="text-[8px] font-bold text-slate-400 uppercase">Schnitt</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Progress trend & level distribution grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <!-- Levels Pie-Equivalent card -->
+                            <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-3 bg-white">
+                                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Niveau-Verteilung</h4>
+                                <div class="flex justify-between items-center gap-4 py-2">
+                                    <div class="space-y-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="h-2.5 w-2.5 rounded-full bg-teal-500"></span>
+                                            <span class="text-xxs font-semibold text-slate-600">Level A (Fördern): <span id="analytics-level-a-count" class="font-bold text-slate-800">0</span></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="h-2.5 w-2.5 rounded-full bg-indigo-500"></span>
+                                            <span class="text-xxs font-semibold text-slate-600">Level B (Fordern): <span id="analytics-level-b-count" class="font-bold text-slate-800">0</span></span>
+                                        </div>
+                                    </div>
+                                    <div class="relative h-16 w-16 flex items-center justify-center">
+                                        <!-- Ring representation -->
+                                        <div class="h-16 w-16 rounded-full border-4 border-slate-100 flex items-center justify-center">
+                                            <span id="analytics-level-ratio" class="text-[10px] font-black text-slate-800">50/50</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Performance trend details -->
+                            <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-3 bg-white">
+                                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Trend &amp; Aktivität</h4>
+                                <div class="space-y-2 py-1">
+                                    <div class="flex justify-between text-xxs font-semibold text-slate-500">
+                                        <span>Aktuelle Form:</span>
+                                        <span id="analytics-trend-badge" class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">Sehr Gut</span>
+                                    </div>
+                                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden mt-1 shadow-inner">
+                                        <div id="analytics-trend-progress-bar" class="h-full bg-emerald-500 transition-all" style="width: 80%"></div>
+                                    </div>
+                                    <p class="text-[9px] text-slate-400 font-medium leading-tight">
+                                        Der Trend zeigt den Durchschnitt aller gelösten Aufgaben.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timeline (Lern-Tagebuch) Table -->
+                        <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-4 bg-white">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Absolvierte Übungen</h4>
+                            <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-inner">
+                                <table class="w-full text-xxs text-left text-slate-600">
+                                    <thead class="bg-slate-50 text-[9px] font-bold text-slate-400 uppercase tracking-wider sticky top-0 border-b border-slate-200">
+                                        <tr>
+                                            <th class="px-4 py-3">Übungs-Name / PIN</th>
+                                            <th class="px-4 py-3">Niveau</th>
+                                            <th class="px-4 py-3 text-right">Punkte</th>
+                                            <th class="px-4 py-3 text-right">Uhrzeit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="analytics-history-tbody">
+                                        <!-- Dynamic history entries will be appended here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full bg-slate-950 text-slate-400 text-center py-6 text-xs font-medium border-t border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2 text-left">
+                <span class="font-bold text-slate-200">Adaptify</span>
+                <span class="text-slate-600">|</span>
+                <p class="text-slate-400">&copy; 2026. Entwickelt für modernen, barrierefreien &amp; differenzierten Unterricht.</p>
+            </div>
+            <div class="flex items-center gap-5">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60">
+                    <i class="fa-solid fa-shield-halved text-[10px]"></i> 100% DSGVO-konform für Schulen
+                </span>
+                <div class="flex gap-4 font-semibold text-slate-400">
+                    <button type="button" onclick="openPrivacyModal(event)" class="hover:text-white transition-all focus:outline-none">Datenschutz</button>
+                    <button type="button" onclick="openImprintModal(event)" class="hover:text-white transition-all focus:outline-none">Impressum</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==================== BRANDING CENTRAL SETTINGS MODAL ==================== -->
+    <div id="branding-settings-modal" class="hidden fixed inset-0 z-50 bg-slate-900/80 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-brand-600 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-lg"></i>
+                    <div>
+                        <h3 class="font-bold text-sm">Branding-Zentrale</h3>
+                        <p class="text-[8px] text-brand-100 font-medium">Personalisiere deine PDFs und Schüler-Tablets</p>
+                    </div>
+                </div>
+                <button onclick="closeBrandingSettingsModal(event)" class="text-white hover:text-brand-100 text-lg transition-all focus:outline-none">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6 space-y-4 text-xs font-semibold text-slate-700">
+                <div>
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Lehrkraft Name</label>
+                    <input type="text" id="branding-teacher-name" oninput="syncBrandingInputs()" placeholder="z.B. Hr. Thomas" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all">
+                </div>
+                
+                <div>
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Klasse</label>
+                    <input type="text" id="branding-class-name" oninput="syncBrandingInputs()" placeholder="z.B. 6a" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all">
+                </div>
+                
+                <div>
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Schullogo (PNG/JPG)</label>
+                    <div class="flex items-center gap-3">
+                        <input type="file" id="branding-school-logo" onchange="handleBrandingLogoUpload(event)" accept="image/*" class="hidden">
+                        <button onclick="document.getElementById('branding-school-logo').click()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-xxs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-cloud-arrow-up text-brand-500"></i> Logo hochladen
+                        </button>
+                        <div id="branding-logo-preview-container" class="hidden items-center gap-1.5">
+                            <img id="branding-logo-preview" class="h-8 w-8 object-contain rounded-md border border-slate-200 p-0.5 bg-slate-50">
+                            <button onclick="removeBrandingLogo(event)" class="text-rose-500 hover:text-rose-700 text-xxs font-bold" title="Logo entfernen">Entfernen</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-[10px] text-slate-500 font-medium leading-relaxed">
+                    <i class="fa-solid fa-circle-info text-brand-500 mr-0.5"></i> 
+                    Das hier hochgeladene Logo und der Name werden automatisch in alle generierten PDFs eingebunden und im Header deiner Schüler-Tablets live angezeigt!
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button onclick="closeBrandingSettingsModal(event)" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold transition-all text-xxs shadow-md">
+                    Einstellungen speichern
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== PROJECTOR FULL-SCREEN VIEW MODAL ==================== -->
+    <div id="projector-view-modal" class="hidden fixed inset-0 z-50 bg-slate-950 text-slate-100 flex flex-col p-6 overflow-hidden select-none">
+        <!-- Top bar: Header & connection details -->
+        <div class="flex flex-col md:flex-row justify-between items-center pb-4 border-b border-slate-800 gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-brand-600 p-2 rounded-xl text-white flex items-center justify-center">
+                    <i class="fa-solid fa-graduation-cap text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-black tracking-tight text-white flex items-center gap-1.5">
+                        <span>Adaptify</span> <span class="text-[8px] bg-slate-800 text-slate-400 border border-slate-700 px-1 py-0.5 rounded-md uppercase">Live</span>
+                    </h2>
+                    <p class="text-[9px] text-slate-400 font-bold">Gemeinsam spielend lernen</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6 bg-slate-900 border border-slate-800 px-6 py-2.5 rounded-2xl shadow-inner text-center md:text-left">
+                <div>
+                    <span class="text-[8px] font-bold text-slate-500 uppercase tracking-widest block">Verbindung</span>
+                    <span class="text-sm font-bold text-slate-300">http://<span id="proj-ip">192.168.178.111</span>:8080/play.html</span>
+                </div>
+                <div class="border-l border-slate-800 h-8"></div>
+                <div>
+                    <span class="text-[8px] font-bold text-slate-500 uppercase tracking-widest block">Verbindungscode (PIN)</span>
+                    <span id="proj-pin" class="text-2xl font-black text-emerald-400 tracking-wider">CODE</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- View switchers -->
+                <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-[10px] font-bold text-slate-400">
+                    <button onclick="switchProjView('track')" id="proj-btn-track" class="px-3 py-1.5 rounded-lg bg-slate-800 text-white transition-all"><i class="fa-solid fa-flag-checkered mr-1"></i> Rennbahn</button>
+                    <button onclick="switchProjView('class')" id="proj-btn-class" class="px-3 py-1.5 rounded-lg transition-all"><i class="fa-solid fa-users text-slate-500 mr-1"></i> Klassenziel</button>
+                    <button onclick="switchProjView('leader')" id="proj-btn-leader" class="px-3 py-1.5 rounded-lg transition-all"><i class="fa-solid fa-trophy text-slate-500 mr-1"></i> Bestenliste</button>
+                </div>
+                <button onclick="closeProjectorView()" class="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="flex-1 flex flex-col justify-center items-center py-8 relative overflow-hidden">
+            
+            <!-- VIEW 1: LERN-RENNBAHN -->
+            <div id="proj-view-track" class="w-full max-w-5xl flex-1 flex flex-col justify-center gap-4">
+                <div class="text-center space-y-1 mb-2">
+                    <h3 class="text-md font-bold text-slate-300">Die Lern-Rennbahn</h3>
+                    <p class="text-[10px] text-slate-500 font-medium">Jeder Fortschritt bringt dein Tier näher ans Ziel!</p>
+                </div>
+                
+                <div class="flex-1 bg-slate-900/60 border border-slate-800 rounded-3xl p-6 relative flex flex-col justify-between overflow-y-auto max-h-[450px] shadow-inner">
+                    <div id="proj-track-container" class="space-y-4 flex-1 flex flex-col justify-center">
+                        <!-- Dynamic track lanes will be rendered here -->
+                        <div class="text-center text-slate-500 py-12 text-xxs font-semibold">
+                            <i class="fa-solid fa-car-side text-3xl text-slate-700 animate-pulse mb-3 block"></i>
+                            Warten auf den Start der ersten Schüler...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: GEMEINSCHAFTS-BAROMETER (KLASSENZIEL) -->
+            <div id="proj-view-class" class="hidden w-full max-w-3xl text-center space-y-8 my-auto">
+                <div class="space-y-2">
+                    <div class="h-16 w-16 bg-brand-600/20 text-brand-400 border border-brand-500/20 rounded-3xl flex items-center justify-center text-3xl mx-auto shadow-lg animate-pulse">
+                        <i class="fa-solid fa-handshake"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-white">Kooperatives Klassenziel</h3>
+                    <p class="text-xxs text-slate-400 font-medium max-w-sm mx-auto">
+                        Jede richtige Antwort zählt! Schafft die Klasse das gemeinsame Ziel von <span id="proj-class-target" class="font-extrabold text-emerald-400">50</span> Punkten?
+                    </p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex justify-between items-end px-2">
+                        <span class="text-xxs font-bold text-slate-500">START</span>
+                        <div class="text-center">
+                            <span id="proj-class-current" class="text-5xl font-black text-emerald-400 tracking-tight">0</span>
+                            <span class="text-slate-500 text-sm font-bold">/ <span id="proj-class-target-label">50</span> Punkte</span>
+                        </div>
+                        <span class="text-xxs font-bold text-emerald-500 animate-pulse">ZIEL 🎉</span>
+                    </div>
+
+                    <div class="h-8 bg-slate-900 border border-slate-800 rounded-2xl p-1 overflow-hidden shadow-inner relative flex items-center">
+                        <div id="proj-class-progress-bar" class="h-full bg-gradient-to-r from-brand-600 to-emerald-500 rounded-xl transition-all duration-500" style="width: 0%"></div>
+                        <!-- Glow indicator -->
+                        <div class="absolute inset-y-0 right-0 bg-white/20 w-8 blur-sm pointer-events-none"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 3: LEADERBOARD -->
+            <div id="proj-view-leader" class="hidden w-full max-w-2xl flex-1 flex flex-col justify-center gap-4">
+                <div class="text-center space-y-1 mb-2">
+                    <h3 class="text-md font-bold text-slate-300">Live-Bestenliste</h3>
+                    <p class="text-[10px] text-slate-500 font-medium">Anonymisiert und stressfrei projizieren.</p>
+                </div>
+
+                <div class="flex-1 bg-slate-900/60 border border-slate-800 rounded-3xl p-6 overflow-y-auto max-h-[400px]">
+                    <table class="w-full text-xxs text-left text-slate-400">
+                        <thead class="bg-slate-950 text-[9px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 border-b border-slate-800">
+                            <tr>
+                                <th class="px-4 py-3">Rang / Schüler</th>
+                                <th class="px-4 py-3">Niveau</th>
+                                <th class="px-4 py-3 text-right">Punkte</th>
+                                <th class="px-4 py-3 text-right">Uhrzeit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="proj-leaderboard-tbody" class="divide-y divide-slate-800/40">
+                            <tr>
+                                <td colspan="4" class="px-4 py-8 text-center text-slate-500 font-semibold">
+                                    Noch keine Abgaben eingegangen.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- ==================== IMAGE EDITOR MODAL ==================== -->
+    <div id="image-editor-modal" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3 md:p-6">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[95vh] flex flex-col overflow-hidden border border-slate-200">
+            <!-- Modal Header -->
+            <div class="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="bg-brand-500/20 text-brand-400 p-2 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-crop-simple text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm md:text-base">Foto anpassen &amp; optimieren</h3>
+                        <p class="text-[10px] text-slate-400 font-medium">Bildausschnitt wählen, drehen &amp; Lesbarkeit für KI verbessern</p>
+                    </div>
+                </div>
+                <button id="btn-close-image-editor" class="h-8 w-8 hover:bg-white/10 rounded-full flex items-center justify-center text-white transition-all focus:outline-none">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Toolbar / Presets -->
+            <div class="px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <!-- Rotate and Filter Actions -->
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <button type="button" onclick="rotateImage(-90)" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-bold text-[11px] flex items-center gap-1 shadow-sm transition-all" title="90° nach links drehen">
+                        <i class="fa-solid fa-rotate-left text-brand-600"></i> 90° Links
+                    </button>
+                    <button type="button" onclick="rotateImage(90)" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-bold text-[11px] flex items-center gap-1 shadow-sm transition-all" title="90° nach rechts drehen">
+                        <i class="fa-solid fa-rotate-right text-brand-600"></i> 90° Rechts
+                    </button>
+                    <div class="h-4 w-px bg-slate-200 mx-1"></div>
+                    <button type="button" onclick="toggleImageFilter('contrast')" id="btn-filter-contrast" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-bold text-[11px] flex items-center gap-1 shadow-sm transition-all" title="Kontrast für Buchseiten optimieren">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> Kontrast +
+                    </button>
+                    <button type="button" onclick="toggleImageFilter('grayscale')" id="btn-filter-bw" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-bold text-[11px] flex items-center gap-1 shadow-sm transition-all" title="Dokumenten-Scan Schwarz/Weiß">
+                        <i class="fa-solid fa-file-lines text-slate-600"></i> S/W Scan
+                    </button>
+                </div>
+
+                <!-- Crop Quick Presets -->
+                <div class="flex items-center gap-1 text-[10px] font-bold text-slate-500">
+                    <span class="hidden sm:inline">Ausschnitt:</span>
+                    <button type="button" onclick="setCropPreset('full')" class="px-2 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-md">Ganz</button>
+                    <button type="button" onclick="setCropPreset('top')" class="px-2 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-md">Oben</button>
+                    <button type="button" onclick="setCropPreset('bottom')" class="px-2 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-md">Unten</button>
+                </div>
+            </div>
+            
+            <!-- Modal Body (Canvas Workspace with Touch Support) -->
+            <div class="flex-1 bg-slate-900/90 p-4 md:p-6 flex flex-col items-center justify-center overflow-hidden min-h-[350px] max-h-[55vh] relative select-none">
+                <!-- Workspace Container -->
+                <div class="relative max-h-full max-w-full overflow-hidden bg-slate-950/40 rounded-xl flex items-center justify-center shadow-2xl" id="img-edit-workspace" style="touch-action: none;">
+                    <canvas id="img-edit-canvas" class="max-h-[48vh] max-w-full object-contain block rounded-lg"></canvas>
+                    
+                    <!-- Interactive Crop Overlay Box with 4 Corner Touch Handles -->
+                    <div id="crop-box" class="absolute border-2 border-dashed border-emerald-400 bg-emerald-400/10 cursor-move" style="width: 80%; height: 80%; top: 10%; left: 10%; box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.75); touch-action: none;">
+                        <!-- Center Drag Indicator -->
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+                            <i class="fa-solid fa-arrows-up-down-left-right text-emerald-300 text-2xl"></i>
+                        </div>
+                        <!-- Top-Left Handle -->
+                        <div class="absolute -top-3 -left-3 w-7 h-7 bg-emerald-500 border-2 border-white rounded-full cursor-nwse-resize shadow-lg flex items-center justify-center text-white text-[9px]" id="crop-handle-nw" style="touch-action: none;">
+                            <i class="fa-solid fa-up-left pointer-events-none"></i>
+                        </div>
+                        <!-- Top-Right Handle -->
+                        <div class="absolute -top-3 -right-3 w-7 h-7 bg-emerald-500 border-2 border-white rounded-full cursor-nesw-resize shadow-lg flex items-center justify-center text-white text-[9px]" id="crop-handle-ne" style="touch-action: none;">
+                            <i class="fa-solid fa-up-right pointer-events-none"></i>
+                        </div>
+                        <!-- Bottom-Left Handle -->
+                        <div class="absolute -bottom-3 -left-3 w-7 h-7 bg-emerald-500 border-2 border-white rounded-full cursor-nesw-resize shadow-lg flex items-center justify-center text-white text-[9px]" id="crop-handle-sw" style="touch-action: none;">
+                            <i class="fa-solid fa-down-left pointer-events-none"></i>
+                        </div>
+                        <!-- Bottom-Right Handle -->
+                        <div class="absolute -bottom-3 -right-3 w-7 h-7 bg-emerald-500 border-2 border-white rounded-full cursor-nwse-resize shadow-lg flex items-center justify-center text-white text-[9px]" id="crop-handle-se" style="touch-action: none;">
+                            <i class="fa-solid fa-down-right pointer-events-none"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-slate-400 text-[10px] font-bold mt-2 text-center pointer-events-none">
+                    <i class="fa-solid fa-hand-pointer text-emerald-400 mr-1"></i> Ziehe den grünen Kasten oder die Ecken mit dem Finger / der Maus, um den Bereich zu wählen.
+                </div>
+            </div>
+            
+            <!-- Modal Footer Controls -->
+            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                <button id="btn-skip-image-edit" type="button" class="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-bold transition-all">
+                    Unverändert übernehmen
+                </button>
+                <button id="btn-save-image-edit" type="button" class="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-black shadow-lg transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-check text-sm"></i> Bildausschnitt übernehmen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== PREVIEW MODAL ==================== -->
+    <div id="preview-modal" class="hidden fixed inset-0 z-50 bg-slate-900/80 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full h-[90vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="bg-teal-500/20 text-teal-400 p-2 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-circle-play text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base">H5P Branching-Scenario Simulator</h3>
+                        <p class="text-[10px] text-slate-400 font-medium">Interaktive Vorschau des adaptiven Lernpfades</p>
+                    </div>
+                </div>
+                <button id="btn-close-preview" class="h-8 w-8 hover:bg-white/10 rounded-full flex items-center justify-center text-white transition-all">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body (The Device Frame Simulation) -->
+            <div class="flex-1 bg-slate-100 p-6 flex flex-col justify-center items-center overflow-y-auto">
+                <div class="w-full max-w-3xl bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex flex-col min-h-[480px] max-h-[100%]" id="sim-frame">
+                    <!-- Simulator screen content dynamically goes here -->
+                </div>
+            </div>
+            
+            <!-- Modal Footer (Debug Info/Step indicators) -->
+            <div class="px-6 py-3 bg-slate-50 border-t flex items-center justify-between text-xs text-slate-500 font-semibold">
+                <span id="sim-path-indicator">Aktueller Pfad: Diagnose</span>
+                <span id="sim-score-indicator">Ergebnis: -</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== DATENSCHUTZERKLÄRUNG (DSGVO) MODAL ==================== -->
+    <div id="privacy-modal" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-slate-200">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-white">Datenschutzerklärung &amp; Schülerschutz</h3>
+                        <p class="text-xs text-slate-400 font-medium">DSGVO-konforme Datenverarbeitung im Schulunterricht</p>
+                    </div>
+                </div>
+                <button onclick="closePrivacyModal(event)" class="h-8 w-8 hover:bg-white/10 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-all focus:outline-none">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-6 md:p-8 space-y-6 overflow-y-auto text-xs text-slate-700 leading-relaxed">
+                <!-- Overview Banner -->
+                <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-3">
+                    <i class="fa-solid fa-circle-check text-emerald-600 text-base mt-0.5 shrink-0"></i>
+                    <div class="space-y-1">
+                        <h4 class="font-bold text-emerald-900 text-xs">Höchster Datenschutzstandard für Schulen</h4>
+                        <p class="text-[11px] text-emerald-800">
+                            Adaptify wurde nach dem Grundsatz der <b>Datenminimierung (Privacy by Design)</b> entwickelt. Schülerinnen und Schüler benötigen kein Benutzerkonto, geben keine Passwörter oder E-Mail-Adressen an und werden nicht für Werbezwecke getrackt.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Section 1 -->
+                <div class="space-y-2">
+                    <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <span class="h-5 w-5 bg-brand-100 text-brand-700 rounded-md flex items-center justify-center text-[10px] font-black">1</span>
+                        Verantwortliche Stelle
+                    </h4>
+                    <p class="text-slate-600">
+                        Verantwortlich für die Datenverarbeitung im Sinne der Datenschutz-Grundverordnung (DSGVO) und des Bundesdatenschutzgesetzes (BDSG) sowie landesspezifischer Schuldatenschutzverordnungen ist:<br><br>
+                        <b>Thomas Benke</b><br>
+                        Freiberufliche Bildungs- &amp; Softwareprojekte<br>
+                        Berta-Höhendorfer-Str. 12<br>
+                        82140 Olching, Deutschland<br>
+                        E-Mail: <span class="font-mono text-slate-800">thomas.benke@schule.bayern.de</span>
+                    </p>
+                </div>
+
+                <!-- Section 2 -->
+                <div class="space-y-2">
+                    <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <span class="h-5 w-5 bg-brand-100 text-brand-700 rounded-md flex items-center justify-center text-[10px] font-black">2</span>
+                        Schülerschutz &amp; Pseudonymisierung im Unterricht
+                    </h4>
+                    <p class="text-slate-600">
+                        Beim gemeinsamen Live-Spiel oder beim Lösen auf Schüler-Tablets gelten strengste Schutzmaßnahmen:
+                    </p>
+                    <ul class="list-disc pl-5 space-y-1 text-slate-600">
+                        <li><b>Keine Klarnamen-Pflicht:</b> Schüler können sich ausschließlich mit Vornamen, Pseudonymen oder zufälligen Tier-Kürzeln anmelden.</li>
+                        <li><b>Keine Schüler-Accounts:</b> Es werden keine Schüler-Passwörter, E-Mail-Adressen oder Telefonnummern erhoben.</li>
+                        <li><b>Lern-Tagebuch im Browser:</b> Das Lern-Tagebuch (gesammelte XP-Punkte, Sterne und Level-Fortschritt) wird ausschließlich lokal im Browserspeicher (<code class="bg-slate-100 px-1 py-0.5 rounded text-slate-800">localStorage</code>) des Schülergeräts gespeichert und zu keinem Zeitpunkt an externe Werbeserver übermittelt.</li>
+                    </ul>
+                </div>
+
+                <!-- Section 3 -->
+                <div class="space-y-2">
+                    <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <span class="h-5 w-5 bg-brand-100 text-brand-700 rounded-md flex items-center justify-center text-[10px] font-black">3</span>
+                        KI-Verarbeitung durch Google Gemini API (Lehrkraft-Eingaben)
+                    </h4>
+                    <p class="text-slate-600">
+                        Wenn die Lehrkraft eine Buchseite oder ein Arbeitsblatt hochlädt, wird dieses Dokument über eine verschlüsselte Schnittstelle (HTTPS/TLS 1.3) an die <b>Google Gemini API</b> übertragen, um die Texterkennung (OCR) und didaktische Differenzierung durchzuführen.
+                    </p>
+                    <p class="text-slate-600">
+                        <b>Wichtig:</b> Die Daten werden ausschließlich zur Erstellung der Aufgaben im Rahmen der API-Nutzungsbedingungen verarbeitet. Sie werden <b>nicht</b> für das Training von öffentlichen KI-Modellen verwendet und nach der Generierung umgehend aus dem flüchtigen Speicher verworfen.
+                    </p>
+                </div>
+
+                <!-- Section 4 -->
+                <div class="space-y-2">
+                    <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <span class="h-5 w-5 bg-brand-100 text-brand-700 rounded-md flex items-center justify-center text-[10px] font-black">4</span>
+                        Speicherung von Unterrichts- und Sitzungsdaten
+                    </h4>
+                    <p class="text-slate-600">
+                        Die Lehrkraft hat die volle Datenhoheit:
+                    </p>
+                    <ul class="list-disc pl-5 space-y-1 text-slate-600">
+                        <li>Erstellte H5P-Pakete, Arbeitsblätter und Sitzungs-Ergebnisse werden in der lokalen Datenbank des Schulservers bzw. Host-Rechners gesichert.</li>
+                        <li>Die Lehrkraft kann gespeicherte Schüler-Ergebnisse jederzeit vollständig löschen, als CSV für das Notenbuch exportieren oder anonymisieren.</li>
+                    </ul>
+                </div>
+
+                <!-- Section 5 -->
+                <div class="space-y-2">
+                    <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <span class="h-5 w-5 bg-brand-100 text-brand-700 rounded-md flex items-center justify-center text-[10px] font-black">5</span>
+                        Ihre Rechte als Betroffene / Lehrkräfte
+                    </h4>
+                    <p class="text-slate-600">
+                        Sie haben gemäß Art. 15–21 DSGVO jederzeit das Recht auf unentgeltliche Auskunft über Ihre gespeicherten Daten, Berichtigung, Sperrung oder Löschung. Wenden Sie sich hierzu einfach formlos per E-Mail an unsere Datenschutz-Kontaktadresse (<span class="font-mono text-slate-800">thomas.benke@schule.bayern.de</span>).
+                    </p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button onclick="closePrivacyModal(event)" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-md transition-all">
+                    Verstanden &amp; Schließen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== IMPRESSUM MODAL ==================== -->
+    <div id="imprint-modal" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-slate-200">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 bg-brand-500/20 text-brand-400 rounded-xl flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-white">Impressum</h3>
+                        <p class="text-xs text-slate-400 font-medium">Gesetzliche Anbieterkennzeichnung gemäß § 5 DDG</p>
+                    </div>
+                </div>
+                <button onclick="closeImprintModal(event)" class="h-8 w-8 hover:bg-white/10 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-all focus:outline-none">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Content -->
+            <div class="p-6 md:p-8 space-y-5 overflow-y-auto text-xs text-slate-700 leading-relaxed">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-900 mb-1">Diensteanbieter gemäß § 5 DDG</h4>
+                    <p class="text-slate-600">
+                        <b>Thomas Benke</b><br>
+                        Freiberufliche Bildungs- &amp; Softwareentwicklung<br>
+                        Berta-Höhendorfer-Str. 12<br>
+                        82140 Olching, Deutschland
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="text-sm font-bold text-slate-900 mb-1">Kontakt</h4>
+                    <p class="text-slate-600">
+                        E-Mail: <span class="font-mono text-slate-800">thomas.benke@schule.bayern.de</span><br>
+                        Web: <a href="http://localhost:8080" class="text-brand-600 hover:underline">www.adaptify-schule.de</a>
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="text-sm font-bold text-slate-900 mb-1">Angaben zur freiberuflichen Tätigkeit &amp; Projekten</h4>
+                    <p class="text-slate-600">
+                        Freiberuflich tätiger Bildungs- und Softwareentwickler (Lehrkraft).<br>
+                        Dieses Angebot ist Teil des Software-Portfolios von Thomas Benke (u.&nbsp;a. <b>Adaptify</b> – Differenzierungs-Plattform für Schulen sowie <b>SpielfeldPartner</b> – Vereins- und Sportplattform).
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="text-sm font-bold text-slate-900 mb-1">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h4>
+                    <p class="text-slate-600">
+                        Thomas Benke<br>
+                        Berta-Höhendorfer-Str. 12<br>
+                        82140 Olching
+                    </p>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4 space-y-3">
+                    <h4 class="text-sm font-bold text-slate-900">Haftung für Inhalte und Links</h4>
+                    <p class="text-slate-600">
+                        Als Diensteanbieter sind wir gemäß § 7 Abs. 1 DDG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Die von der KI (Google Gemini) generierten Differenzierungsvorschläge und Aufgaben dienen als pädagogisches Assistenzsystem. Die fachdidaktische Prüfung und Freigabe für den Unterricht obliegt der unterrichtenden Lehrkraft.
+                    </p>
+                    <p class="text-slate-600">
+                        Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich.
+                    </p>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4">
+                    <h4 class="text-sm font-bold text-slate-900 mb-1">Urheberrecht</h4>
+                    <p class="text-slate-600">
+                        Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. H5P ist eine eingetragene Marke der Joubel AS. Die generierten H5P-Pakete stehen unter den standardmäßigen Open-Educational-Resources-Lizenzen (CC-BY / CC-BY-SA) zur freien Weiternutzung im Unterricht zur Verfügung.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button onclick="closeImprintModal(event)" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-md transition-all">
+                    Schließen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SETTINGS & KEYS MODAL ==================== -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden border border-slate-200">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 bg-brand-500/20 text-brand-400 rounded-xl flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-gear"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-white">Einstellungen &amp; Schlüssel</h3>
+                        <p class="text-xs text-slate-400 font-medium">Promo-Code, API-Key &amp; Systemkonfiguration</p>
+                    </div>
+                </div>
+                <button onclick="closeSettingsModal()" class="h-8 w-8 hover:bg-white/10 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-all focus:outline-none">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Content -->
+            <div class="p-6 space-y-5 text-xs text-slate-700">
+                <!-- Promo Code & BYOK API Key -->
+                <div class="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <h4 class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-key text-brand-600"></i> Schlüssel &amp; Zugang
+                    </h4>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-700">Promo- / Schul-Code</label>
+                        <input type="text" id="input-promo-code" placeholder="z. B. SCHULE2026" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs uppercase font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all bg-white">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-xs font-bold text-slate-700">Gemini API Key (BYOK)</label>
+                        <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all bg-white">
+                    </div>
+                    <p class="text-[10px] text-slate-500 leading-tight">Lasse die Felder leer für den kostenlosen Demo-Modus.</p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button onclick="closeSettingsModal()" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold text-xs shadow-md transition-all">
+                    Speichern &amp; Schließen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== DSGVO & DATENSCHUTZ MODAL ==================== -->
+    <div id="dsgvo-modal" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden border border-slate-200">
+            <div class="px-6 py-4 bg-emerald-900 text-white flex items-center justify-between border-b border-emerald-800">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-white">Datenschutz &amp; Schulrecht</h3>
+                        <p class="text-xs text-emerald-300 font-medium">ByCS-, mebis- &amp; DSGVO-Konformität</p>
+                    </div>
+                </div>
+                <button onclick="closeDSGVOModal()" class="h-8 w-8 hover:bg-white/10 rounded-full flex items-center justify-center text-emerald-400 hover:text-white transition-all focus:outline-none text-xl font-bold">&times;</button>
+            </div>
+            <div class="p-6 space-y-4 text-xs text-slate-700 leading-relaxed">
+                <div class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-1.5">
+                    <h4 class="font-extrabold text-emerald-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-shield text-emerald-600"></i> Keine Verarbeitung von Schülerdaten
+                    </h4>
+                    <p class="text-slate-700 text-[11px]">Adaptify verarbeitet ausschließlich Buchseiten-Muster, Übungstexte und didaktische Fachinhalte. Es werden zu keinem Zeitpunkt Namen, Noten oder andere personenbezogene Daten von Schülern erfasst, verarbeitet oder an KI-Server übermittelt.</p>
+                </div>
+                <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5">
+                    <h4 class="font-extrabold text-slate-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-school text-brand-600"></i> ByCS &amp; mebis Kompatibilität
+                    </h4>
+                    <p class="text-slate-700 text-[11px]">Generierte H5P-Pakete, SCORM-Archive und PDF-Arbeitsblätter enthalten keinerlei Tracking-Skripte oder Werbecookies und können BKM-konform direkt in mebis, ByCS und Moodle-Plattformen eingebunden werden.</p>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button onclick="closeDSGVOModal()" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-md transition-all">
+                    Verstanden
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>

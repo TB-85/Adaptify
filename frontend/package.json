@@ -1,0 +1,18 @@
+{
+  "name": "adaptih5p-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for AdaptiH5P Mobile App",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'No build step required'",
+    "sync": "npx cap sync"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/ios": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}

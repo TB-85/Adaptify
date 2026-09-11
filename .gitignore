@@ -1,0 +1,10 @@
+node_modules/
+__pycache__/
+*.pyc
+*.db-journal
+.env
+tools/git/
+mingit.zip
+AdaptiH5P_Clean_Source.zip
+.DS_Store
+*.log
