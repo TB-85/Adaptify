@@ -3,7 +3,8 @@ __pycache__/
 *.pyc
 *.db-journal
 .env
-tools/git/
+tools/
+cloudflared.exe
 mingit.zip
 AdaptiH5P_Clean_Source.zip
 .DS_Store
