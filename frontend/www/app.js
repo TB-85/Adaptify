@@ -162,7 +162,7 @@ window.handleSchoolTypeChange = function() {
     renderDynamicTopicRows();
     const headerSchoolName = document.getElementById('header-school-name');
     if (headerSchoolName && inputSchoolType) {
-        headerSchoolName.textContent = inputSchoolType.value + ' (Schullizenz)';
+        headerSchoolName.textContent = 'Testschullizenz Amperschule Olching (' + inputSchoolType.value + ')';
     }
 };
 
