@@ -102,7 +102,7 @@
                         <span class="text-[9px] font-bold bg-brand-50 border border-brand-100 text-brand-700 px-1.5 py-0.5 rounded-md uppercase tracking-wide">Beta</span>
                     </h1>
                     <p class="text-[10px] text-slate-400 font-bold flex items-center gap-1">
-                        <i class="fa-solid fa-school text-[9px]"></i> <span id="header-school-name">Schullizenz Bayern</span>
+                        <i class="fa-solid fa-school text-[9px]"></i> <span id="header-school-name">Pilot-Testphase (Kollegium)</span>
                     </p>
                 </div>
             </div>
@@ -356,10 +356,10 @@
                                 <p class="text-[10px] text-slate-500 font-medium">Bestimme die genaue Anzahl der Aufgaben pro Schwerpunkt</p>
                             </div>
                             <!-- Main Total Task Count Stepper (Default 5, max 20) -->
-                            <div class="flex items-center gap-1.5 bg-white border border-slate-300 rounded-xl px-2 py-1 shadow-sm">
-                                <button type="button" onclick="adjustTotalTasks(-1)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg flex items-center justify-center text-xs">-</button>
+                            <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl shrink-0">
+                                <button type="button" onclick="adjustTotalTasks(-1)" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-extrabold rounded-lg flex items-center justify-center text-sm transition-all">-</button>
                                 <span id="display-total-tasks" class="text-xs font-black text-brand-700 px-1">5</span>
-                                <button type="button" onclick="adjustTotalTasks(1)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg flex items-center justify-center text-xs">+</button>
+                                <button type="button" onclick="adjustTotalTasks(1)" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-extrabold rounded-lg flex items-center justify-center text-sm transition-all">+</button>
                                 <span class="text-[10px] font-bold text-slate-500 ml-1">Aufgaben</span>
                             </div>
                         </div>
@@ -374,12 +374,11 @@
                             <button type="button" onclick="addCustomTopicRow()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
                                 <i class="fa-solid fa-plus text-slate-600"></i> Schwerpunkt hinzufügen
                             </button>
-                            <button type="button" onclick="resetDefaultTopics()" class="text-[11px] font-semibold text-slate-500 hover:text-slate-700 underline">
+                            <button type="button" onclick="resetDefaultTopics()" class="text-[11px] font-bold text-slate-400 hover:text-slate-600 transition-all">
                                 Zurücksetzen
                             </button>
                         </div>
 
-                        <input type="hidden" id="input-focus-topic" value="2 Textverständnis, 2 Wortarten & Grammatik, 1 Fremdwörter">
                         <input type="hidden" id="input-task-count" value="5">
                     </div>
 
@@ -393,6 +392,18 @@
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-700">Zusätzlicher Hinweis für Adaptify (Optional)</label>
                         <input type="text" id="input-context" placeholder="z. B. Sprachlich vereinfachen, DaZ-Klasse" class="w-full px-3 py-2.5 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all shadow-sm">
+                    </div>
+
+                    <!-- Didaktische Niveaustufen Erklärung -->
+                    <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1 text-[11px] text-slate-600">
+                        <div class="flex items-center gap-1.5 font-bold text-slate-800">
+                            <i class="fa-solid fa-circle-info text-brand-600"></i>
+                            <span>Didaktische Niveaustufen</span>
+                        </div>
+                        <p class="leading-relaxed">
+                            <strong class="text-slate-700">Level A:</strong> Grundlagen mit Hilfestellungen &amp; Satzanfängen | 
+                            <strong class="text-slate-700">Level B:</strong> Vertiefung &amp; Transfer
+                        </p>
                     </div>
 
                     <!-- Level C Opt-in Checkbox -->

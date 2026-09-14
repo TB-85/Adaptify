@@ -362,12 +362,12 @@ window.renderDynamicTopicRows = function() {
         row.innerHTML = `
             <input type="text" value="${topic.name}" oninput="updateTopicName(${idx}, this.value)" placeholder="z. B. Wortarten, Grammatik" class="flex-1 px-2.5 py-1.5 text-xs font-bold text-slate-800 bg-transparent focus:outline-none focus:bg-slate-50 rounded-lg border border-transparent focus:border-slate-200">
             <div class="flex items-center gap-1.5 shrink-0">
-                <button type="button" onclick="adjustDynamicTopicCount(${idx}, -1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-extrabold text-xs flex items-center justify-center transition-all">-</button>
+                <button type="button" onclick="adjustDynamicTopicCount(${idx}, -1)" class="w-9 h-9 sm:w-8 sm:h-8 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-extrabold text-sm flex items-center justify-center transition-all">-</button>
                 <span class="w-6 text-center font-black text-xs text-brand-700">${topic.count}</span>
-                <button type="button" onclick="adjustDynamicTopicCount(${idx}, 1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-extrabold text-xs flex items-center justify-center transition-all">+</button>
+                <button type="button" onclick="adjustDynamicTopicCount(${idx}, 1)" class="w-9 h-9 sm:w-8 sm:h-8 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-extrabold text-sm flex items-center justify-center transition-all">+</button>
             </div>
             ${dynamicTopics.length > 1 ? `
-                <button type="button" onclick="removeDynamicTopicRow(${idx})" title="Schwerpunkt entfernen" class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-all shrink-0">
+                <button type="button" onclick="removeDynamicTopicRow(${idx})" title="Schwerpunkt entfernen" class="w-9 h-9 sm:w-8 sm:h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-all shrink-0">
                     <i class="fa-solid fa-trash-can text-xs"></i>
                 </button>
             ` : ''}
