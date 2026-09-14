@@ -19,6 +19,7 @@ COPY . /app
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/backend
 ENV PORT=8080
 ENV REQUIRE_USER_KEY_OR_PROMO=False
 
