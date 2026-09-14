@@ -1,7 +1,7 @@
 from google import genai
 import os
 
-key = "AQ.Ab8RN6IIli6Pmhc4lXUcD__SLmQ3pqlFeEOWQO7x5aoi8X9cEg"
+key = os.environ.get("GEMINI_API_KEY", "")
 client = genai.Client(api_key=key)
 
 for model_name in ['gemini-2.0-flash', 'gemini-3.5-flash']:

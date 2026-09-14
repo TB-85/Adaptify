@@ -408,7 +408,7 @@ window.loadDemoPreset = function(presetKey) {
 };
 
 // Load API Key & Promo Code from localStorage if exists, with default fallback
-inputApiKey.value = localStorage.getItem('gemini_api_key') || 'AQ.Ab8RN6IIli6Pmhc4lXUcD__SLmQ3pqlFeEOWQO7x5aoi8X9cEg';
+inputApiKey.value = localStorage.getItem('gemini_api_key') || '';
 if (localStorage.getItem('promo_code')) {
     inputPromoCode.value = localStorage.getItem('promo_code');
 }
