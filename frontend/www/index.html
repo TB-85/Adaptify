@@ -218,7 +218,7 @@
                                     <i class="fa-solid fa-file-import"></i> Datei auswählen
                                 </button>
                                 <button type="button" onclick="openCameraCapture(event)" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-2">
-                                    <i class="fa-solid fa-camera"></i> Foto knipsen
+                                    <i class="fa-solid fa-camera"></i> Foto
                                 </button>
                             </div>
                         </div>
@@ -248,17 +248,6 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- DSGVO & Bayerisches Schulrecht Badge -->
-                    <div class="flex items-center justify-between bg-emerald-50/90 border border-emerald-200 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-emerald-900 shadow-sm">
-                        <span class="flex items-center gap-2">
-                            <i class="fa-solid fa-shield-halved text-emerald-600 text-sm"></i>
-                            <span>100% DSGVO &amp; ByCS-konform: Keine Schülerdaten verarbeitet.</span>
-                        </span>
-                        <button type="button" onclick="openDSGVOModal()" class="text-[11px] font-extrabold text-emerald-700 hover:text-emerald-900 underline shrink-0">
-                            Details
-                        </button>
                     </div>
 
                     <!-- 1-Click Demo Presets Box (Instant Onboarding) -->
@@ -308,8 +297,8 @@
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold text-slate-700">Schulart</label>
                             <select id="input-school-type" onchange="handleSchoolTypeChange()" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm">
-                                <option value="Grundschule" selected>Grundschule</option>
-                                <option value="Mittelschule">Mittelschule</option>
+                                <option value="Mittelschule" selected>Mittelschule</option>
+                                <option value="Grundschule">Grundschule</option>
                                 <option value="Realschule">Realschule</option>
                                 <option value="Gymnasium">Gymnasium</option>
                                 <option value="Förderschule">Förderschule</option>
@@ -320,107 +309,98 @@
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold text-slate-700">Aufgaben-Format</label>
                             <select id="input-format" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm" required>
-                                <option value="KI-Mix" selected>✨ KI-Mix (Automatisch passend)</option>
-                                <option value="Lückentext">📝 Lückentext (Blanks)</option>
-                                <option value="Drag the Words">🧩 Wörter ziehen (Drag Text)</option>
-                                <option value="Wahr/Falsch">☑️ Wahr/Falsch (True/False)</option>
-                                <option value="Multiple Choice">🔘 Multiple Choice</option>
-                                <option value="Vokabelkarten">🃏 Vokabelkarten (Dialogcards)</option>
-                                <option value="Wörter markieren">🖍️ Wörter markieren</option>
+                                <option value="KI-Mix" selected>KI-Mix (Automatisch passend)</option>
+                                <option value="Lückentext">Lückentext (Blanks)</option>
+                                <option value="Drag the Words">Wörter ziehen (Drag Text)</option>
+                                <option value="Wahr/Falsch">Wahr / Falsch</option>
+                                <option value="Multiple Choice">Multiple Choice</option>
+                                <option value="Vokabelkarten">Vokabelkarten (Dialogcards)</option>
+                                <option value="Wörter markieren">Wörter markieren</option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- Subject Selection (Colorful Touch Pills) -->
+                    <!-- Subject Selection (Clean Structured Grid) -->
                     <div class="space-y-2">
                         <div class="flex justify-between items-center">
                             <label class="block text-xs font-bold text-slate-700">Schulfach / Fächer</label>
-                            <span class="text-[9px] text-brand-600 font-bold">Mehrfachauswahl möglich</span>
+                            <span class="text-[10px] text-slate-500 font-medium">Mehrfachauswahl möglich</span>
                         </div>
-                        <div id="subject-chips-container" class="flex flex-wrap gap-1.5 p-2.5 bg-slate-50/80 border border-slate-200 rounded-2xl min-h-[44px]">
+                        <div id="subject-chips-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 bg-slate-50 border border-slate-200 rounded-2xl min-h-[44px]">
                             <!-- Dynamic Subject Chips will be rendered here -->
                         </div>
                         
                         <!-- Cross-Curricular Notification Badge -->
-                        <div id="cross-curricular-badge" class="hidden text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-xl p-2.5 leading-tight flex items-start gap-1.5 transition-all">
+                        <div id="cross-curricular-badge" class="hidden text-[11px] font-bold text-indigo-800 bg-indigo-50 border border-indigo-200 rounded-xl p-2.5 leading-tight flex items-start gap-2 transition-all">
                             <i class="fa-solid fa-layer-group text-indigo-600 mt-0.5"></i>
                             <div>
                                 <span class="font-extrabold block">Fächerübergreifend aktiv:</span>
-                                <span id="cross-curricular-text" class="font-medium text-indigo-600">Die KI verknüpft die Kompetenzen der gewählten Fächer didaktisch sinnvoll.</span>
+                                <span id="cross-curricular-text" class="font-medium text-indigo-700">Die Kompetenzen der gewählten Fächer werden didaktisch verknüpft.</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Didaktische Steuerung: Aufgaben-Anzahl Dropdown & Schwerpunkte -->
-                    <div class="space-y-3 bg-slate-50/90 p-4 rounded-2xl border border-slate-200 shadow-inner">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <!-- Gesamtzahl der Aufgaben Dropdown -->
-                            <div class="space-y-1.5">
-                                <label class="block text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-list-ol text-brand-600"></i>
-                                    <span>Anzahl der Aufgaben</span>
-                                </label>
-                                <select id="select-task-count" onchange="syncTaskCountFromDropdown()" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm">
-                                    <option value="3">3 Aufgaben</option>
-                                    <option value="4" selected>4 Aufgaben</option>
-                                    <option value="5">5 Aufgaben</option>
-                                    <option value="6">6 Aufgaben</option>
-                                </select>
+                    <!-- Didaktische Steuerung & Aufgaben-Verteilung (Clean Stepper 1-20) -->
+                    <div class="space-y-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-inner">
+                        <div class="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+                            <div>
+                                <label class="block text-xs font-extrabold text-slate-900">Didaktische Aufgaben-Verteilung</label>
+                                <p class="text-[10px] text-slate-500 font-medium">Bestimme die genaue Anzahl der Aufgaben pro Schwerpunkt</p>
                             </div>
-
-                            <!-- Schwerpunkte / Themen Freitext -->
-                            <div class="space-y-1.5">
-                                <label class="block text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-bullseye text-brand-600"></i>
-                                    <span>Schwerpunkte / Themen</span>
-                                </label>
-                                <input type="text" id="input-focus-topic" placeholder="z. B. Textverständnis, Wortarten, Grammatik" class="w-full px-3 py-2.5 border border-slate-200 bg-white rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all shadow-sm">
+                            <!-- Main Total Task Count Stepper (Default 5, max 20) -->
+                            <div class="flex items-center gap-1.5 bg-white border border-slate-300 rounded-xl px-2 py-1 shadow-sm">
+                                <button type="button" onclick="adjustTotalTasks(-1)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg flex items-center justify-center text-xs">-</button>
+                                <span id="display-total-tasks" class="text-xs font-black text-brand-700 px-1">5</span>
+                                <button type="button" onclick="adjustTotalTasks(1)" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg flex items-center justify-center text-xs">+</button>
+                                <span class="text-[10px] font-bold text-slate-500 ml-1">Aufgaben</span>
                             </div>
                         </div>
 
-                        <!-- Schnell-Auswahl Klick-Chips für Themen -->
-                        <div class="space-y-1 pt-1 border-t border-slate-200/80">
-                            <span class="text-[10px] font-bold text-slate-500">Schnell-Auswahl per Klick hinzufügen:</span>
-                            <div id="quick-topic-chips" class="flex flex-wrap gap-1.5 pt-0.5">
-                                <button type="button" onclick="appendFocusTopic('Textverständnis')" class="px-2.5 py-1 bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-brand-700 transition-all shadow-sm">+ Textverständnis</button>
-                                <button type="button" onclick="appendFocusTopic('Wortarten')" class="px-2.5 py-1 bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-brand-700 transition-all shadow-sm">+ Wortarten</button>
-                                <button type="button" onclick="appendFocusTopic('Fremdwörter')" class="px-2.5 py-1 bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-brand-700 transition-all shadow-sm">+ Fremdwörter</button>
-                                <button type="button" onclick="appendFocusTopic('Grammatik')" class="px-2.5 py-1 bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-brand-700 transition-all shadow-sm">+ Grammatik</button>
-                                <button type="button" onclick="appendFocusTopic('Grafik auswerten')" class="px-2.5 py-1 bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-brand-700 transition-all shadow-sm">+ Grafik auswerten</button>
-                            </div>
+                        <!-- Dynamic Topic Rows List -->
+                        <div id="topic-rows-list" class="space-y-2">
+                            <!-- Dynamic topic rows rendered by JS -->
                         </div>
 
-                        <input type="hidden" id="input-task-count" value="4">
+                        <!-- Add Custom Topic & Reset Buttons -->
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-200/80">
+                            <button type="button" onclick="addCustomTopicRow()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-plus text-slate-600"></i> Schwerpunkt hinzufügen
+                            </button>
+                            <button type="button" onclick="resetDefaultTopics()" class="text-[11px] font-semibold text-slate-500 hover:text-slate-700 underline">
+                                Zurücksetzen
+                            </button>
+                        </div>
+
+                        <input type="hidden" id="input-focus-topic" value="2 Textverständnis, 2 Wortarten & Grammatik, 1 Fremdwörter">
+                        <input type="hidden" id="input-task-count" value="5">
                     </div>
 
-                    <!-- Thema für Merkkasten / Hefteintrag -->
-                    <div class="space-y-1.5 bg-amber-50/40 p-3.5 rounded-2xl border border-amber-200 shadow-sm">
-                        <label class="block text-xs font-extrabold text-amber-900 flex items-center gap-1.5">
-                            <i class="fa-solid fa-bookmark text-amber-500"></i>
-                            <span>Thema / W-Frage für den Merkkasten (Tafelbild)</span>
-                        </label>
-                        <input type="text" id="input-hefteintrag-topic" placeholder="z. B. Wie werte ich eine Grafik aus? (Optional: KI ermittelt sonst automatisch)" class="w-full px-3 py-2.5 border border-amber-300 bg-white rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all shadow-sm">
+                    <!-- Thema für Merkkasten / Tafelbild -->
+                    <div class="space-y-1.5 bg-amber-50/50 p-3.5 rounded-2xl border border-amber-200/80 shadow-sm">
+                        <label class="block text-xs font-extrabold text-amber-900">Thema für Merkkasten</label>
+                        <p class="text-[10px] text-amber-700 font-medium">Adaptify erstellt automatisch eine passende W-Frage für das Tafelbild</p>
+                        <input type="text" id="input-hefteintrag-topic" placeholder="z. B. Auswertung von Diagrammen und Grafiken" class="w-full px-3 py-2.5 border border-amber-300 bg-white rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all shadow-sm">
                     </div>
 
-                    <!-- Context Textfield (Collapsible / Compact) -->
+                    <!-- Zusätzlicher Hinweis für Adaptify -->
                     <div class="space-y-1.5">
-                        <label class="block text-xs font-bold text-slate-700">Zusätzlicher Hinweis für die KI (Optional)</label>
-                        <input type="text" id="input-context" placeholder="z. B. Sprachlich vereinfachen, DaZ-Klasse" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm">
+                        <label class="block text-xs font-bold text-slate-700">Zusätzlicher Hinweis für Adaptify (Optional)</label>
+                        <input type="text" id="input-context" placeholder="z. B. Sprachlich vereinfachen, DaZ-Klasse" class="w-full px-3 py-2.5 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all shadow-sm">
                     </div>
 
                     <!-- Level C Opt-in Checkbox -->
                     <div class="flex items-center gap-2.5 p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl shadow-sm">
                         <input type="checkbox" id="input-include-level-c" class="w-4 h-4 text-emerald-600 rounded border-emerald-300 focus:ring-emerald-500 cursor-pointer">
                         <label for="input-include-level-c" class="text-xs font-bold text-emerald-900 cursor-pointer select-none">
-                            🟢 Level C (Inklusion &amp; DaZ in Leichter Sprache) mit generieren
+                            Level C (Inklusion &amp; DaZ in Leichter Sprache) mit generieren
                         </label>
                     </div>
 
                     <!-- MAIN ACTION BUTTON -->
                     <div class="pt-2">
-                        <button id="btn-submit" type="button" class="w-full py-4 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-extrabold text-base rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-2.5 group">
+                        <button id="btn-submit" type="button" class="w-full py-4 bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-base rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2.5 group">
                             <span>Unterrichtsmaterial jetzt differenzieren</span>
-                            <i class="fa-solid fa-wand-magic-sparkles group-hover:scale-125 transition-transform"></i>
+                            <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
                         </button>
                     </div>
                 </div>

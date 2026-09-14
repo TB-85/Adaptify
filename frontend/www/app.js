@@ -86,14 +86,12 @@ function renderSubjectChips() {
 
     subjectChipsContainer.innerHTML = availableSubjects.map(sub => {
         const isSelected = selectedSubjects.includes(sub);
-        const emoji = subjectEmojis[sub] || "📚";
         const activeClass = isSelected
             ? "bg-brand-600 text-white font-bold border-brand-600 shadow-sm ring-2 ring-brand-200"
             : "bg-white text-slate-700 font-semibold border-slate-200 hover:border-slate-300 hover:bg-slate-50";
         const checkIcon = isSelected ? '<i class="fa-solid fa-check ml-1.5 text-[10px]"></i>' : '';
         return `
             <button type="button" onclick="toggleSubjectChip('${sub}')" class="px-3 py-1.5 rounded-xl border text-xs transition-all flex items-center gap-1 select-none ${activeClass}">
-                <span>${emoji}</span>
                 <span>${sub}</span>
                 ${checkIcon}
             </button>
@@ -102,49 +100,6 @@ function renderSubjectChips() {
 
     updateCrossCurricularBadge();
 }
-
-const subjectPresets = {
-    "Deutsch": [
-        { name: "Textverständnis", count: 1 },
-        { name: "Wortarten & Grammatik", count: 1 },
-        { name: "Fremdwörter", count: 1 }
-    ],
-    "Mathematik": [
-        { name: "Bruchrechnen & Anteile", count: 1 },
-        { name: "Sachaufgabe & Modellieren", count: 1 },
-        { name: "Geometrie & Umfang", count: 1 }
-    ],
-    "Englisch": [
-        { name: "Reading Comprehension", count: 1 },
-        { name: "Vocabulary & Phrases", count: 1 },
-        { name: "Grammar & Tenses", count: 1 }
-    ],
-    "Natur und Technik (NT)": [
-        { name: "Versuchsaufbau & Beobachtung", count: 1 },
-        { name: "Fachbegriffe Biologie/Physik", count: 1 },
-        { name: "Diagramm auswerten", count: 1 }
-    ],
-    "Geschichte / Politik / Geographie (GPG)": [
-        { name: "Quellentext & Textanalyse", count: 1 },
-        { name: "Kartenarbeit & Standort", count: 1 },
-        { name: "Historische Fachbegriffe", count: 1 }
-    ],
-    "Wirtschaft und Beruf (WiB)": [
-        { name: "Haushaltsplanung & Budget", count: 1 },
-        { name: "Wirtschaftliche Fachbegriffe", count: 1 },
-        { name: "Fallbeispiel auswerten", count: 1 }
-    ],
-    "Religion / Ethik": [
-        { name: "Textverständnis & Ethische Frage", count: 1 },
-        { name: "Begriffsbedeutung & Werte", count: 1 },
-        { name: "Eigene Stellungnahme", count: 1 }
-    ],
-    "Kunst / Musik": [
-        { name: "Bildanalyse & Gestaltung", count: 1 },
-        { name: "Fachbegriffe & Notenlehre", count: 1 },
-        { name: "Künstlerisches Verfahren", count: 1 }
-    ]
-};
 
 window.toggleSubjectChip = function(subjectName) {
     if (selectedSubjects.includes(subjectName)) {
@@ -231,12 +186,68 @@ window.closeDSGVOModal = function() {
     if (modal) modal.classList.add('hidden');
 };
 
-// Didaktische Schwerpunkte Builder State & Handlers (Fully Dynamic & Responsive)
+// Didaktische Schwerpunkte Builder State & Handlers (Default 5 Tasks, Max 20)
 let dynamicTopics = [
-    { name: "Textverständnis", count: 1 },
-    { name: "Fremdwörter", count: 1 },
-    { name: "Grafik auswerten", count: 1 }
+    { name: "Textverständnis", count: 2 },
+    { name: "Wortarten & Grammatik", count: 2 },
+    { name: "Fremdwörter", count: 1 }
 ];
+
+const subjectPresets = {
+    "Deutsch": [
+        { name: "Textverständnis", count: 2 },
+        { name: "Wortarten & Grammatik", count: 2 },
+        { name: "Fremdwörter", count: 1 }
+    ],
+    "Mathematik": [
+        { name: "Bruchrechnen & Anteile", count: 2 },
+        { name: "Sachaufgabe & Modellieren", count: 2 },
+        { name: "Geometrie & Umfang", count: 1 }
+    ],
+    "Englisch": [
+        { name: "Reading Comprehension", count: 2 },
+        { name: "Vocabulary & Phrases", count: 2 },
+        { name: "Grammar & Tenses", count: 1 }
+    ],
+    "Natur und Technik (NT)": [
+        { name: "Versuchsaufbau & Beobachtung", count: 2 },
+        { name: "Fachbegriffe Biologie/Physik", count: 2 },
+        { name: "Diagramm auswerten", count: 1 }
+    ],
+    "Geschichte / Politik / Geographie (GPG)": [
+        { name: "Quellentext & Textanalyse", count: 2 },
+        { name: "Kartenarbeit & Standort", count: 2 },
+        { name: "Historische Fachbegriffe", count: 1 }
+    ],
+    "Wirtschaft und Beruf (WiB)": [
+        { name: "Haushaltsplanung & Budget", count: 2 },
+        { name: "Wirtschaftliche Fachbegriffe", count: 2 },
+        { name: "Fallbeispiel auswerten", count: 1 }
+    ],
+    "Religion / Ethik": [
+        { name: "Textverständnis & Ethische Frage", count: 2 },
+        { name: "Begriffsbedeutung & Werte", count: 2 },
+        { name: "Eigene Stellungnahme", count: 1 }
+    ],
+    "Kunst / Musik": [
+        { name: "Bildanalyse & Gestaltung", count: 2 },
+        { name: "Fachbegriffe & Notenlehre", count: 2 },
+        { name: "Künstlerisches Verfahren", count: 1 }
+    ]
+};
+
+window.adjustTotalTasks = function(delta) {
+    let currentTotal = dynamicTopics.reduce((sum, t) => sum + (t.count || 0), 0);
+    if (currentTotal === 0) currentTotal = 5;
+    
+    let newTotal = Math.min(20, Math.max(1, currentTotal + delta));
+    
+    if (dynamicTopics.length > 0) {
+        const diff = newTotal - currentTotal;
+        dynamicTopics[0].count = Math.min(20, Math.max(0, dynamicTopics[0].count + diff));
+    }
+    renderDynamicTopicRows();
+};
 
 window.renderDynamicTopicRows = function() {
     const container = document.getElementById('topic-rows-list');
@@ -247,11 +258,11 @@ window.renderDynamicTopicRows = function() {
         const row = document.createElement('div');
         row.className = 'flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm';
         row.innerHTML = `
-            <input type="text" value="${topic.name}" oninput="updateTopicName(${idx}, this.value)" placeholder="z. B. Wortarten, Grammatik" class="flex-1 px-2.5 py-1 text-xs font-bold text-slate-800 bg-transparent focus:outline-none focus:bg-slate-50 rounded-lg border border-transparent focus:border-slate-200">
-            <div class="flex items-center gap-1 shrink-0">
-                <button type="button" onclick="adjustDynamicTopicCount(${idx}, -1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-extrabold text-sm flex items-center justify-center transition-all">-</button>
+            <input type="text" value="${topic.name}" oninput="updateTopicName(${idx}, this.value)" placeholder="z. B. Wortarten, Grammatik" class="flex-1 px-2.5 py-1.5 text-xs font-bold text-slate-800 bg-transparent focus:outline-none focus:bg-slate-50 rounded-lg border border-transparent focus:border-slate-200">
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button type="button" onclick="adjustDynamicTopicCount(${idx}, -1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-extrabold text-xs flex items-center justify-center transition-all">-</button>
                 <span class="w-6 text-center font-black text-xs text-brand-700">${topic.count}</span>
-                <button type="button" onclick="adjustDynamicTopicCount(${idx}, 1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-extrabold text-sm flex items-center justify-center transition-all">+</button>
+                <button type="button" onclick="adjustDynamicTopicCount(${idx}, 1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-extrabold text-xs flex items-center justify-center transition-all">+</button>
             </div>
             ${dynamicTopics.length > 1 ? `
                 <button type="button" onclick="removeDynamicTopicRow(${idx})" title="Schwerpunkt entfernen" class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-all shrink-0">
@@ -267,7 +278,7 @@ window.renderDynamicTopicRows = function() {
 
 window.adjustDynamicTopicCount = function(idx, delta) {
     if (!dynamicTopics[idx]) return;
-    dynamicTopics[idx].count = Math.max(0, dynamicTopics[idx].count + delta);
+    dynamicTopics[idx].count = Math.min(20, Math.max(0, dynamicTopics[idx].count + delta));
     renderDynamicTopicRows();
 };
 
@@ -290,34 +301,29 @@ window.removeDynamicTopicRow = function(idx) {
 
 window.resetDefaultTopics = function() {
     dynamicTopics = [
-        { name: "Textverständnis", count: 1 },
-        { name: "Fremdwörter", count: 1 },
-        { name: "Grafik auswerten", count: 1 }
+        { name: "Textverständnis", count: 2 },
+        { name: "Wortarten & Grammatik", count: 2 },
+        { name: "Fremdwörter", count: 1 }
     ];
     renderDynamicTopicRows();
 };
 
 window.updateTopicSummary = function() {
-    let total = 0;
-    const parts = [];
+    const totalDisplay = document.getElementById('display-total-tasks');
+    const hiddenTopicInput = document.getElementById('input-focus-topic');
+    const hiddenTaskCountInput = document.getElementById('input-task-count');
     
-    dynamicTopics.forEach(t => {
-        if (t.count > 0 && t.name.trim()) {
-            total += t.count;
-            parts.push(`${t.count} ${t.name.trim()}`);
-        }
-    });
+    const totalTasks = dynamicTopics.reduce((sum, t) => sum + (t.count || 0), 0);
+    if (totalDisplay) totalDisplay.textContent = totalTasks;
+    if (hiddenTaskCountInput) hiddenTaskCountInput.value = totalTasks;
     
-    const label = document.getElementById('label-total-task-count');
-    if (label) {
-        label.textContent = `Gesamt: ${total} Aufgaben`;
+    const summaryParts = dynamicTopics
+        .filter(t => t.count > 0 && t.name.trim())
+        .map(t => `${t.count} ${t.name.trim()}`);
+    
+    if (hiddenTopicInput) {
+        hiddenTopicInput.value = summaryParts.join(', ') || '5 Aufgaben';
     }
-    
-    const focusInput = document.getElementById('input-focus-topic');
-    const countInput = document.getElementById('input-task-count');
-    
-    if (focusInput) focusInput.value = parts.join(', ') || "Textverständnis";
-    if (countInput) countInput.value = total || 1;
 };
 
 // Task Count Segment Selector
