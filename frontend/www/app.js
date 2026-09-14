@@ -110,8 +110,14 @@ window.toggleSubjectChip = function(subjectName) {
         selectedSubjects.push(subjectName);
     }
     renderSubjectChips();
-    if (selectedSubjects.length > 0 && subjectPresets[selectedSubjects[0]]) {
-        dynamicTopics = JSON.parse(JSON.stringify(subjectPresets[selectedSubjects[0]]));
+    if (selectedSubjects.length > 0) {
+        const primarySubject = selectedSubjects[0];
+        const preset = subjectPresets[primarySubject] || [
+            { name: "Textverständnis", count: 2 },
+            { name: "Fachbegriffe & Anwendungsaufgabe", count: 2 },
+            { name: "Vertiefungs- & Transferaufgabe", count: 1 }
+        ];
+        dynamicTopics = JSON.parse(JSON.stringify(preset));
         renderDynamicTopicRows();
     }
 };
@@ -200,39 +206,99 @@ const subjectPresets = {
         { name: "Fremdwörter", count: 1 }
     ],
     "Mathematik": [
+        { name: "Textverständnis (Sachaufgaben)", count: 2 },
         { name: "Bruchrechnen & Anteile", count: 2 },
-        { name: "Sachaufgabe & Modellieren", count: 2 },
         { name: "Geometrie & Umfang", count: 1 }
     ],
     "Englisch": [
-        { name: "Reading Comprehension", count: 2 },
+        { name: "Textverständnis (Reading)", count: 2 },
         { name: "Vocabulary & Phrases", count: 2 },
         { name: "Grammar & Tenses", count: 1 }
     ],
     "Natur und Technik (NT)": [
-        { name: "Versuchsaufbau & Beobachtung", count: 2 },
+        { name: "Textverständnis (Sachtext)", count: 2 },
         { name: "Fachbegriffe Biologie/Physik", count: 2 },
         { name: "Diagramm auswerten", count: 1 }
     ],
     "Geschichte / Politik / Geographie (GPG)": [
-        { name: "Quellentext & Textanalyse", count: 2 },
+        { name: "Textverständnis (Quellentext)", count: 2 },
         { name: "Kartenarbeit & Standort", count: 2 },
         { name: "Historische Fachbegriffe", count: 1 }
     ],
     "Wirtschaft und Beruf (WiB)": [
+        { name: "Textverständnis (Fallbeispiel)", count: 2 },
         { name: "Haushaltsplanung & Budget", count: 2 },
-        { name: "Wirtschaftliche Fachbegriffe", count: 2 },
-        { name: "Fallbeispiel auswerten", count: 1 }
+        { name: "Wirtschaftliche Fachbegriffe", count: 1 }
     ],
     "Religion / Ethik": [
-        { name: "Textverständnis & Ethische Frage", count: 2 },
+        { name: "Textverständnis (Ethische Frage)", count: 2 },
         { name: "Begriffsbedeutung & Werte", count: 2 },
         { name: "Eigene Stellungnahme", count: 1 }
     ],
     "Kunst / Musik": [
-        { name: "Bildanalyse & Gestaltung", count: 2 },
+        { name: "Textverständnis (Werkbeschreibung)", count: 2 },
         { name: "Fachbegriffe & Notenlehre", count: 2 },
-        { name: "Künstlerisches Verfahren", count: 1 }
+        { name: "Bildanalyse & Gestaltung", count: 1 }
+    ],
+    "Heimat- und Sachunterricht (HSU)": [
+        { name: "Textverständnis (Sachtext)", count: 2 },
+        { name: "Versuch & Beobachtung", count: 2 },
+        { name: "Grundwissen & Fachbegriffe", count: 1 }
+    ],
+    "Physik": [
+        { name: "Textverständnis (Sachtext)", count: 2 },
+        { name: "Formeln & Berechnungen", count: 2 },
+        { name: "Versuchsaufbau & Erklärung", count: 1 }
+    ],
+    "Chemie": [
+        { name: "Textverständnis (Sachtext)", count: 2 },
+        { name: "Reaktionsgleichung & Symbole", count: 2 },
+        { name: "Versuchsauswertung", count: 1 }
+    ],
+    "Biologie": [
+        { name: "Textverständnis (Sachtext)", count: 2 },
+        { name: "Fachbegriffe & Vorgänge", count: 2 },
+        { name: "Diagramm & Schema auswerten", count: 1 }
+    ],
+    "Geschichte": [
+        { name: "Textverständnis (Quellentext)", count: 2 },
+        { name: "Historische Einordnung", count: 2 },
+        { name: "Urteilsbildung", count: 1 }
+    ],
+    "Geographie": [
+        { name: "Textverständnis (Sachtext)", count: 2 },
+        { name: "Kartenanalyse & Standort", count: 2 },
+        { name: "Fachbegriffe & Diagramme", count: 1 }
+    ],
+    "BwR / Wirtschaft & Recht": [
+        { name: "Textverständnis (Sachverhalt)", count: 2 },
+        { name: "Buchungssätze & Rechnungslegung", count: 2 },
+        { name: "Rechtliche Fallanalyse", count: 1 }
+    ],
+    "Wirtschaft & Recht": [
+        { name: "Textverständnis (Gesetzestext)", count: 2 },
+        { name: "Ökonomische Zusammenhänge", count: 2 },
+        { name: "Fallanalyse & Urteilsbildung", count: 1 }
+    ],
+    "Französisch": [
+        { name: "Textverständnis (Compréhension)", count: 2 },
+        { name: "Vocabulaire & Expressions", count: 2 },
+        { name: "Grammaire & Conjugaison", count: 1 }
+    ],
+    "Latein": [
+        { name: "Textverständnis (Übersetzung)", count: 2 },
+        { name: "Wortschatz & Formenlehre", count: 2 },
+        { name: "Realien & Kultur", count: 1 }
+    ],
+    "Kunst": [
+        { name: "Textverständnis (Werkbeschreibung)", count: 2 },
+        { name: "Bildanalyse & Gestalten", count: 2 },
+        { name: "Künstlerische Praxis", count: 1 }
+    ],
+    "Musik": [
+        { name: "Textverständnis (Liedtext)", count: 2 },
+        { name: "Notenlehre & Rhythmik", count: 2 },
+        { name: "Höranalyse & Instrumente", count: 1 }
     ]
 };
 
