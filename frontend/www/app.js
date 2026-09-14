@@ -185,6 +185,26 @@ function updateCrossCurricularBadge() {
 renderSubjectChips();
 
 // Settings Modal Handlers
+window.syncTaskCountFromDropdown = function() {
+    const select = document.getElementById('select-task-count');
+    const hiddenInput = document.getElementById('input-task-count');
+    if (select && hiddenInput) {
+        hiddenInput.value = select.value;
+    }
+};
+
+window.appendFocusTopic = function(topicName) {
+    const focusInput = document.getElementById('input-focus-topic');
+    if (focusInput) {
+        const currentVal = focusInput.value.trim();
+        if (!currentVal) {
+            focusInput.value = topicName;
+        } else if (!currentVal.includes(topicName)) {
+            focusInput.value = currentVal + ', ' + topicName;
+        }
+    }
+};
+
 window.openSettingsModal = function() {
     const modal = document.getElementById('settings-modal');
     if (modal) modal.classList.remove('hidden');

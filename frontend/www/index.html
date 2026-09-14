@@ -351,33 +351,46 @@
                         </div>
                     </div>
 
-                    <!-- Intuitive & Flexibler Didaktischer Schwerpunkte Builder -->
+                    <!-- Didaktische Steuerung: Aufgaben-Anzahl Dropdown & Schwerpunkte -->
                     <div class="space-y-3 bg-slate-50/90 p-4 rounded-2xl border border-slate-200 shadow-inner">
-                        <div class="flex items-center justify-between">
-                            <label class="block text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                                <i class="fa-solid fa-sliders text-brand-600"></i>
-                                <span>Didaktische Aufgaben-Verteilung</span>
-                            </label>
-                            <span id="label-total-task-count" class="text-xs font-extrabold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-0.5 rounded-full">Gesamt: 3 Aufgaben</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Gesamtzahl der Aufgaben Dropdown -->
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-list-ol text-brand-600"></i>
+                                    <span>Anzahl der Aufgaben</span>
+                                </label>
+                                <select id="select-task-count" onchange="syncTaskCountFromDropdown()" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all shadow-sm">
+                                    <option value="3">3 Aufgaben</option>
+                                    <option value="4" selected>4 Aufgaben</option>
+                                    <option value="5">5 Aufgaben</option>
+                                    <option value="6">6 Aufgaben</option>
+                                </select>
+                            </div>
+
+                            <!-- Schwerpunkte / Themen Freitext -->
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-bullseye text-brand-600"></i>
+                                    <span>Schwerpunkte / Themen</span>
+                                </label>
+                                <input type="text" id="input-focus-topic" placeholder="z. B. Textverständnis, Wortarten, Grammatik" class="w-full px-3 py-2.5 border border-slate-200 bg-white rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all shadow-sm">
+                            </div>
                         </div>
 
-                        <!-- Dynamic Topic Rows (Vertical List - Zero Clipping) -->
-                        <div id="topic-rows-list" class="space-y-2">
-                            <!-- Dynamic topic rows rendered by JS -->
+                        <!-- Schnell-Auswahl Klick-Chips für Themen -->
+                        <div class="space-y-1 pt-1 border-t border-slate-200/80">
+                            <span class="text-[10px] font-bold text-slate-500">Schnell-Auswahl per Klick hinzufügen:</span>
+                            <div id="quick-topic-chips" class="flex flex-wrap gap-1.5 pt-0.5">
+                                <button type="button" onclick="appendFocusTopic('Textverständnis')" class="px-2.5 py-1 bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-brand-700 transition-all shadow-sm">+ Textverständnis</button>
+                                <button type="button" onclick="appendFocusTopic('Wortarten')" class="px-2.5 py-1 bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-brand-700 transition-all shadow-sm">+ Wortarten</button>
+                                <button type="button" onclick="appendFocusTopic('Fremdwörter')" class="px-2.5 py-1 bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-brand-700 transition-all shadow-sm">+ Fremdwörter</button>
+                                <button type="button" onclick="appendFocusTopic('Grammatik')" class="px-2.5 py-1 bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-brand-700 transition-all shadow-sm">+ Grammatik</button>
+                                <button type="button" onclick="appendFocusTopic('Grafik auswerten')" class="px-2.5 py-1 bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 rounded-lg text-[11px] font-semibold text-slate-700 hover:text-brand-700 transition-all shadow-sm">+ Grafik auswerten</button>
+                            </div>
                         </div>
 
-                        <!-- Add Custom Topic & Reset Buttons -->
-                        <div class="flex items-center justify-between pt-1 border-t border-slate-200/80">
-                            <button type="button" onclick="addCustomTopicRow()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-brand-700 border border-brand-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
-                                <i class="fa-solid fa-plus text-brand-600"></i> Schwerpunkt hinzufügen (z. B. Wortarten)
-                            </button>
-                            <button type="button" onclick="resetDefaultTopics()" class="text-[11px] font-semibold text-slate-400 hover:text-slate-600 underline">
-                                Standard
-                            </button>
-                        </div>
-
-                        <input type="hidden" id="input-focus-topic" value="1 Textverständnis, 1 Fremdwörter, 1 Grafik auswerten">
-                        <input type="hidden" id="input-task-count" value="3">
+                        <input type="hidden" id="input-task-count" value="4">
                     </div>
 
                     <!-- Thema für Merkkasten / Hefteintrag -->
