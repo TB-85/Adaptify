@@ -172,11 +172,24 @@ class PDFGenerator:
             textColor=colors.HexColor("#64748b")
         )
 
-        # Build Logo image if provided
+        # Build Logo image if provided or load default Adaptify logo
         logo_img = None
         logo_data = data.get("pdf_logo_base64")
         logo_io = None
-        if logo_data:
+        if not logo_data:
+            import os
+            default_logo_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "www", "logo_full.png")
+            if os.path.exists(default_logo_path):
+                try:
+                    with open(default_logo_path, "rb") as f:
+                        logo_bytes = f.read()
+                        logo_io = io.BytesIO(logo_bytes)
+                        from reportlab.platypus import Image
+                        logo_img = Image(logo_io, width=1.1*inch, height=0.6*inch)
+                        logo_img.hAlign = 'RIGHT'
+                except Exception:
+                    pass
+        else:
             try:
                 import base64
                 if "," in logo_data:
