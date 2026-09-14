@@ -101,6 +101,48 @@ function renderSubjectChips() {
     updateCrossCurricularBadge();
 }
 
+window.buildDynamicTopicsForSelectedSubjects = function(subjects) {
+    if (!subjects || subjects.length === 0) {
+        return [
+            { name: "Textverständnis", count: 2 },
+            { name: "Wortarten & Grammatik", count: 2 },
+            { name: "Fremdwörter", count: 1 }
+        ];
+    }
+
+    if (subjects.length === 1) {
+        const sub = subjects[0];
+        const preset = subjectPresets[sub] || [
+            { name: "Textverständnis", count: 2 },
+            { name: "Fachbegriffe & Anwendungsaufgabe", count: 2 },
+            { name: "Vertiefungs- & Transferaufgabe", count: 1 }
+        ];
+        return JSON.parse(JSON.stringify(preset));
+    }
+
+    // 2 or more subjects selected:
+    const sub1 = subjects[0];
+    const sub2 = subjects[1];
+
+    const preset1 = subjectPresets[sub1] || [
+        { name: "Textverständnis", count: 2 },
+        { name: "Schwerpunkt " + sub1, count: 2 }
+    ];
+    const preset2 = subjectPresets[sub2] || [
+        { name: "Textverständnis", count: 2 },
+        { name: "Schwerpunkt " + sub2, count: 2 }
+    ];
+
+    const topicSub1Obj = preset1.find(t => !t.name.toLowerCase().includes("textverständnis")) || preset1[1] || { name: sub1 + "-Schwerpunkt" };
+    const topicSub2Obj = preset2.find(t => !t.name.toLowerCase().includes("textverständnis")) || preset2[1] || { name: sub2 + "-Schwerpunkt" };
+
+    return [
+        { name: "Textverständnis", count: 2 },
+        { name: topicSub1Obj.name, count: 2 },
+        { name: topicSub2Obj.name, count: 1 }
+    ];
+};
+
 window.toggleSubjectChip = function(subjectName) {
     if (selectedSubjects.includes(subjectName)) {
         if (selectedSubjects.length > 1) {
@@ -110,20 +152,14 @@ window.toggleSubjectChip = function(subjectName) {
         selectedSubjects.push(subjectName);
     }
     renderSubjectChips();
-    if (selectedSubjects.length > 0) {
-        const primarySubject = selectedSubjects[0];
-        const preset = subjectPresets[primarySubject] || [
-            { name: "Textverständnis", count: 2 },
-            { name: "Fachbegriffe & Anwendungsaufgabe", count: 2 },
-            { name: "Vertiefungs- & Transferaufgabe", count: 1 }
-        ];
-        dynamicTopics = JSON.parse(JSON.stringify(preset));
-        renderDynamicTopicRows();
-    }
+    dynamicTopics = buildDynamicTopicsForSelectedSubjects(selectedSubjects);
+    renderDynamicTopicRows();
 };
 
 window.handleSchoolTypeChange = function() {
     renderSubjectChips();
+    dynamicTopics = buildDynamicTopicsForSelectedSubjects(selectedSubjects);
+    renderDynamicTopicRows();
     const headerSchoolName = document.getElementById('header-school-name');
     if (headerSchoolName && inputSchoolType) {
         headerSchoolName.textContent = inputSchoolType.value + ' (Schullizenz)';
