@@ -1,5 +1,13 @@
 import sys
 import os
+import json
+import logging
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response, FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from typing import List, Optional
 
 # Ensure backend directory is in sys.path for reliable module imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
