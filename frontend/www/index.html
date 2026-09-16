@@ -10,8 +10,14 @@
     <title>Adaptify – KI-gestützter H5P-Differenzierungs-Generator</title>
     <!-- PWA Support -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4f46e5">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8074/8074788.png">
+    <meta name="theme-color" content="#0284c7">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=6">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png?v=6">
+    <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png?v=6">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png?v=6">
+    <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png?v=6">
+    <link rel="icon" type="image/png" sizes="192x192" href="/apple-touch-icon-192x192.png?v=6">
+    <link rel="shortcut icon" href="/apple-touch-icon.png?v=6">
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -96,8 +102,8 @@
                 <img src="logo_icon.png" alt="Adaptify Logo" class="h-11 w-11 object-contain drop-shadow-sm shrink-0">
                 <div>
                     <h1 class="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-1.5">
-                        <span>Adapt<span class="text-brand-600">ify</span></span>
-                        <span class="text-[9px] font-bold bg-brand-50 border border-brand-100 text-brand-700 px-1.5 py-0.5 rounded-md uppercase tracking-wide">Beta</span>
+                        <span>Adapt<span class="text-brand-500">ify</span></span>
+                        <span class="text-[9px] font-bold bg-brand-50 border border-brand-200 text-brand-700 px-1.5 py-0.5 rounded-md uppercase tracking-wide">Beta</span>
                     </h1>
                     <p class="text-[10px] text-slate-400 font-bold flex items-center gap-1">
                         <i class="fa-solid fa-school text-[9px]"></i> <span id="header-school-name">Testschullizenz Amperschule Olching</span>
@@ -256,10 +262,8 @@
                         </div>
                     </div>
 
-                    <!-- Urheberrecht & Kopierrecht Hinweistext für Lehrkräfte -->
-                    <p class="text-[11px] text-slate-500 font-medium flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-scale-balanced text-slate-400"></i>
-                        <span>Rechtssicher nach <strong>§ 60a UrhG</strong> (Schulgebrauch &amp; Kopierrecht für den eigenen Unterricht)</span>
+                    <p class="text-[11px] text-slate-500 font-medium flex items-center justify-center text-center">
+                        <span>Urheber- &amp; Kopierrecht (<strong>§ 60a UrhG</strong> für den eigenen Unterricht) sind eigenverantwortlich von der Lehrkraft zu beachten.</span>
                     </p>
 
                     <!-- 1-Click Demo Presets Box (Instant Onboarding) -->
@@ -516,6 +520,15 @@
 
                 <!-- Right Pane: Editable cards -->
                 <div class="lg:col-span-7 space-y-6">
+                    <!-- KI-Assistenz & Prüfpflicht Hinweisleiste -->
+                    <div class="bg-amber-50/90 border border-amber-200/90 text-amber-900 rounded-2xl p-3.5 flex items-start gap-3 shadow-sm text-xs">
+                        <i class="fa-solid fa-user-check text-amber-600 text-base shrink-0 mt-0.5"></i>
+                        <div class="leading-snug">
+                            <span class="font-extrabold block text-amber-950 mb-0.5">Didaktischer Entwurf (KI-Assistenz)</span>
+                            <span class="text-amber-800 text-[11px]">Bitte überprüfen und passen Sie die generierten Aufgaben vor dem Unterrichtseinsatz kurz auf fachliche Richtigkeit an.</span>
+                        </div>
+                    </div>
+
                     <!-- Title Input -->
                     <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-3">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Aufgabentitel</label>
@@ -677,7 +690,7 @@
                     <div>
                         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Akzentfarbe</label>
                         <div class="flex items-center gap-2">
-                            <input type="color" id="pdf-accent-color" value="#4f46e5" class="h-8 w-10 border border-slate-200 rounded-lg cursor-pointer">
+                            <input type="color" id="pdf-accent-color" value="#0284c7" class="h-8 w-10 border border-slate-200 rounded-lg cursor-pointer">
                             <span class="text-[10px] font-semibold text-slate-500">Farbe für Titel & Linien</span>
                         </div>
                     </div>

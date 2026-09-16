@@ -1549,7 +1549,7 @@ btnDownloadPDF.addEventListener('click', async () => {
     // Inject PDF customization parameters
     payload.pdf_teacher_name = document.getElementById('pdf-teacher-name')?.value || "";
     payload.pdf_class_name = document.getElementById('pdf-class-name')?.value || "";
-    payload.pdf_accent_color = document.getElementById('pdf-accent-color')?.value || "#4f46e5";
+    payload.pdf_accent_color = document.getElementById('pdf-accent-color')?.value || "#0284c7";
     payload.pdf_include_lehrplan = document.getElementById('pdf-include-lehrplan')?.checked ?? false;
     payload.pdf_include_level_c = document.getElementById('pdf-include-level-c')?.checked ?? false;
     payload.pdf_logo_base64 = pdfLogoBase64;
