@@ -736,13 +736,62 @@ let currentFilter = 'none'; // 'none' | 'contrast' | 'grayscale'
 let activeDragMode = null; // null | 'move' | 'nw' | 'ne' | 'sw' | 'se'
 let dragStartX, dragStartY, dragStartLeft, dragStartTop, dragStartWidth, dragStartHeight;
 
-function handleFile(file) {
-    appState.selectedFile = file;
-    fileName.textContent = file.name;
+function compressImageFile(file, maxDimension = 1600, quality = 0.85) {
+    return new Promise((resolve) => {
+        if (!file || !file.type.startsWith('image/')) return resolve(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                let w = img.width;
+                let h = img.height;
+                if (w <= maxDimension && h <= maxDimension && file.size < 800 * 1024) {
+                    return resolve(file);
+                }
+                if (w > maxDimension || h > maxDimension) {
+                    if (w > h) {
+                        h = Math.round((h * maxDimension) / w);
+                        w = maxDimension;
+                    } else {
+                        w = Math.round((w * maxDimension) / h);
+                        h = maxDimension;
+                    }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, w, h);
+                ctx.drawImage(img, 0, 0, w, h);
+                canvas.toBlob((blob) => {
+                    if (!blob) return resolve(file);
+                    const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    console.log(`Compressed photo from ${(file.size / 1024 / 1024).toFixed(2)}MB to ${(compressedFile.size / 1024).toFixed(1)}KB`);
+                    resolve(compressedFile);
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = () => resolve(file);
+            img.src = e.target.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+    });
+}
+
+async function handleFile(file) {
+    let processedFile = file;
+    if (file && file.type.startsWith('image/')) {
+        processedFile = await compressImageFile(file);
+    }
+    appState.selectedFile = processedFile;
+    fileName.textContent = processedFile.name;
     
     // Format file size
-    const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-    fileSize.textContent = `${sizeInMB} MB`;
+    fileSize.textContent = processedFile.size > 1024 * 1024 ? `${(processedFile.size / (1024 * 1024)).toFixed(2)} MB` : `${(processedFile.size / 1024).toFixed(0)} KB`;
     
     fileInfo.classList.remove('hidden');
 
