@@ -377,11 +377,16 @@
                             <!-- Dynamic topic rows rendered by JS -->
                         </div>
 
-                        <!-- Add Custom Topic & Reset Buttons -->
-                        <div class="flex items-center justify-between pt-1 border-t border-slate-200/80">
-                            <button type="button" onclick="addCustomTopicRow()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
-                                <i class="fa-solid fa-plus text-slate-600"></i> Schwerpunkt hinzufügen
-                            </button>
+                        <!-- Add Custom Topic, AI Auto, and Reset Buttons -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/80">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <button type="button" onclick="addCustomTopicRow()" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                                    <i class="fa-solid fa-plus text-slate-600"></i> Manuell hinzufügen
+                                </button>
+                                <button type="button" onclick="setAiAutoTopics()" class="px-2.5 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-brand-600"></i> KI automatisch wählen lassen
+                                </button>
+                            </div>
                             <button type="button" onclick="resetDefaultTopics()" class="text-[11px] font-bold text-slate-400 hover:text-slate-600 transition-all">
                                 Zurücksetzen
                             </button>
@@ -1026,7 +1031,7 @@
             </div>
             <div class="flex items-center gap-5">
                 <button type="button" onclick="openDSGVOModal()" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-indigo-950/60 text-indigo-300 border border-indigo-800/60 hover:bg-indigo-900/80 cursor-pointer transition-all">
-                    <i class="fa-solid fa-scale-balanced text-[10px]"></i> Datenschutz &amp; Schulrecht (§ 60a UrhG)
+                    Datenschutz &amp; Schulrecht (§ 60a UrhG)
                 </button>
                 <div class="flex gap-4 font-semibold text-slate-400">
                     <button type="button" onclick="openDSGVOModal()" class="hover:text-white transition-all focus:outline-none">Datenschutz &amp; Urheberrecht</button>
@@ -1620,7 +1625,7 @@
                 </div>
                 <div class="p-3.5 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-1.5">
                     <h4 class="font-extrabold text-amber-900 flex items-center gap-1.5">
-                        <i class="fa-solid fa-scale-balanced text-amber-700"></i> Urheberrecht &amp; Eigenverantwortung (§ 60a UrhG)
+                        Urheberrecht &amp; Eigenverantwortung (§ 60a UrhG)
                     </h4>
                     <p class="text-slate-700 text-[11px]">Die Beachtung des Urheber- und Kopierrechts (§ 60a UrhG für den Schulgebrauch) obliegt eigenverantwortlich der hochladenden Lehrkraft. Die Plattform und deren Betreiber stellen lediglich das technische Assistenzsystem bereit und übernehmen keine Haftung für urheberrechtswidrig hochgeladene oder vervielfältigte Vorlagen Dritter.</p>
                 </div>

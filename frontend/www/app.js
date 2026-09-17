@@ -391,7 +391,22 @@ window.updateTopicName = function(idx, val) {
 };
 
 window.addCustomTopicRow = function() {
-    dynamicTopics.push({ name: "Wortarten & Grammatik", count: 1 });
+    dynamicTopics.push({ name: "", count: 1 });
+    renderDynamicTopicRows();
+    setTimeout(() => {
+        const inputs = document.querySelectorAll('#topic-rows-list input[type="text"]');
+        if (inputs.length > 0) {
+            const lastInput = inputs[inputs.length - 1];
+            lastInput.placeholder = "Eigenen Schwerpunkt eingeben...";
+            lastInput.focus();
+        }
+    }, 50);
+};
+
+window.setAiAutoTopics = function() {
+    dynamicTopics = [
+        { name: "KI wählt Schwerpunkte automatisch aus dem Text", count: 5 }
+    ];
     renderDynamicTopicRows();
 };
 
