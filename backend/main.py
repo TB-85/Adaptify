@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import logging
+import asyncio
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, FileResponse
@@ -38,6 +39,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/health")
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok", "app": "Adaptify"}
 
 # Custom Middleware to disable stale browser caching for live classroom updates
 @app.middleware("http")
@@ -159,7 +165,8 @@ async def generate_task(
             mime_type = 'image/jpeg'
             
     # Call Gemini API
-    result = ai_service.generate_differentiated_content(
+    result = await asyncio.to_thread(
+        ai_service.generate_differentiated_content,
         file_content=contents,
         mime_type=mime_type,
         context=context,
@@ -199,7 +206,8 @@ async def refine_task(req: RefineTaskRequest):
     Refines a single task based on prompt instruction from teacher.
     """
     try:
-        updated = ai_service.refine_single_task(
+        updated = await asyncio.to_thread(
+            ai_service.refine_single_task,
             task_data=req.task,
             instruction=req.instruction,
             subject=req.subject,
