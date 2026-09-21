@@ -109,8 +109,9 @@ class AIService:
             except Exception as e:
                 logger.error(f"Failed to read .env file: {e}")
 
-        # The new SDK automatically picks up GEMINI_API_KEY from environment
-        self.api_key = os.environ.get("GEMINI_API_KEY")
+        DEFAULT_SERVER_KEY = "AQ.Ab8RN6IIli6Pmhc4lXUcD__SLmQ3pqlFeEOWQO7x5aoi8X9cEg"
+        # The new SDK automatically picks up GEMINI_API_KEY from environment or fallback key
+        self.api_key = os.environ.get("GEMINI_API_KEY") or DEFAULT_SERVER_KEY
         self.client = None
         if self.api_key:
             try:
@@ -405,7 +406,7 @@ Generiere genau dieses JSON:
         if effective_client:
             try:
                 response = effective_client.models.generate_content(
-                    model='gemini-2.5-flash',
+                    model='gemini-3.5-flash-lite',
                     contents=prompt,
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
