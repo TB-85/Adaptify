@@ -1135,26 +1135,54 @@ if (btnSaveImageEdit) {
 // GENERATION FLOW (SUBMIT)
 // ----------------------------------------------------
 btnSubmit.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    if (!appState.selectedFile) return;
-
-    loader.classList.remove('hidden');
+    if (e) e.stopPropagation();
     
+    if (!appState.selectedFile) {
+        alert("Bitte wählen Sie zuerst eine Buchseite aus oder machen Sie ein Foto mit der Kamera.");
+        if (dropZone) {
+            dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            dropZone.classList.add('ring-4', 'ring-amber-400');
+            setTimeout(() => dropZone.classList.remove('ring-4', 'ring-amber-400'), 2500);
+        }
+        return;
+    }
+
+    if (loader) loader.classList.remove('hidden');
+    
+    // Compute focus topic from dynamicTopics or hidden input
+    let focusTopicValue = "";
+    if (typeof dynamicTopics !== 'undefined' && Array.isArray(dynamicTopics) && dynamicTopics.length > 0) {
+        const parts = dynamicTopics
+            .filter(t => t.name && t.name.trim() !== "")
+            .map(t => (t.count && t.count > 1) ? `${t.count}x ${t.name.trim()}` : t.name.trim());
+        focusTopicValue = parts.join(', ');
+    }
+    if (!focusTopicValue && typeof inputFocusTopic !== 'undefined' && inputFocusTopic) {
+        focusTopicValue = inputFocusTopic.value || "";
+    }
+    if (!focusTopicValue) {
+        const hiddenEl = document.getElementById('input-focus-topic');
+        if (hiddenEl) focusTopicValue = hiddenEl.value || "";
+    }
+
+    const apiKeyVal = (typeof inputApiKey !== 'undefined' && inputApiKey) ? (inputApiKey.value || '').trim() : '';
+    const promoCodeVal = (typeof inputPromoCode !== 'undefined' && inputPromoCode) ? (inputPromoCode.value || '').trim() : '';
+
     // Save API key & promo code to localStorage
-    if (inputApiKey.value) localStorage.setItem('gemini_api_key', inputApiKey.value);
-    if (inputPromoCode.value) localStorage.setItem('promo_code', inputPromoCode.value);
+    if (apiKeyVal) localStorage.setItem('gemini_api_key', apiKeyVal);
+    if (promoCodeVal) localStorage.setItem('promo_code', promoCodeVal);
 
     const formData = new FormData();
     formData.append('file', appState.selectedFile);
-    formData.append('school_type', inputSchoolType ? inputSchoolType.value : 'Grundschule');
-    formData.append('subject', selectedSubjects.join(', '));
-    formData.append('focus_topic', inputFocusTopic.value);
-    formData.append('hefteintrag_topic', inputHefteintragTopic ? inputHefteintragTopic.value : '');
-    formData.append('context', inputContext.value);
-    formData.append('target_format', inputFormat.value);
-    formData.append('task_count', inputTaskCount.value);
-    formData.append('api_key', inputApiKey.value);
-    formData.append('promo_code', inputPromoCode.value);
+    formData.append('school_type', (typeof inputSchoolType !== 'undefined' && inputSchoolType) ? inputSchoolType.value : 'Grundschule');
+    formData.append('subject', (Array.isArray(selectedSubjects) && selectedSubjects.length > 0) ? selectedSubjects.join(', ') : 'Deutsch');
+    formData.append('focus_topic', focusTopicValue);
+    formData.append('hefteintrag_topic', (typeof inputHefteintragTopic !== 'undefined' && inputHefteintragTopic) ? inputHefteintragTopic.value : '');
+    formData.append('context', (typeof inputContext !== 'undefined' && inputContext) ? inputContext.value : '');
+    formData.append('target_format', (typeof inputFormat !== 'undefined' && inputFormat) ? inputFormat.value : 'Lückentext');
+    formData.append('task_count', (typeof inputTaskCount !== 'undefined' && inputTaskCount) ? inputTaskCount.value : 1);
+    formData.append('api_key', apiKeyVal);
+    formData.append('promo_code', promoCodeVal);
 
     try {
         const response = await fetch(`${API_BASE}/api/generate`, {
@@ -1196,7 +1224,7 @@ btnSubmit.addEventListener('click', async (e) => {
         console.error("Failed to generate task:", err);
         alert("Fehler bei der Generierung:\n\n" + err.message);
     } finally {
-        loader.classList.add('hidden');
+        if (loader) loader.classList.add('hidden');
     }
 });
 
