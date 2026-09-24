@@ -738,7 +738,10 @@ let dragStartX, dragStartY, dragStartLeft, dragStartTop, dragStartWidth, dragSta
 
 function compressImageFile(file, maxDimension = 1600, quality = 0.85) {
     return new Promise((resolve) => {
-        if (!file || !file.type.startsWith('image/')) return resolve(file);
+        if (!file) return resolve(file);
+        const isImage = (file.type && file.type.startsWith('image/')) || 
+                        /\.(jpg|jpeg|png|heic|heif|webp)$/i.test(file.name || '');
+        if (!isImage) return resolve(file);
         const reader = new FileReader();
         reader.onload = (e) => {
             const img = new Image();
@@ -1237,11 +1240,16 @@ window.openCameraCapture = function(event) {
     input.type = 'file';
     input.accept = 'image/*';
     input.capture = 'environment';
+    input.style.display = 'none';
     input.onchange = (e) => {
-        const file = e.target.files[0];
+        const file = e.target.files && e.target.files[0];
         if (file) handleFile(file);
     };
+    document.body.appendChild(input);
     input.click();
+    setTimeout(() => {
+        if (input && input.parentNode) input.parentNode.removeChild(input);
+    }, 1000);
 };
 
 window.moveTask = function(prefix, index, direction) {
