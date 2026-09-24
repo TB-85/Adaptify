@@ -341,14 +341,28 @@ WICHTIGE ANWEISUNGEN:
                 )
                 contents = [part, prompt]
             
-            response = client.models.generate_content(
-                model='gemini-3.5-flash-lite',
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=DifferentiatedContent,
-                )
-            )
+            candidate_models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-flash-latest']
+            response = None
+            last_err = None
+            for model_name in candidate_models:
+                try:
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=contents,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            response_schema=DifferentiatedContent,
+                        )
+                    )
+                    if response and response.text:
+                        logger.info(f"Successfully generated content using Gemini model '{model_name}'")
+                        break
+                except Exception as m_err:
+                    logger.warning(f"Gemini model '{model_name}' failed: {m_err}. Trying next candidate model...")
+                    last_err = m_err
+
+            if not response or not response.text:
+                raise last_err or Exception("All Gemini models failed")
             
             try:
                 result_json = json.loads(response.text)
