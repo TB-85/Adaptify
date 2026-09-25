@@ -1243,8 +1243,16 @@ btnSubmit.addEventListener('click', async (e) => {
         showScreen(screenEditor);
 
     } catch (err) {
+        clearTimeout(slowTimer1);
+        clearTimeout(slowTimer2);
+        clearTimeout(timeoutId);
+        
         console.error("Failed to generate task:", err);
-        alert("Fehler bei der Generierung:\n\n" + err.message);
+        if (err.name === 'AbortError' || (err.message && err.message.toLowerCase().includes('aborted'))) {
+            console.log("Request was aborted (page refresh or navigation).");
+        } else {
+            alert("Fehler bei der Generierung:\n\n" + err.message);
+        }
     } finally {
         if (loader) loader.classList.add('hidden');
     }
