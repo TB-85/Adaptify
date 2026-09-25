@@ -1152,6 +1152,20 @@ btnSubmit.addEventListener('click', async (e) => {
 
     if (loader) loader.classList.remove('hidden');
     
+    // Dynamic loader status indicator for long requests (e.g. Render cold start)
+    const loaderTextEl = document.querySelector('#loader p') || document.querySelector('#loader span');
+    if (loaderTextEl) loaderTextEl.textContent = "Analysiere Buchseite mit KI...";
+    
+    const slowTimer1 = setTimeout(() => {
+        if (loaderTextEl) loaderTextEl.textContent = "Server wird aufgeweckt & KI verarbeitet Dokument...";
+    }, 6000);
+    const slowTimer2 = setTimeout(() => {
+        if (loaderTextEl) loaderTextEl.textContent = "Erstelle differenzierte H5P- & PDF-Aufgaben...";
+    }, 18000);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000);
+
     // Compute focus topic from dynamicTopics or hidden input
     let focusTopicValue = "";
     if (typeof dynamicTopics !== 'undefined' && Array.isArray(dynamicTopics) && dynamicTopics.length > 0) {
@@ -1191,7 +1205,12 @@ btnSubmit.addEventListener('click', async (e) => {
         const response = await fetch(`${API_BASE}/api/generate`, {
             method: 'POST',
             body: formData,
+            signal: controller.signal
         });
+        
+        clearTimeout(slowTimer1);
+        clearTimeout(slowTimer2);
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             let errMsg = `Server-Fehler (${response.status})`;
