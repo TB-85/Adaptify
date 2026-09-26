@@ -726,10 +726,11 @@
 
             <!-- Export Buttons Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto">
-                <button id="btn-download-h5p" class="flex flex-col items-center gap-2 p-5 bg-gradient-to-b from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white rounded-3xl shadow-xl transition-all duration-300 group hover:-translate-y-1">
+                <button id="btn-download-h5p" class="flex flex-col items-center gap-2 p-5 bg-gradient-to-b from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white rounded-3xl shadow-xl transition-all duration-300 group hover:-translate-y-1 relative ring-2 ring-brand-400 ring-offset-2">
+                    <span class="absolute -top-3 bg-amber-400 text-slate-900 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow">Standard für ByCS & mebis</span>
                     <i class="fa-solid fa-file-zipper text-3xl group-hover:scale-110 transition-all"></i>
-                    <span class="font-bold text-sm">H5P-Datei laden</span>
-                    <span class="text-xxs text-brand-200">Für Moodle, mebis, ByCS</span>
+                    <span class="font-bold text-sm">ByCS / mebis H5P-Datei (.h5p)</span>
+                    <span class="text-xxs text-brand-200">Direkt in den Inhaltsspeicher hochladen</span>
                 </button>
 
                 <button id="btn-download-pdf" class="flex flex-col items-center gap-2 p-5 bg-white hover:bg-slate-50 text-slate-800 rounded-3xl border border-slate-200 shadow-xl transition-all duration-300 group hover:-translate-y-1">
@@ -1634,6 +1635,6 @@
     </div>
 
     <!-- App JavaScript -->
-    <script src="app.js?v=16"></script>
+    <script src="app.js?v=18"></script>
 </body>
 </html>

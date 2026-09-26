@@ -1654,14 +1654,34 @@ window.downloadSCORMPackage = async function() {
     }
 };
 
-window.copyIframeEmbedCode = function() {
-    const pin = liveSessionPin || 'XXXX';
-    const embedUrl = `${window.location.origin}/play.html?pin=${pin}`;
-    const iframeCode = `<iframe src="${embedUrl}" width="100%" height="600" style="border:0; border-radius:16px; overflow:hidden;" allow="camera; microphone; autoplay"></iframe>`;
+window.copyIframeEmbedCode = async function() {
+    if (!liveSessionPin) {
+        const data = getEditedData();
+        if (data) {
+            try {
+                const sessionRes = await fetch(`${API_BASE}/api/sessions/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (sessionRes.ok) {
+                    const sessionJson = await sessionRes.json();
+                    liveSessionPin = sessionJson.pin;
+                    updateNavigationState();
+                }
+            } catch (e) {
+                console.warn("Could not auto-create session for embed code:", e);
+            }
+        }
+    }
     
-    if (navigator.clipboard) {
+    const pin = liveSessionPin || 'LIVE';
+    const embedUrl = `${window.location.origin}/play.html?pin=${pin}`;
+    const iframeCode = `<iframe src="${embedUrl}" width="100%" height="650" style="border:0; border-radius:16px; overflow:hidden;" allow="camera; microphone; autoplay; fullscreen"></iframe>`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(iframeCode).then(() => {
-            alert("📋 mebis / ByCS iFrame-Einbettungscode kopiert!\n\nFüge ihn einfach in dein mebis- oder Moodle-Textfeld ein.");
+            alert(`📋 mebis / ByCS iFrame-Einbettungscode (PIN: ${pin}) kopiert!\n\nFüge ihn einfach in dein mebis-, ByCS- oder Moodle-Textfeld ein.`);
         }).catch(() => {
             prompt("Kopiere diesen iFrame-Code für mebis / ByCS:", iframeCode);
         });
@@ -2976,20 +2996,34 @@ window.startLiveSession = async function() {
         const sessionJson = await sessionRes.json();
         liveSessionPin = sessionJson.pin;
         
-        // 2. Fetch network IP address
-        const ipRes = await fetch(`${API_BASE}/api/system/ip`);
-        const ipJson = await ipRes.json();
-        const localIp = ipJson.ip;
+        // 2. Build Student link (Cloud/Render vs Localhost)
+        let playUrl;
+        const isLocalhost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname);
         
-        // 3. Build Student link
-        const port = window.location.port ? `:${window.location.port}` : '';
-        const playUrl = `${window.location.protocol}//${localIp}${port}/play.html?pin=${liveSessionPin}`;
+        if (!isLocalhost) {
+            playUrl = `${window.location.origin}/play.html?pin=${liveSessionPin}`;
+            const ipLabel = document.getElementById('live-session-ip-label');
+            if (ipLabel) ipLabel.textContent = window.location.hostname;
+        } else {
+            try {
+                const ipRes = await fetch(`${API_BASE}/api/system/ip`);
+                const ipJson = await ipRes.json();
+                const localIp = ipJson.ip || '127.0.0.1';
+                const port = window.location.port ? `:${window.location.port}` : '';
+                playUrl = `${window.location.protocol}//${localIp}${port}/play.html?pin=${liveSessionPin}`;
+                const ipLabel = document.getElementById('live-session-ip-label');
+                if (ipLabel) ipLabel.textContent = localIp;
+            } catch (e) {
+                playUrl = `${window.location.origin}/play.html?pin=${liveSessionPin}`;
+                const ipLabel = document.getElementById('live-session-ip-label');
+                if (ipLabel) ipLabel.textContent = window.location.hostname;
+            }
+        }
         
-        // 4. Update UI
+        // 3. Update UI
         document.getElementById('live-session-pin').textContent = liveSessionPin;
         const pinTipEl = document.getElementById('live-session-pin-tip');
         if (pinTipEl) pinTipEl.textContent = liveSessionPin;
-        document.getElementById('live-session-ip-label').textContent = localIp;
         document.getElementById('live-session-link').href = playUrl;
         document.getElementById('live-session-link').textContent = playUrl;
         
