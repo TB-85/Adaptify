@@ -801,10 +801,6 @@ class H5PGenerator:
         # Create zip in memory
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-            # Create content directory entry to ensure PHP ZipArchive handles it correctly
-            content_dir = zipfile.ZipInfo("content/")
-            zip_file.writestr(content_dir, "")
-            
             zip_file.writestr("h5p.json", json.dumps(h5p_json, indent=2, ensure_ascii=False))
             zip_file.writestr("content/content.json", json.dumps(content_json, indent=2, ensure_ascii=False))
             
