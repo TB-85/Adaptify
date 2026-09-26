@@ -1,5 +1,6 @@
 // App State
 let appState = {
+    selectedFiles: [],
     selectedFile: null,
     generatedData: null,
     previewDataUrl: null,
@@ -713,9 +714,27 @@ dropZone.addEventListener('drop', (e) => {
 
 fileInput.addEventListener('change', () => {
     if (fileInput.files.length > 0) {
-        handleFile(fileInput.files[0]);
+        handleFiles(fileInput.files);
     }
 });
+
+async function handleFiles(filesList) {
+    if (!filesList || filesList.length === 0) return;
+    
+    appState.selectedFiles = Array.from(filesList);
+    const firstFile = appState.selectedFiles[0];
+    await handleFile(firstFile);
+    
+    if (appState.selectedFiles.length > 1) {
+        fileName.textContent = appState.selectedFiles.length + " Dateien ausgewählt";
+        let totalSize = appState.selectedFiles.reduce((acc, f) => acc + f.size, 0);
+        fileSize.textContent = totalSize > 1024 * 1024 ? (totalSize / (1024 * 1024)).toFixed(2) + " MB" : (totalSize / 1024).toFixed(0) + " KB";
+        
+        const btnCrop = document.getElementById('btn-crop-image');
+        if (btnCrop) btnCrop.classList.add('hidden');
+    }
+}
+
 
 btnRemoveFile.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -834,6 +853,7 @@ window.reopenImageEditor = function() {
 
 function resetFileSelection() {
     appState.selectedFile = null;
+    appState.selectedFiles = [];
     appState.originalDataUrl = null;
     appState.previewDataUrl = null;
     fileInput.value = '';

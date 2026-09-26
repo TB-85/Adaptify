@@ -112,7 +112,7 @@ class ExportData(BaseModel):
 
 @app.post("/api/generate")
 async def generate_task(
-    file: UploadFile = File(...),
+    files: List[UploadFile] = File(...),
     subject: str = Form("Deutsch"),
     school_type: str = Form("Grundschule"),
     focus_topic: str = Form(""),
@@ -127,7 +127,7 @@ async def generate_task(
     Receives an uploaded book page scan (image or PDF) and generates
     differentiated task content, board entries, and extension tasks using Gemini Vision.
     """
-    logger.info(f"Received file: {file.filename}, school_type: {school_type}, subject: {subject}, focus: {focus_topic}, hefteintrag_topic: {hefteintrag_topic}, context: {context}, format: {target_format}, count: {task_count}, promo: {promo_code}")
+    logger.info(f"Received files: {[f.filename for f in files]}, school_type: {school_type}, subject: {subject}, focus: {focus_topic}, hefteintrag_topic: {hefteintrag_topic}, context: {context}, format: {target_format}, count: {task_count}, promo: {promo_code}")
     
     # Check subscription / BYOK credentials
     effective_api_key = api_key

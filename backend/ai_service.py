@@ -121,8 +121,7 @@ class AIService:
 
     def generate_differentiated_content(
         self,
-        file_content: bytes,
-        mime_type: str,
+        files: list,
         context: str = "",
         target_format: str = "Lückentext",
         task_count: int = 1,
