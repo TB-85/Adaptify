@@ -747,11 +747,11 @@ class H5PGenerator:
         
         # 2. Determine and generate h5p.json preloadedDependencies based on actual formats used
         dependencies = [
-            {"machineName": "H5P.BranchingQuestion", "majorVersion": "1", "minorVersion": "0"},
-            {"machineName": "FontAwesome", "majorVersion": "4", "minorVersion": "5"},
-            {"machineName": "H5P.BranchingScenario", "majorVersion": "1", "minorVersion": "8"},
-            {"machineName": "H5P.CoursePresentation", "majorVersion": "1", "minorVersion": "25"},
-            {"machineName": "H5P.AdvancedText", "majorVersion": "1", "minorVersion": "1"}
+            {"machineName": "H5P.BranchingQuestion", "majorVersion": 1, "minorVersion": 0},
+            {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
+            {"machineName": "H5P.BranchingScenario", "majorVersion": 1, "minorVersion": 8},
+            {"machineName": "H5P.CoursePresentation", "majorVersion": 1, "minorVersion": 25},
+            {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1}
         ]
         
         # Collect all formats actually used in the tasks
@@ -765,12 +765,12 @@ class H5PGenerator:
         
         # Mapping of format names to H5P library dependencies
         library_map = {
-            "Multiple Choice": {"machineName": "H5P.MultiChoice", "majorVersion": "1", "minorVersion": "16"},
-            "Vokabelkarten": {"machineName": "H5P.Dialogcards", "majorVersion": "1", "minorVersion": "9"},
-            "Drag the Words": {"machineName": "H5P.DragText", "majorVersion": "1", "minorVersion": "10"},
-            "Wahr/Falsch": {"machineName": "H5P.TrueFalse", "majorVersion": "1", "minorVersion": "8"},
-            "Wörter markieren": {"machineName": "H5P.MarkTheWords", "majorVersion": "1", "minorVersion": "0"},
-            "Lückentext": {"machineName": "H5P.Blanks", "majorVersion": "1", "minorVersion": "14"}
+            "Multiple Choice": {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 16},
+            "Vokabelkarten": {"machineName": "H5P.Dialogcards", "majorVersion": 1, "minorVersion": 9},
+            "Drag the Words": {"machineName": "H5P.DragText", "majorVersion": 1, "minorVersion": 10},
+            "Wahr/Falsch": {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 8},
+            "Wörter markieren": {"machineName": "H5P.MarkTheWords", "majorVersion": 1, "minorVersion": 0},
+            "Lückentext": {"machineName": "H5P.Blanks", "majorVersion": 1, "minorVersion": 14}
         }
         
         for fmt in used_formats:
@@ -782,10 +782,11 @@ class H5PGenerator:
                 for lib in library_map.values():
                     if lib not in dependencies:
                         dependencies.append(lib)
-            else:
-                # Default fallback for unknown formats
-                if library_map["Lückentext"] not in dependencies:
-                    dependencies.append(library_map["Lückentext"])
+                        
+        # Ensure H5P.Blanks is always included because expert tasks (Zusatzaufgaben) 
+        # and fallbacks always use it.
+        if library_map["Lückentext"] not in dependencies:
+            dependencies.append(library_map["Lückentext"])
             
         h5p_json = {
             "title": title,
@@ -800,6 +801,10 @@ class H5PGenerator:
         # Create zip in memory
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            # Create content directory entry to ensure PHP ZipArchive handles it correctly
+            content_dir = zipfile.ZipInfo("content/")
+            zip_file.writestr(content_dir, "")
+            
             zip_file.writestr("h5p.json", json.dumps(h5p_json, indent=2, ensure_ascii=False))
             zip_file.writestr("content/content.json", json.dumps(content_json, indent=2, ensure_ascii=False))
             
