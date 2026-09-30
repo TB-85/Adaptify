@@ -139,7 +139,8 @@ class AIService:
         # Check SQLite Generation Cache first
         try:
             from database import compute_cache_hash, get_cached_generation, set_cached_generation
-            cache_hash = compute_cache_hash(file_content, subject, school_type, focus_topic, task_count, target_format, hefteintrag_topic)
+            combined_content = b"".join([f['content'] for f in files])
+            cache_hash = compute_cache_hash(combined_content, subject, school_type, focus_topic, task_count, target_format, hefteintrag_topic)
             cached_res = get_cached_generation(cache_hash)
             if cached_res:
                 return cached_res
@@ -321,24 +322,29 @@ WICHTIGE ANWEISUNGEN:
 """
 
         try:
-            # Check if document is DOCX
-            is_docx = (mime_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
-                       or mime_type.endswith('document') 
-                       or mime_type.endswith('docx'))
+            contents = []
+            extracted_texts = []
             
-            if is_docx:
-                extracted_text = extract_text_from_docx(file_content)
-                logger.info("Successfully extracted text from DOCX locally.")
-                contents = [
-                    f"Hier ist der Text des hochgeladenen Word-Dokuments (.docx):\n\n{extracted_text}\n\n",
-                    prompt
-                ]
-            else:
-                part = types.Part.from_bytes(
-                    data=file_content,
-                    mime_type=mime_type
-                )
-                contents = [part, prompt]
+            for f in files:
+                fc = f['content']
+                mt = f['mime_type']
+                is_docx = (mt == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+                           or mt.endswith('document') 
+                           or mt.endswith('docx'))
+                
+                if is_docx:
+                    extracted_texts.append(extract_text_from_docx(fc))
+                else:
+                    contents.append(types.Part.from_bytes(
+                        data=fc,
+                        mime_type=mt
+                    ))
+            
+            if extracted_texts:
+                combined_text = "\n\n--- Nächste Datei ---\n\n".join(extracted_texts)
+                contents.append(f"Hier ist der extrahierte Text aus den hochgeladenen Dokumenten:\n\n{combined_text}")
+            
+            contents.append(prompt)
             
             candidate_models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-flash-latest']
             response = None

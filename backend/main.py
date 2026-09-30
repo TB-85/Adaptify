@@ -147,28 +147,26 @@ async def generate_task(
         # When promo code is active, force backend to use the host/server API key
         effective_api_key = None
         
-    # Read file content
-    contents = await file.read()
-    
-    # Determine MIME type
-    mime_type = file.content_type
-    if not mime_type:
-        # Fallback based on extension
-        ext = os.path.splitext(file.filename)[1].lower()
-        if ext in ['.jpg', '.jpeg']:
-            mime_type = 'image/jpeg'
-        elif ext == '.png':
-            mime_type = 'image/png'
-        elif ext == '.pdf':
-            mime_type = 'application/pdf'
-        else:
-            mime_type = 'image/jpeg'
+    file_items = []
+    for uploaded_file in files:
+        contents = await uploaded_file.read()
+        mime_type = uploaded_file.content_type
+        if not mime_type:
+            ext = os.path.splitext(uploaded_file.filename)[1].lower()
+            if ext in ['.jpg', '.jpeg']:
+                mime_type = 'image/jpeg'
+            elif ext == '.png':
+                mime_type = 'image/png'
+            elif ext == '.pdf':
+                mime_type = 'application/pdf'
+            else:
+                mime_type = 'image/jpeg'
+        file_items.append({'content': contents, 'mime_type': mime_type})
             
     # Call Gemini API
     result = await asyncio.to_thread(
         ai_service.generate_differentiated_content,
-        file_content=contents,
-        mime_type=mime_type,
+        files=file_items,
         context=context,
         target_format=target_format,
         task_count=task_count,
