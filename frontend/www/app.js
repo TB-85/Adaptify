@@ -1210,7 +1210,17 @@ btnSubmit.addEventListener('click', async (e) => {
     if (promoCodeVal) localStorage.setItem('promo_code', promoCodeVal);
 
     const formData = new FormData();
-    formData.append('file', appState.selectedFile);
+    if (appState.selectedFiles && appState.selectedFiles.length > 1) {
+        appState.selectedFiles.forEach((f, idx) => {
+            if (idx === 0 && appState.selectedFile) {
+                formData.append('files', appState.selectedFile);
+            } else {
+                formData.append('files', f);
+            }
+        });
+    } else {
+        formData.append('files', appState.selectedFile);
+    }
     formData.append('school_type', (typeof inputSchoolType !== 'undefined' && inputSchoolType) ? inputSchoolType.value : 'Grundschule');
     formData.append('subject', (Array.isArray(selectedSubjects) && selectedSubjects.length > 0) ? selectedSubjects.join(', ') : 'Deutsch');
     formData.append('focus_topic', focusTopicValue);
