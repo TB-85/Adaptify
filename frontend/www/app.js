@@ -31,6 +31,7 @@ const inputHefteintragTopic = document.getElementById('input-hefteintrag-topic')
 const inputFormat = document.getElementById('input-format');
 const inputTaskCount = document.getElementById('input-task-count');
 const inputPromoCode = document.getElementById('input-promo-code');
+const inputYoutubeUrl = document.getElementById('input-youtube-url');
 const inputApiKey = document.getElementById('input-api-key');
 const inputContext = document.getElementById('input-context');
 
@@ -721,7 +722,9 @@ fileInput.addEventListener('change', () => {
 async function handleFiles(filesList) {
     if (!filesList || filesList.length === 0) return;
     
-    appState.selectedFiles = Array.from(filesList);
+    // Append instead of overwrite so multiple camera shots work
+    if (!appState.selectedFiles) appState.selectedFiles = [];
+    appState.selectedFiles = appState.selectedFiles.concat(Array.from(filesList));
     const firstFile = appState.selectedFiles[0];
     await handleFile(firstFile);
     
@@ -1230,6 +1233,7 @@ btnSubmit.addEventListener('click', async (e) => {
     formData.append('task_count', (typeof inputTaskCount !== 'undefined' && inputTaskCount) ? inputTaskCount.value : 1);
     formData.append('api_key', apiKeyVal);
     formData.append('promo_code', promoCodeVal);
+    formData.append('youtube_url', (typeof inputYoutubeUrl !== 'undefined' && inputYoutubeUrl) ? inputYoutubeUrl.value : '');
 
     try {
         const response = await fetch(`${API_BASE}/api/generate`, {

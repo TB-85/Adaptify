@@ -121,7 +121,8 @@ async def generate_task(
     target_format: str = Form("Lückentext"),
     task_count: int = Form(1),
     api_key: Optional[str] = Form(None),
-    promo_code: Optional[str] = Form(None)
+    promo_code: Optional[str] = Form(None),
+    youtube_url: Optional[str] = Form(None)
 ):
     """
     Receives an uploaded book page scan (image or PDF) and generates
@@ -177,6 +178,9 @@ async def generate_task(
         api_key=effective_api_key
     )
     
+    if youtube_url and youtube_url.strip():
+        result['youtube_url'] = youtube_url.strip()
+        
     return result
 
 import re

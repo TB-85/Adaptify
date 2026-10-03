@@ -137,15 +137,17 @@ class H5PGenerator:
         num_questions = len(questions)
         
         # Setup level node IDs
+        yt_url = data.get('youtube_url')
+        offset = 1 if yt_url else 0
         if num_questions == 2:
-            level_b_id = 3
-            level_a_id = 4
+            level_b_id = 3 + offset
+            level_a_id = 4 + offset
         elif num_questions >= 3:
-            level_b_id = 6
-            level_a_id = 7
+            level_b_id = 6 + offset
+            level_a_id = 7 + offset
         else:
-            level_b_id = 1
-            level_a_id = 2
+            level_b_id = 1 + offset
+            level_a_id = 2 + offset
 
         # Helper for creating node compliant with ByCS BranchingScenario
         def make_node(library_str, params_dict, content_type_title, title_str, next_content_id=None):
@@ -742,7 +744,8 @@ class H5PGenerator:
             {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
             {"machineName": "H5P.BranchingScenario", "majorVersion": 1, "minorVersion": 8},
             {"machineName": "H5P.CoursePresentation", "majorVersion": 1, "minorVersion": 25},
-            {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1}
+            {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1},
+            {"machineName": "H5P.Video", "majorVersion": 1, "minorVersion": 6}
         ]
         
         # Collect all formats actually used in the tasks
