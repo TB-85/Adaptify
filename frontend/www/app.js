@@ -1715,7 +1715,7 @@ window.copyIframeEmbedCode = async function() {
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(iframeCode).then(() => {
-            alert(`📋 ByCS iFrame-Einbettungscode (PIN: ${pin}) kopiert!\n\nFüge ihn einfach in dein ByCS- oder Moodle-Textfeld ein.`);
+            alert(`📋 ByCS iFrame-Einbettungscode (PIN: ${pin}) kopiert!\n\nFüge ihn einfach in dein ByCS- Textfeld ein.`);
         }).catch(() => {
             prompt("Kopiere diesen iFrame-Code für ByCS:", iframeCode);
         });
