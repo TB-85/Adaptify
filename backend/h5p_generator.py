@@ -679,18 +679,9 @@ class H5PGenerator:
                 z_task = z.get("task", "")
                 expert_slides.append({
                     "title": z_title,
-                    "library": "H5P.Blanks 1.14",
+                    "library": "H5P.AdvancedText 1.1",
                     "params": {
-                        "text": f"<b>🚀 {z_title}</b><br/>{z_task}",
-                        "questions": [f"<p>Schreibe hier deine Idee/Lösung: *Lösung*</p>"],
-                        "title": z_title,
-                        "score": "Punkte",
-                        "showSolutions": "Lösung anzeigen", "tryAgain": "Wiederholen", "checkAnswer": "Prüfen",
-                        "notFilledOut": "Bitte fülle das Feld aus.", "answerIsCorrect": "Richtig", "answerIsWrong": "Falsch",
-                        "solutionLabel": "Musterlösung:", "inputLabel": "Lösung", "inputHasTipLabel": "Hinweis", "tipLabel": "Hinweis",
-                        "behaviour": {"enableRetry": True, "enableSolutionsButton": True, "enableCheckButton": True, "autoCheck": False, "caseSensitive": False, "showSolutionsRequiresInput": False, "separateLines": False, "confirmCheckDialog": False, "confirmRetryDialog": False},
-                        "confirmCheck": {"header": "Prüfen ?", "body": "Prüfen ?", "cancelLabel": "Abbrechen", "confirmLabel": "Prüfen"},
-                        "confirmRetry": {"header": "Wiederholen ?", "body": "Wiederholen ?", "cancelLabel": "Abbrechen", "confirmLabel": "Ja"}
+                        "text": f"<div style='background-color:#eff6ff; border-left:4px solid #3b82f6; padding:15px; border-radius:8px;'><h3 style='color:#1d4ed8; margin-top:0;'>🚀 {z_title}</h3><p style='font-size:16px; color:#1e3a8a; line-height:1.6;'>{z_task}</p></div>"
                     }
                 })
             content_nodes.append(wrap_in_course_presentation(
