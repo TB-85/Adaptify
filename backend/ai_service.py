@@ -227,7 +227,7 @@ Generiere genau folgendes JSON-Schema:
   }},
   "hefteintrag": {{
     "title": "ÜBERSCHRIFT ZWINGEND ALS W-FRAGE (z. B. 'Wie werte ich eine Grafik aus?' oder 'Wie berechne ich den Umfang?')",
-    "summary": "Einheitlicher Klassen-Hefteintrag (1:1 ins Merkheft übertragbar im Format: 1. MERKREGEL, 2. SCHRITTE ZUR ANWENDUNG und 3. MUSTERBEISPIEL)",
+    "summary": "Einheitlicher Klassen-Hefteintrag im HTML-Format (WICHTIG!). Aufbau zwingend so:\n<p><strong>1. Merke:</strong> [Hier der allgemeine Merksatz]</p>\n<p><strong>2. [Passende Frage zum Thema, z.B. Wie entstehen nun Erdöl, Erdgas oder Kohle?]:</strong> [Erklärung, wobei neue Gedanken, neue Punkte und neue Handlungen zwingend durch <br> getrennt in eine neue Zeile kommen, damit es übersichtlicher ist]</p>\n<p><strong>3. Beispiel:</strong> [Das Beispiel]</p>\nWichtige Begriffe im Text müssen zwingend mit <strong>fett</strong> markiert werden.",
     "level_a_notes": "",
     "level_b_notes": ""
   }},
