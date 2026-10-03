@@ -37,20 +37,20 @@ const inputContext = document.getElementById('input-context');
 
 const SCHOOL_SUBJECTS = {
     "Grundschule": [
-        "Deutsch", "Mathematik", "Heimat- und Sachunterricht (HSU)", "Englisch", "Religion / Ethik", "Kunst", "Musik"
+        "KI (Automatisch)", "Deutsch", "Mathematik", "Heimat- und Sachunterricht (HSU)", "Englisch", "Religion / Ethik", "Kunst", "Musik"
     ],
     "Mittelschule": [
-        "Deutsch", "Mathematik", "Englisch", "Natur und Technik (NT)", "Geschichte / Politik / Geographie (GPG)", "Wirtschaft und Beruf (WiB)", "Religion / Ethik", "Kunst / Musik"
+        "KI (Automatisch)", "Deutsch", "Mathematik", "Englisch", "Natur und Technik (NT)", "Geschichte / Politik / Geographie (GPG)", "Wirtschaft und Beruf (WiB)", "Religion / Ethik", "Kunst / Musik"
     ],
     "Realschule": [
-        "Deutsch", "Mathematik", "Englisch", "Physik", "Chemie", "Biologie", "Geschichte", "Geographie", "BwR / Wirtschaft & Recht", "Französisch", "Religion / Ethik"
+        "KI (Automatisch)", "Deutsch", "Mathematik", "Englisch", "Physik", "Chemie", "Biologie", "Geschichte", "Geographie", "BwR / Wirtschaft & Recht", "Französisch", "Religion / Ethik"
     ],
     "Gymnasium": [
-        "Deutsch", "Mathematik", "Englisch", "Latein", "Französisch", "Physik", "Chemie", "Biologie", "Geschichte", "Geographie", "Wirtschaft & Recht", "Religion / Ethik"
+        "KI (Automatisch)", "Deutsch", "Mathematik", "Englisch", "Latein", "Französisch", "Physik", "Chemie", "Biologie", "Geschichte", "Geographie", "Wirtschaft & Recht", "Religion / Ethik"
     ]
 };
 
-let selectedSubjects = ["Deutsch"];
+let selectedSubjects = ["KI (Automatisch)"];
 
 function renderSubjectChips() {
     if (!subjectChipsContainer) return;
@@ -232,9 +232,7 @@ window.closeDSGVOModal = function() {
 
 // Didaktische Schwerpunkte Builder State & Handlers (Default 5 Tasks, Max 20)
 let dynamicTopics = [
-    { name: "Textverständnis", count: 2 },
-    { name: "Wortarten & Grammatik", count: 2 },
-    { name: "Fremdwörter", count: 1 }
+    { name: "KI wählt Schwerpunkte automatisch aus dem Text", count: 5 }
 ];
 
 const subjectPresets = {
@@ -420,9 +418,7 @@ window.removeDynamicTopicRow = function(idx) {
 
 window.resetDefaultTopics = function() {
     dynamicTopics = [
-        { name: "Textverständnis", count: 2 },
-        { name: "Wortarten & Grammatik", count: 2 },
-        { name: "Fremdwörter", count: 1 }
+        { name: "KI wählt Schwerpunkte automatisch aus dem Text", count: 5 }
     ];
     renderDynamicTopicRows();
 };
