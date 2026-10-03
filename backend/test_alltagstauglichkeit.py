@@ -70,7 +70,7 @@ def test_2_h5p_packaging():
     print(f"  -> H5P Main Library: {h5p_meta.get('mainLibrary')}")
     print(f"  -> Start Screen Title: '{content_json['branchingScenario']['startScreen']['startScreenTitle']}'")
     print(f"  -> Szenario-Knoten: {len(content_json['branchingScenario']['content'])} interaktive Lernschritte")
-    print("  [OK] H5P ist ByCS-, Moodle- und mebis-konform strukturiert.")
+    print("  [OK] H5P ist ByCS-, Moodle- und ByCS-konform strukturiert.")
 
 def test_3_pdf_worksheet_and_solution():
     print_header("3. PDF-ARBEITSBLATT & LOESUNGSBLATT (DRUCKQUALITAET A4)")
@@ -155,7 +155,7 @@ def test_4_live_classroom_stress():
     print("  [OK] Echtzeit-Datenuebertragung fuer ganze Schulklassen ist voll alltagstauglich!")
 
 def test_5_scorm_packaging():
-    print_header("5. SCORM 1.2 PAKET-INTEGRITAET (MEBIS & MOODLE LMS)")
+    print_header("5. SCORM 1.2 PAKET-INTEGRITAET (Moodle LMS)")
     from scorm_generator import SCORMGenerator
     ai = AIService()
     data = ai._get_mock_data(school_type="Realschule", subject="Physik", focus_topic="Geschwindigkeit")
@@ -169,7 +169,7 @@ def test_5_scorm_packaging():
     print(f"[TEST] SCORM-Dateigroesse: {len(scorm_bytes)} Bytes")
     assert "imsmanifest.xml" in names, "imsmanifest.xml fehlt in SCORM!"
     assert "scorm_player.html" in names, "scorm_player.html fehlt in SCORM!"
-    print("  [OK] SCORM 1.2 Paket ist mebis & Moodle-konform strukturiert.")
+    print("  [OK] SCORM 1.2 Paket ist Moodle-konform strukturiert.")
 
 def test_6_sqlite_caching():
     print_header("6. SQLITE HASH-CACHING (PERFORMANCE & COST OPTIMIZATION)")

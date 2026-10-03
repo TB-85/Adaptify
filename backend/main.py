@@ -262,7 +262,7 @@ from scorm_generator import SCORMGenerator
 @app.post("/api/export/scorm")
 async def export_scorm(data: ExportData):
     """
-    Takes structured task JSON and creates a SCORM 1.2 package (.zip) for mebis/Moodle LMS import.
+    Takes structured task JSON and creates a SCORM 1.2 package (.zip) for Moodle LMS import.
     """
     try:
         scorm_bytes = SCORMGenerator.create_scorm_zip(data.dict())
