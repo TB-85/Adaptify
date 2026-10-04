@@ -311,7 +311,7 @@ class H5PGenerator:
                                 "width": 80,
                                 "height": 80,
                                 "action": {
-                                    "library": "H5P.Video 1.6",
+                                    "library": "H5P.Video 1.5",
                                     "params": {
                                         "sources": [source],
                                         "visuals": {"fit": False, "controls": True},
@@ -797,9 +797,11 @@ class H5PGenerator:
             {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
             {"machineName": "H5P.BranchingScenario", "majorVersion": 1, "minorVersion": 8},
             {"machineName": "H5P.CoursePresentation", "majorVersion": 1, "minorVersion": 25},
-            {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1},
-            {"machineName": "H5P.Video", "majorVersion": 1, "minorVersion": 6}
+            {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1}
         ]
+        
+        if data.get("youtube_url") or data.get("video_filename"):
+            dependencies.append({"machineName": "H5P.Video", "majorVersion": 1, "minorVersion": 5})
         
         # Collect all formats actually used in the tasks
         used_formats = set()
