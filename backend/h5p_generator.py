@@ -166,7 +166,7 @@ class H5PGenerator:
                 },
                 "showContentTitle": False,
                 "proceedButtonText": "Weiter",
-                "forceContentFinished": True if "CoursePresentation" in library_str else "useBehavioural",
+                "forceContentFinished": True if "CoursePresentation" in library_str else False,
                 "feedback": {"title": "", "subtitle": ""},
                 "contentBehaviour": "useBehavioural"
             }
