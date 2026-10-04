@@ -341,7 +341,21 @@ class H5PGenerator:
                         "summarySlideSolutionButton": False,
                         "summarySlideRetryButton": False,
                         "enablePrintButton": False,
-                        "social": {"showFacebookShare": False, "showTwitterShare": False, "showGoogleShare": False}
+                        "social": {
+                        "showFacebookShare": False,
+                        "facebookShare": {
+                            "url": "@currentpageurl",
+                            "quote": "Ich habe @score von @maxScore Punkten bei der Aufgabe @currentpageurl erreicht."
+                        },
+                        "showTwitterShare": False,
+                        "twitterShare": {
+                            "statement": "Ich habe @score von @maxScore Punkten bei der Aufgabe @currentpageurl erreicht.",
+                            "url": "@currentpageurl",
+                            "hashtags": "h5p, Kurs"
+                        },
+                        "showGoogleShare": False,
+                        "googleShareUrl": "@currentpageurl"
+                    }
                     },
                     "l10n": {"startScreenButtonText": "Start", "endScreenButtonText": "Restart", "backButtonText": "Zurück", "disableProceedButtonText": "Bitte warte", "replayButtonText": "Replay", "scoreText": "Score:", "fullscreenAria": "Vollbild"}
                 },
