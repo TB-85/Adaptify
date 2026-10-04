@@ -1617,12 +1617,16 @@ btnDownloadH5P.addEventListener('click', async () => {
     const payload = getEditedData();
     
     try {
+        const videoInput = document.getElementById('input-video-file');
+        const videoFile = (videoInput && videoInput.files.length > 0) ? videoInput.files[0] : null;
+        
+        let formData = new FormData();
+        formData.append('data', JSON.stringify(payload));
+        if (videoFile) formData.append('video_file', videoFile);
+        
         const response = await fetch(`${API_BASE}/api/export/h5p`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
+            body: formData
         });
 
         if (!response.ok) throw new Error("Failed to download H5P");

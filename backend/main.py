@@ -222,13 +222,19 @@ async def refine_task(req: RefineTaskRequest):
         raise HTTPException(status_code=500, detail=f"Aufgaben-Anpassung fehlgeschlagen: {str(e)}")
 
 @app.post("/api/export/h5p")
-async def export_h5p(data: ExportData):
+async def export_h5p(data: str = Form(...), video_file: UploadFile = File(None)):
     """
     Takes the structured task JSON and builds the H5P Branching Scenario zip file.
     """
+    import json
     try:
-        h5p_bytes = H5PGenerator.create_h5p_zip(data.dict())
-        disposition = make_content_disposition(data.title, "differenziert.h5p")
+        json_data = json.loads(data)
+        if video_file and video_file.filename:
+            json_data["video_bytes"] = await video_file.read()
+            json_data["video_filename"] = video_file.filename
+            
+        h5p_bytes = H5PGenerator.create_h5p_zip(json_data)
+        disposition = make_content_disposition(json_data.get("title", "Export"), "differenziert.h5p")
         
         return Response(
             content=h5p_bytes,
