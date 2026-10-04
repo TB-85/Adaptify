@@ -167,7 +167,7 @@ class H5PGenerator:
                 "showContentTitle": False,
                 "proceedButtonText": "Weiter",
                 "forceContentFinished": True if "CoursePresentation" in library_str else "useBehavioural",
-                "feedback": {},
+                "feedback": {"title": "", "subtitle": ""},
                 "contentBehaviour": "useBehavioural"
             }
             if next_content_id is not None:
@@ -362,7 +362,7 @@ class H5PGenerator:
                             {
                                 "text": q1.get("options")[i],
                                 "nextContentId": 1 if i == correct_idx_1 else 2,
-                                "feedback": {}
+                                "feedback": {"title": "", "subtitle": ""}
                             } for i in range(len(q1.get("options", [])))
                         ]
                     }
@@ -381,7 +381,7 @@ class H5PGenerator:
                             {
                                 "text": q2.get("options")[i],
                                 "nextContentId": level_b_id,
-                                "feedback": {}
+                                "feedback": {"title": "", "subtitle": ""}
                             } for i in range(len(q2.get("options", [])))
                         ]
                     }
@@ -398,7 +398,7 @@ class H5PGenerator:
                             {
                                 "text": q2.get("options")[i],
                                 "nextContentId": level_b_id if i == correct_idx_2 else level_a_id,
-                                "feedback": {}
+                                "feedback": {"title": "", "subtitle": ""}
                             } for i in range(len(q2.get("options", [])))
                         ]
                     }
@@ -418,7 +418,7 @@ class H5PGenerator:
                             {
                                 "text": q1.get("options")[i],
                                 "nextContentId": 1 if i == correct_idx_1 else 2,
-                                "feedback": {}
+                                "feedback": {"title": "", "subtitle": ""}
                             } for i in range(len(q1.get("options", [])))
                         ]
                     }
@@ -437,7 +437,7 @@ class H5PGenerator:
                             {
                                 "text": q2.get("options")[i],
                                 "nextContentId": 3 if i == correct_idx_2 else 4,
-                                "feedback": {}
+                                "feedback": {"title": "", "subtitle": ""}
                             } for i in range(len(q2.get("options", [])))
                         ]
                     }
@@ -454,7 +454,7 @@ class H5PGenerator:
                             {
                                 "text": q2.get("options")[i],
                                 "nextContentId": 4 if i == correct_idx_2 else 5,
-                                "feedback": {}
+                                "feedback": {"title": "", "subtitle": ""}
                             } for i in range(len(q2.get("options", [])))
                         ]
                     }
@@ -473,7 +473,7 @@ class H5PGenerator:
                             {
                                 "text": q3.get("options")[i],
                                 "nextContentId": level_b_id,
-                                "feedback": {}
+                                "feedback": {"title": "", "subtitle": ""}
                             } for i in range(len(q3.get("options", [])))
                         ]
                     }
@@ -490,7 +490,7 @@ class H5PGenerator:
                             {
                                 "text": q3.get("options")[i],
                                 "nextContentId": level_b_id if i == correct_idx_3 else level_a_id,
-                                "feedback": {}
+                                "feedback": {"title": "", "subtitle": ""}
                             } for i in range(len(q3.get("options", [])))
                         ]
                     }
@@ -507,7 +507,7 @@ class H5PGenerator:
                             {
                                 "text": q3.get("options")[i],
                                 "nextContentId": level_a_id,
-                                "feedback": {}
+                                "feedback": {"title": "", "subtitle": ""}
                             } for i in range(len(q3.get("options", [])))
                         ]
                     }
@@ -526,7 +526,7 @@ class H5PGenerator:
                             {
                                 "text": q1.get("options")[i],
                                 "nextContentId": level_b_id if i == correct_idx_1 else level_a_id,
-                                "feedback": {}
+                                "feedback": {"title": "", "subtitle": ""}
                             } for i in range(len(q1.get("options", [])))
                         ]
                     }
