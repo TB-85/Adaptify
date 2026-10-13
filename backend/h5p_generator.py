@@ -65,9 +65,7 @@ class H5PGenerator:
             if front and back:
                 cards.append({
                     "text": front,
-                    "answer": back,
-                    "image": None,
-                    "audio": None
+                    "answer": back
                 })
         return cards
 
@@ -638,7 +636,7 @@ class H5PGenerator:
                 elif task_format == "Vokabelkarten":
                     cards = H5PGenerator.parse_dialogcards_text(raw_text)
                     if not cards:
-                        cards = [{"text": "Front", "answer": "Back", "image": None, "audio": None}]
+                        cards = [{"text": "Front", "answer": "Back"}]
                     slides_data.append({
                         "title": task_title,
                         "library": "H5P.Dialogcards 1.9",
