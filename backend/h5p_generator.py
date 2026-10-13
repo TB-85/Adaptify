@@ -635,20 +635,20 @@ class H5PGenerator:
                     
                 elif task_format == "Vokabelkarten":
                     cards = H5PGenerator.parse_dialogcards_text(raw_text)
-                    if not cards:
-                        cards = [{"text": "Front", "answer": "Back"}]
-                    slides_data.append({
-                        "title": task_title,
-                        "library": "H5P.Dialogcards 1.9",
-                        "params": {
+                    # Keine Platzhalter-Karten: ohne echte Karten wird die Folie weggelassen
+                    if cards:
+                        slides_data.append({
                             "title": task_title,
-                            "description": "Präge dir die Begriffe ein.",
-                            "dialogs": cards,
-                            "behaviour": {"enableRetry": True, "randomise": False, "scaleTextNotCard": False},
-                            "progressText": "Karte :num von :total", "next": "Weiter", "prev": "Zurück", 
-                            "check": "Prüfen", "gotIt": "Gewusst", "incorrect": "Falsch", "showAnswer": "Antwort anzeigen"
-                        }
-                    })
+                            "library": "H5P.Dialogcards 1.9",
+                            "params": {
+                                "title": task_title,
+                                "description": "Präge dir die Begriffe ein.",
+                                "dialogs": cards,
+                                "behaviour": {"enableRetry": True, "randomise": False, "scaleTextNotCard": False},
+                                "progressText": "Karte :num von :total", "next": "Weiter", "prev": "Zurück", 
+                                "check": "Prüfen", "gotIt": "Gewusst", "incorrect": "Falsch", "showAnswer": "Antwort anzeigen"
+                            }
+                        })
                     
                 elif task_format == "Drag the Words":
                     drag_text_field = H5PGenerator.clean_slashes_for_drag_text(formatted_blanks_text)
