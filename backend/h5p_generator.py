@@ -796,7 +796,281 @@ class H5PGenerator:
         return content_json_data
 
     @staticmethod
+    def create_interactive_video_h5p_zip(data):
+        title = data.get("title", "Interaktives Video")
+        video_filename = data.get("video_filename")
+        youtube_url = data.get("youtube_url")
+
+        # 1. Sources
+        if video_filename:
+            files_source = [{
+                "path": f"videos/{video_filename}",
+                "mime": "video/mp4",
+                "copyright": {"license": "U"}
+            }]
+        elif youtube_url:
+            files_source = [{
+                "path": youtube_url,
+                "mime": "video/YouTube",
+                "copyright": {"license": "U"}
+            }]
+        else:
+            files_source = []
+
+        # 2. Build interactions
+        interactions_list = []
+        bookmarks_list = []
+        used_libraries = set()
+
+        raw_interactions = data.get("interactions", [])
+        for idx, item in enumerate(raw_interactions):
+            t_sec = int(item.get("time_seconds", 30 * (idx + 1)))
+            label = item.get("title", f"Frage {idx + 1}")
+            fmt = item.get("format", "Multiple Choice")
+            sub_id = str(uuid.uuid4())
+
+            bookmarks_list.append({
+                "time": t_sec,
+                "label": label
+            })
+
+            interaction_obj = {
+                "x": 15,
+                "y": 15,
+                "width": 70,
+                "height": 70,
+                "duration": {
+                    "from": t_sec,
+                    "to": t_sec + 5
+                },
+                "pause": True,
+                "displayType": "poster",
+                "buttonOnMobile": False,
+                "label": label,
+                "visuals": {
+                    "backgroundColor": "rgba(255, 255, 255, 0.95)",
+                    "boxShadow": True
+                }
+            }
+
+            if fmt == "Multiple Choice":
+                used_libraries.add("H5P.MultiChoice")
+                answers = []
+                for ans in item.get("answers", []):
+                    answers.append({
+                        "text": f"<div>{ans.get('text', '')}</div>\n",
+                        "correct": bool(ans.get("correct", False)),
+                        "tipsAndFeedback": {
+                            "tip": "",
+                            "chosenFeedback": f"<div>{item.get('explanation', '')}</div>" if ans.get("correct") else "",
+                            "notChosenFeedback": ""
+                        }
+                    })
+                interaction_obj["action"] = {
+                    "library": "H5P.MultiChoice 1.16",
+                    "params": {
+                        "question": f"<p>{item.get('question', '')}</p>\n",
+                        "answers": answers,
+                        "behaviour": {
+                            "enableRetry": True,
+                            "enableSolutionsButton": True,
+                            "singlePoint": True,
+                            "randomAnswers": True,
+                            "showSolutionsRequiresInput": True,
+                            "type": "auto",
+                            "confirmCheckDialog": False,
+                            "confirmRetryDialog": False,
+                            "autoCheck": False,
+                            "passPercentage": 100,
+                            "showScorePoints": True
+                        },
+                        "UI": {
+                            "checkAnswerButton": "Prüfen",
+                            "showSolutionButton": "Lösung anzeigen",
+                            "tryAgainButton": "Wiederholen",
+                            "tipsLabel": "Hinweis anzeigen",
+                            "scoreBarLabel": "Sie haben :num von :total Punkten erreicht."
+                        }
+                    },
+                    "subContentId": sub_id,
+                    "metadata": {
+                        "contentType": "Multiple Choice",
+                        "license": "U",
+                        "title": label
+                    }
+                }
+            elif fmt in ["Wahr/Falsch", "Wahr / Falsch"]:
+                used_libraries.add("H5P.TrueFalse")
+                is_correct = str(item.get("correct", "true")).lower() in ["true", "wahr", "1"]
+                interaction_obj["action"] = {
+                    "library": "H5P.TrueFalse 1.8",
+                    "params": {
+                        "question": f"<p>{item.get('question', '')}</p>\n",
+                        "correct": "true" if is_correct else "false",
+                        "l10n": {
+                            "trueText": "Wahr",
+                            "falseText": "Falsch",
+                            "feedback": item.get("explanation", "")
+                        },
+                        "behaviour": {
+                            "enableRetry": True,
+                            "enableSolutionsButton": True,
+                            "confirmCheckDialog": False,
+                            "confirmRetryDialog": False
+                        }
+                    },
+                    "subContentId": sub_id,
+                    "metadata": {
+                        "contentType": "True/False",
+                        "license": "U",
+                        "title": label
+                    }
+                }
+            elif fmt in ["Lückentext", "Lueckentext"]:
+                used_libraries.add("H5P.Blanks")
+                text_with_blanks = item.get("text_with_blanks", item.get("question", ""))
+                formatted_blanks = H5PGenerator.format_blanks_text(text_with_blanks) if hasattr(H5PGenerator, "format_blanks_text") else text_with_blanks
+                interaction_obj["action"] = {
+                    "library": "H5P.Blanks 1.14",
+                    "params": {
+                        "text": f"<p>{item.get('question', 'Fülle die Lücken aus:')}</p>",
+                        "questions": [f"<p>{formatted_blanks}</p>"],
+                        "score": "Du hast @score von @total Punkten erreicht.",
+                        "checkAnswer": "Prüfen",
+                        "tryAgain": "Wiederholen",
+                        "showSolution": "Lösung anzeigen",
+                        "behaviour": {
+                            "enableRetry": True,
+                            "enableSolutionsButton": True,
+                            "autoCheck": False,
+                            "caseSensitive": False,
+                            "showSolutionsRequiresInput": True,
+                            "separateLines": False
+                        }
+                    },
+                    "subContentId": sub_id,
+                    "metadata": {
+                        "contentType": "Fill in the Blanks",
+                        "license": "U",
+                        "title": label
+                    }
+                }
+            else:
+                used_libraries.add("H5P.AdvancedText")
+                info_text = item.get("text", item.get("question", ""))
+                interaction_obj["action"] = {
+                    "library": "H5P.AdvancedText 1.1",
+                    "params": {
+                        "text": f"<h3>{label}</h3><p>{info_text}</p>"
+                    },
+                    "subContentId": sub_id,
+                    "metadata": {
+                        "contentType": "Text",
+                        "license": "U",
+                        "title": label
+                    }
+                }
+
+            interactions_list.append(interaction_obj)
+
+        # 3. Build content.json
+        content_json = {
+            "interactiveVideo": {
+                "video": {
+                    "files": files_source,
+                    "startScreenOptions": {
+                        "title": title,
+                        "hideStartTitle": False
+                    }
+                },
+                "assets": {
+                    "interactions": interactions_list,
+                    "bookmarks": bookmarks_list
+                },
+                "summary": {
+                    "task": {
+                        "library": "H5P.Summary 1.10",
+                        "params": {
+                            "intro": "Wähle die richtige Aussage:",
+                            "summaries": []
+                        },
+                        "subContentId": str(uuid.uuid4())
+                    },
+                    "displayAt": 3
+                }
+            },
+            "override": {
+                "showBookmarksmenuOnLoad": False,
+                "showRewind10": True,
+                "preventSkipping": False,
+                "deactivateSound": False
+            },
+            "l10n": {
+                "interaction": "Interaktion",
+                "play": "Abspielen",
+                "pause": "Pausieren",
+                "mute": "Stummschalten",
+                "unmute": "Ton an",
+                "quality": "Videoqualität",
+                "captions": "Untertitel",
+                "close": "Schließen",
+                "fullscreen": "Vollbild",
+                "exitFullscreen": "Vollbild beenden",
+                "summary": "Zusammenfassung",
+                "bookmarks": "Lesezeichen",
+                "defaultAdaptivitySeekLabel": "Fortfahren",
+                "continueWithVideo": "Video fortsetzen",
+                "more": "Mehr",
+                "playbackRate": "Wiedergabegeschwindigkeit",
+                "rewind10": "10 Sekunden zurückspringen",
+                "navDisabled": "Navigation ist deaktiviert",
+                "requiresCompletionWarning": "Du musst alle Fragen beantworten, bevor du weitermachst."
+            }
+        }
+
+        # 4. Build dependencies
+        dependencies = [
+            {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
+            {"machineName": "H5P.InteractiveVideo", "majorVersion": 1, "minorVersion": 22},
+            {"machineName": "H5P.Video", "majorVersion": 1, "minorVersion": 5},
+            {"machineName": "H5P.Summary", "majorVersion": 1, "minorVersion": 10}
+        ]
+
+        lib_map = {
+            "H5P.MultiChoice": {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 16},
+            "H5P.TrueFalse": {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 8},
+            "H5P.Blanks": {"machineName": "H5P.Blanks", "majorVersion": 1, "minorVersion": 14},
+            "H5P.AdvancedText": {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1}
+        }
+        for lib_name in used_libraries:
+            if lib_name in lib_map and lib_map[lib_name] not in dependencies:
+                dependencies.append(lib_map[lib_name])
+
+        h5p_json = {
+            "title": title,
+            "language": "de",
+            "mainLibrary": "H5P.InteractiveVideo",
+            "embedTypes": ["div"],
+            "license": "U",
+            "defaultLanguage": "de",
+            "preloadedDependencies": dependencies
+        }
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            zip_file.writestr("h5p.json", json.dumps(h5p_json, indent=2, ensure_ascii=False))
+            zip_file.writestr("content/content.json", json.dumps(content_json, indent=2, ensure_ascii=False))
+            if "video_bytes" in data and "video_filename" in data:
+                zip_file.writestr(f"content/videos/{data['video_filename']}", data["video_bytes"])
+
+        zip_buffer.seek(0)
+        return zip_buffer.getvalue()
+
+    @staticmethod
     def create_h5p_zip(data):
+        if data.get("video_mode") == "interactive_video" or data.get("is_interactive_video"):
+            return H5PGenerator.create_interactive_video_h5p_zip(data)
+
         title = data.get("title", "Differenzierte Übung")
         target_format = data.get("target_format", "Lückentext")
         

@@ -1,3 +1,338 @@
+
+// ==================== INTERACTIVE VIDEO (H5P.InteractiveVideo) LOGIC ====================
+
+function setVideoMode(mode) {
+    const input = document.getElementById('input-video-mode');
+    const btnBranching = document.getElementById('btn-video-mode-branching');
+    const btnInteractive = document.getElementById('btn-video-mode-interactive');
+    const desc = document.getElementById('video-mode-desc');
+    
+    if (input) input.value = mode;
+    
+    if (mode === 'interactive_video') {
+        if (btnInteractive) {
+            btnInteractive.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-red-600 text-white shadow-xs transition-all flex items-center gap-1';
+        }
+        if (btnBranching) {
+            btnBranching.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-600 hover:text-red-700 hover:bg-red-50 transition-all flex items-center gap-1';
+        }
+        if (desc) {
+            desc.innerHTML = '<span class="text-red-700 font-bold">🎬 Interaktives Video aktiv:</span> Die KI setzt 3–5 automatische Haltepunkte mit Pop-up Fragen direkt ins laufende Video!';
+        }
+    } else {
+        if (btnBranching) {
+            btnBranching.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-red-600 text-white shadow-xs transition-all flex items-center gap-1';
+        }
+        if (btnInteractive) {
+            btnInteractive.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-600 hover:text-red-700 hover:bg-red-50 transition-all flex items-center gap-1';
+        }
+        if (desc) {
+            desc.textContent = 'Das Video wird automatisch als allererste Folie vor die verzweigten Aufgaben eingebaut.';
+        }
+    }
+}
+
+function formatSecondsToMMSS(sec) {
+    const total = Math.max(0, parseInt(sec) || 0);
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+function parseMMSSToSeconds(str) {
+    if (!str) return 0;
+    const parts = str.toString().trim().split(':');
+    if (parts.length === 2) {
+        return (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+    }
+    return parseInt(str) || 0;
+}
+
+function renderInteractiveVideoCards(interactions) {
+    const list = document.getElementById('interactive-video-cards-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    // Update source label
+    const videoInput = document.getElementById('input-video-file');
+    const ytInput = document.getElementById('input-youtube-url');
+    const sourceLabel = document.getElementById('interactive-video-source-label');
+    const sourceSub = document.getElementById('interactive-video-source-sub');
+    
+    if (videoInput && videoInput.files.length > 0) {
+        if (sourceLabel) sourceLabel.textContent = `MP4 Datei: ${videoInput.files[0].name}`;
+        if (sourceSub) sourceSub.textContent = `${(videoInput.files[0].size / (1024*1024)).toFixed(1)} MB - wird fest in das H5P-Paket eingebettet`;
+    } else if (ytInput && ytInput.value.trim()) {
+        if (sourceLabel) sourceLabel.textContent = 'YouTube Video';
+        if (sourceSub) sourceSub.textContent = ytInput.value.trim();
+    }
+
+    if (!interactions || interactions.length === 0) {
+        list.innerHTML = '<div class="p-6 text-center text-xs text-slate-400 font-medium bg-slate-50 border border-dashed border-slate-200 rounded-2xl">Noch keine Haltepunkte vorhanden. Klicke auf "+ Haltepunkt hinzufügen".</div>';
+        return;
+    }
+
+    interactions.forEach((item, idx) => {
+        const card = createInteractionCardElement(item, idx);
+        list.appendChild(card);
+    });
+}
+
+function createInteractionCardElement(item, idx) {
+    const card = document.createElement('div');
+    const cardId = `iv-card-${idx}`;
+    card.id = cardId;
+    card.className = 'interactive-video-card p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-4 transition-all hover:border-red-200';
+
+    const tSec = item.time_seconds || 30 * (idx + 1);
+    const tMMSS = item.time_formatted || formatSecondsToMMSS(tSec);
+    const fmt = item.format || 'Multiple Choice';
+
+    card.innerHTML = `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 border-slate-100">
+            <div class="flex items-center gap-2">
+                <span class="bg-red-100 text-red-700 h-6 w-6 rounded-full inline-flex items-center justify-center text-xs font-bold">${idx + 1}</span>
+                <input type="text" value="${escapeHtml(item.title || `Haltepunkt ${idx + 1}`)}" class="iv-title font-extrabold text-sm text-slate-900 bg-transparent border-0 border-b border-transparent hover:border-slate-300 focus:border-red-500 focus:outline-none px-1">
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <!-- Timestamp Control -->
+                <div class="flex items-center gap-1.5 bg-red-50 border border-red-200 px-2.5 py-1 rounded-xl text-xs font-bold text-red-900">
+                    <i class="fa-solid fa-clock text-red-500 text-[11px]"></i>
+                    <span class="text-[10px] text-red-600 font-medium">Stopp bei:</span>
+                    <input type="text" value="${tMMSS}" onchange="handleMMSSChange(this, '${cardId}')" placeholder="00:30" class="iv-time-mmss w-14 text-center bg-white border border-red-200 rounded-lg px-1 py-0.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-red-500">
+                    <input type="hidden" value="${tSec}" class="iv-time-sec">
+                </div>
+
+                <!-- Format selector -->
+                <select class="iv-format px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500" onchange="changeInteractionFormat('${cardId}', this.value)">
+                    <option value="Multiple Choice" ${fmt === 'Multiple Choice' ? 'selected' : ''}>Multiple Choice</option>
+                    <option value="Wahr/Falsch" ${fmt === 'Wahr/Falsch' || fmt === 'Wahr / Falsch' ? 'selected' : ''}>Wahr / Falsch</option>
+                    <option value="Lückentext" ${fmt === 'Lückentext' || fmt === 'Lueckentext' ? 'selected' : ''}>Lückentext</option>
+                    <option value="Infobox" ${fmt === 'Infobox' ? 'selected' : ''}>Infobox / Merksatz</option>
+                </select>
+
+                <!-- Delete button -->
+                <button type="button" onclick="removeInteractionCard('${cardId}')" class="text-slate-400 hover:text-red-500 transition-colors p-1" title="Haltepunkt löschen">
+                    <i class="fa-solid fa-trash-can text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Format specific body -->
+        <div class="iv-body space-y-3">
+            ${renderInteractionBodyHtml(item, idx)}
+        </div>
+
+        <!-- Feedback / Explanation -->
+        <div class="space-y-1">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Erklärung / Feedback nach der Antwort:</label>
+            <input type="text" value="${escapeHtml(item.explanation || '')}" placeholder="z. B. Sehr gut erklärt! Der Begriff steht für..." class="iv-explanation w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500 bg-slate-50/50">
+        </div>
+    `;
+
+    return card;
+}
+
+function renderInteractionBodyHtml(item, idx) {
+    const fmt = item.format || 'Multiple Choice';
+
+    if (fmt === 'Multiple Choice') {
+        const answers = item.answers || [
+            { text: 'Option A (Richtig)', correct: true },
+            { text: 'Option B (Falsch)', correct: false },
+            { text: 'Option C (Falsch)', correct: false }
+        ];
+        let optionsHtml = '';
+        answers.forEach((ans, aIdx) => {
+            optionsHtml += `
+                <div class="flex items-center gap-2">
+                    <input type="radio" name="iv_correct_${idx}" value="${aIdx}" ${ans.correct ? 'checked' : ''} class="text-red-600 focus:ring-red-500 h-4 w-4 cursor-pointer" title="Als richtige Antwort markieren">
+                    <input type="text" value="${escapeHtml(ans.text || '')}" placeholder="Antwortoption ${aIdx + 1}" class="iv-mc-option flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-red-500">
+                </div>
+            `;
+        });
+
+        return `
+            <div class="space-y-1.5">
+                <label class="block text-[10px] font-bold text-slate-600 uppercase">Fragestellung:</label>
+                <textarea rows="2" class="iv-question w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-red-500">${escapeHtml(item.question || '')}</textarea>
+            </div>
+            <div class="space-y-1.5 pt-1">
+                <label class="block text-[10px] font-bold text-slate-500">Antwortmöglichkeiten (Radio-Button = Richtige Antwort):</label>
+                <div class="space-y-2">
+                    ${optionsHtml}
+                </div>
+            </div>
+        `;
+    } else if (fmt === 'Wahr/Falsch' || fmt === 'Wahr / Falsch') {
+        const isTrue = (item.correct === true || item.correct === 'true');
+        return `
+            <div class="space-y-1.5">
+                <label class="block text-[10px] font-bold text-slate-600 uppercase">Aussage zur Überprüfung:</label>
+                <textarea rows="2" class="iv-question w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-red-500">${escapeHtml(item.question || '')}</textarea>
+            </div>
+            <div class="flex items-center gap-4 pt-1">
+                <span class="text-[10px] font-bold text-slate-500">Richtige Lösung:</span>
+                <label class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                    <input type="radio" name="iv_tf_${idx}" value="true" ${isTrue ? 'checked' : ''} class="text-red-600 focus:ring-red-500"> Wahr
+                </label>
+                <label class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                    <input type="radio" name="iv_tf_${idx}" value="false" ${!isTrue ? 'checked' : ''} class="text-red-600 focus:ring-red-500"> Falsch
+                </label>
+            </div>
+        `;
+    } else if (fmt === 'Lückentext' || fmt === 'Lueckentext') {
+        const textWithBlanks = item.text_with_blanks || item.question || '';
+        return `
+            <div class="space-y-1.5">
+                <label class="block text-[10px] font-bold text-slate-600 uppercase">Aufgaben-Anweisung:</label>
+                <input type="text" value="${escapeHtml(item.question || 'Fülle die Lücken aus:')}" class="iv-question w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-red-500">
+            </div>
+            <div class="space-y-1.5">
+                <div class="flex justify-between items-center">
+                    <label class="block text-[10px] font-bold text-slate-600 uppercase">Lückentext (Lückenwörter mit *Sternchen* umgeben):</label>
+                    <span class="text-[10px] text-slate-400">z.B. *Eingabe*</span>
+                </div>
+                <textarea rows="3" class="iv-blanks-text w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-red-500">${escapeHtml(textWithBlanks)}</textarea>
+            </div>
+        `;
+    } else {
+        // Infobox
+        const infoText = item.text || item.question || '';
+        return `
+            <div class="space-y-1.5">
+                <label class="block text-[10px] font-bold text-slate-600 uppercase">Inhalt des Merkkastens:</label>
+                <textarea rows="3" class="iv-info-text w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-red-500">${escapeHtml(infoText)}</textarea>
+            </div>
+        `;
+    }
+}
+
+function handleMMSSChange(input, cardId) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    const secInput = card.querySelector('.iv-time-sec');
+    const sec = parseMMSSToSeconds(input.value);
+    if (secInput) secInput.value = sec;
+    input.value = formatSecondsToMMSS(sec);
+}
+
+function changeInteractionFormat(cardId, newFormat) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    const body = card.querySelector('.iv-body');
+    if (!body) return;
+    const idx = parseInt(cardId.replace('iv-card-', '')) || 0;
+    
+    // Read current question if present
+    const curQ = card.querySelector('.iv-question')?.value || '';
+    const tempItem = {
+        format: newFormat,
+        question: curQ,
+        text: curQ,
+        text_with_blanks: curQ,
+        answers: [
+            { text: 'Option A (Richtig)', correct: true },
+            { text: 'Option B (Falsch)', correct: false },
+            { text: 'Option C (Falsch)', correct: false }
+        ],
+        correct: true
+    };
+    body.innerHTML = renderInteractionBodyHtml(tempItem, idx);
+}
+
+function addInteractionCard() {
+    const list = document.getElementById('interactive-video-cards-list');
+    if (!list) return;
+    const cards = list.querySelectorAll('.interactive-video-card');
+    const newIdx = cards.length;
+    
+    let nextSec = 45;
+    if (cards.length > 0) {
+        const lastSec = parseInt(cards[cards.length - 1].querySelector('.iv-time-sec')?.value || '30');
+        nextSec = lastSec + 45;
+    }
+
+    const newItem = {
+        title: `Haltepunkt ${newIdx + 1}`,
+        time_seconds: nextSec,
+        time_formatted: formatSecondsToMMSS(nextSec),
+        format: 'Multiple Choice',
+        question: 'Verständnisfrage zum Videoabschnitt...',
+        answers: [
+            { text: 'Erste richtige Aussage', correct: true },
+            { text: 'Zweite falsche Aussage', correct: false },
+            { text: 'Dritte falsche Aussage', correct: false }
+        ],
+        explanation: 'Erklärung zur Lösung...'
+    };
+
+    const card = createInteractionCardElement(newItem, newIdx);
+    list.appendChild(card);
+}
+
+function removeInteractionCard(cardId) {
+    const card = document.getElementById(cardId);
+    if (card) {
+        card.remove();
+    }
+}
+
+function getEditedInteractiveVideoData() {
+    const interactions = [];
+    const cards = document.querySelectorAll('.interactive-video-card');
+    cards.forEach((card, idx) => {
+        const timeSec = parseInt(card.querySelector('.iv-time-sec')?.value || (30 * (idx + 1)));
+        const title = card.querySelector('.iv-title')?.value || `Frage ${idx + 1}`;
+        const format = card.querySelector('.iv-format')?.value || 'Multiple Choice';
+        const question = card.querySelector('.iv-question')?.value || '';
+        const explanation = card.querySelector('.iv-explanation')?.value || '';
+
+        const item = {
+            time_seconds: timeSec,
+            time_formatted: formatSecondsToMMSS(timeSec),
+            title: title,
+            format: format,
+            question: question,
+            explanation: explanation
+        };
+
+        if (format === 'Multiple Choice') {
+            const answers = [];
+            card.querySelectorAll('.iv-mc-option').forEach((optInput, optIdx) => {
+                const isCorrect = card.querySelector(`input[name="iv_correct_${idx}"][value="${optIdx}"]`)?.checked || false;
+                answers.push({
+                    text: optInput.value,
+                    correct: isCorrect
+                });
+            });
+            item.answers = answers;
+        } else if (format === 'Wahr/Falsch' || format === 'Wahr / Falsch') {
+            const isTrue = card.querySelector(`input[name="iv_tf_${idx}"][value="true"]`)?.checked || false;
+            item.correct = isTrue;
+        } else if (format === 'Lückentext' || format === 'Lueckentext') {
+            item.text_with_blanks = card.querySelector('.iv-blanks-text')?.value || question;
+        } else {
+            item.text = card.querySelector('.iv-info-text')?.value || question;
+        }
+
+        interactions.push(item);
+    });
+
+    const videoInput = document.getElementById('input-video-file');
+    const videoFile = (videoInput && videoInput.files.length > 0) ? videoInput.files[0] : null;
+    const ytInput = document.getElementById('input-youtube-url');
+
+    return {
+        title: (typeof editorTitle !== 'undefined' && editorTitle.value) ? editorTitle.value : "Interaktives Video",
+        video_mode: "interactive_video",
+        video_filename: videoFile ? videoFile.name : (appState.generatedData?.video_filename || ""),
+        youtube_url: (ytInput && ytInput.value) ? ytInput.value.trim() : (appState.generatedData?.youtube_url || ""),
+        interactions: interactions
+    };
+}
+
 // App State
 let appState = {
     selectedFiles: [],
@@ -1230,6 +1565,8 @@ btnSubmit.addEventListener('click', async (e) => {
     formData.append('api_key', apiKeyVal);
     formData.append('promo_code', promoCodeVal);
     formData.append('youtube_url', (typeof inputYoutubeUrl !== 'undefined' && inputYoutubeUrl) ? inputYoutubeUrl.value : '');
+    const videoModeInput = document.getElementById('input-video-mode');
+    formData.append('video_mode', (videoModeInput && videoModeInput.value) ? videoModeInput.value : 'branching');
 
     try {
         const response = await fetch(`${API_BASE}/api/generate`, {
@@ -1382,6 +1719,19 @@ window.refineTaskWithAI = async function(prefix, index) {
 
 function populateEditor(data) {
     editorTitle.value = data.title || "Differenzierte Übung";
+    const branchingSections = document.getElementById('editor-branching-sections');
+    const interactiveContainer = document.getElementById('editor-interactive-video-container');
+
+    if (data.video_mode === 'interactive_video' || (data.interactions && data.interactions.length > 0)) {
+        if (branchingSections) branchingSections.classList.add('hidden');
+        if (interactiveContainer) {
+            interactiveContainer.classList.remove('hidden');
+            renderInteractiveVideoCards(data.interactions || []);
+        }
+    } else {
+        if (branchingSections) branchingSections.classList.remove('hidden');
+        if (interactiveContainer) interactiveContainer.classList.add('hidden');
+    }
     editorSourceText.value = data.extracted_text || "";
     
     // Populate LehrplanPlus Badge
@@ -1528,6 +1878,9 @@ btnBackToUpload.addEventListener('click', () => {
 // PACK & EXPORT FLOW
 // ----------------------------------------------------
 function getEditedData() {
+    if (appState.generatedData && (appState.generatedData.video_mode === 'interactive_video' || document.getElementById('input-video-mode')?.value === 'interactive_video')) {
+        return getEditedInteractiveVideoData();
+    }
     // Reconstruct the JSON model from editor inputs
     const questions = [];
     const questionCards = editorQuestions.querySelectorAll('.p-4');

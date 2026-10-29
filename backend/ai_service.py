@@ -49,6 +49,29 @@ class DifferentiatedContent(BaseModel):
     zusatzaufgaben: List[Zusatzaufgabe]
     level_a: LevelContent
     level_b: LevelContent
+class InteractionAnswer(BaseModel):
+    text: str
+    correct: bool
+
+class VideoInteraction(BaseModel):
+    time_seconds: int
+    time_formatted: str
+    title: str
+    format: str # 'Multiple Choice', 'Wahr/Falsch', 'Lückentext', 'Infobox'
+    question: str
+    answers: Optional[List[InteractionAnswer]] = None
+    correct: Optional[bool] = None
+    text_with_blanks: Optional[str] = None
+    text: Optional[str] = None
+    explanation: Optional[str] = None
+
+class InteractiveVideoContent(BaseModel):
+    title: str
+    video_mode: str = "interactive_video"
+    subject: str
+    school_type: str
+    interactions: List[VideoInteraction]
+
 
 
 def parse_focus_topics(focus_topic_str: str, default_task_count: int = 2) -> tuple:
@@ -587,5 +610,141 @@ Generiere genau dieses JSON:
                 "title": "Level B - Vertiefung (Fordern)",
                 "tasks": tasks_b
             },
+            "error": error_message
+        }
+
+
+    def generate_interactive_video_content(
+        self,
+        files: list,
+        context: str = "",
+        subject: str = "Informatik",
+        school_type: str = "Mittelschule",
+        task_count: int = 4,
+        api_key: str = None
+    ) -> dict:
+        """
+        Sends the uploaded material / text / video info to Gemini to generate
+        interactive video pause points and in-video quiz popups.
+        """
+        client = None
+        if api_key and api_key.strip():
+            try:
+                client = genai.Client(api_key=api_key.strip())
+            except Exception as e:
+                logger.error(f"Failed to initialize Gemini Client with dynamic API key: {e}")
+        
+        if not client:
+            client = self.client
+
+        if not client:
+            logger.warning("Gemini Client not initialized. Returning mock interactive video data.")
+            return self._get_mock_interactive_video(context, subject, school_type, task_count)
+
+        prompt = f"""Du bist ein didaktischer Experte für digitale Bildung und interaktive Lernvideos (H5P Interactive Video) für bayerische Schulen ({school_type}, Fach: {subject}).
+
+Deine Aufgabe:
+Erstelle für ein interaktives Lernvideo genau {task_count} abwechslungsreiche, didaktisch hochwertige Haltepunkte (Interaktionen / Pop-up Quizzes), die mitten im Video eingeblendet werden.
+Das Thema des Videos:
+Kontext / Thema / Text: {context or 'Grundlagen zum Fach ' + subject}
+
+Wichtige Regeln für die Haltepunkte:
+1. Verteile die Haltepunkte zeitlich sinnvoll über ein typisches 3- bis 6-minütiges Erklärvideo (z.B. Minute 00:30, 01:15, 02:00, 03:00).
+   - 'time_seconds': Sekunden als Ganzzahl (z.B. 30, 75, 120, 180).
+   - 'time_formatted': Lesbar formatiert (z.B. '00:30', '01:15').
+2. Fragetypen ('format'):
+   - 'Multiple Choice': Genau 1 richtige Antwort und 2-3 plausible falsche Distraktoren.
+   - 'Wahr/Falsch': Aussage zur Überprüfung des Verständnisses mit 'correct': true oder false.
+   - 'Lückentext': Satz mit genau 1-2 Lückenwörtern in Sternchen *Wort*, z.B. 'EVA steht für *Eingabe*, *Verarbeitung* und *Ausgabe*.'.
+   - 'Infobox': Prägnanter Merksatz / Tipp zur Vertiefung.
+3. Variiere die Formate, sodass nicht alle Fragen denselben Typ haben.
+4. Formuliere kurze, verständliche Erklärungen ('explanation') als Feedback nach dem Lösen.
+
+Antworte ausschließlich im vorgegebenen JSON-Format:
+"""
+
+        contents = []
+        for f in files:
+            mime = f.get('mime_type', 'image/jpeg')
+            if mime == 'application/pdf':
+                contents.append(types.Part.from_bytes(data=f['content'], mime_type='application/pdf'))
+            elif mime.startswith('image/'):
+                contents.append(types.Part.from_bytes(data=f['content'], mime_type=mime))
+
+        contents.append(prompt)
+
+        candidate_models = ['gemini-2.5-flash', 'gemini-3.5-flash-lite']
+        last_err = None
+        for model_name in candidate_models:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=InteractiveVideoContent,
+                        temperature=0.2
+                    )
+                )
+                if response and response.text:
+                    parsed = json.loads(response.text)
+                    parsed["video_mode"] = "interactive_video"
+                    return parsed
+            except Exception as e:
+                logger.warning(f"Interactive video generation failed with model {model_name}: {e}")
+                last_err = e
+
+        logger.error(f"All models failed for interactive video: {last_err}")
+        return self._get_mock_interactive_video(context, subject, school_type, task_count, error_message=str(last_err))
+
+    def _get_mock_interactive_video(self, context: str = "", subject: str = "Informatik", school_type: str = "Mittelschule", task_count: int = 4, error_message: str = None) -> dict:
+        topic = context.strip() if context else f"Grundlagen {subject}"
+        return {
+            "title": f"Interaktives Video: {topic}",
+            "video_mode": "interactive_video",
+            "subject": subject,
+            "school_type": school_type,
+            "interactions": [
+                {
+                    "time_seconds": 30,
+                    "time_formatted": "00:30",
+                    "title": "Verständnisfrage 1",
+                    "format": "Multiple Choice",
+                    "question": f"Was ist der zentrale Kernpunkt von '{topic}'?",
+                    "answers": [
+                        {"text": "Die korrekte Definition und Anwendung", "correct": True},
+                        {"text": "Eine rein theoretische Überlegung", "correct": False},
+                        {"text": "Ein veraltetes Konzept ohne Nutzen", "correct": False}
+                    ],
+                    "explanation": f"Genau richtig! Das Verständnis von '{topic}' bildet die Basis für alle weiteren Schritte."
+                },
+                {
+                    "time_seconds": 75,
+                    "time_formatted": "01:15",
+                    "title": "Wahr oder Falsch",
+                    "format": "Wahr/Falsch",
+                    "question": f"Die hier gezeigte Methode zu '{topic}' lässt sich direkt auf Alltagssituationen übertragen.",
+                    "correct": True,
+                    "explanation": "Richtig! Die Methode ist praxisnah und vielseitig anwendbar."
+                },
+                {
+                    "time_seconds": 130,
+                    "time_formatted": "02:10",
+                    "title": "Lückentext-Merksatz",
+                    "format": "Lückentext",
+                    "question": "Ergänze das Schlüsselwort:",
+                    "text_with_blanks": f"Beim Thema {topic} ist vor allem die *Struktur* und *Genauigkeit* entscheidend.",
+                    "explanation": "Ausgezeichnet! Struktur und Genauigkeit führen zum Ziel."
+                },
+                {
+                    "time_seconds": 190,
+                    "time_formatted": "03:10",
+                    "title": "Zusammenfassender Merksatz",
+                    "format": "Infobox",
+                    "question": "Merksatz",
+                    "text": f"Merke dir: Alle Teilschritte von {topic} bauen logisch aufeinander auf. Wiederhole schwierige Abschnitte bei Bedarf.",
+                    "explanation": ""
+                }
+            ],
             "error": error_message
         }

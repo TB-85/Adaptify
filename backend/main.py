@@ -122,7 +122,8 @@ async def generate_task(
     task_count: int = Form(1),
     api_key: Optional[str] = Form(None),
     promo_code: Optional[str] = Form(None),
-    youtube_url: Optional[str] = Form(None)
+    youtube_url: Optional[str] = Form(None),
+    video_mode: Optional[str] = Form("branching")
 ):
     """
     Receives an uploaded book page scan (image or PDF) and generates
@@ -165,18 +166,29 @@ async def generate_task(
         file_items.append({'content': contents, 'mime_type': mime_type})
             
     # Call Gemini API
-    result = await asyncio.to_thread(
-        ai_service.generate_differentiated_content,
-        files=file_items,
-        context=context,
-        target_format=target_format,
-        task_count=task_count,
-        subject=subject,
-        school_type=school_type,
-        focus_topic=focus_topic,
-        hefteintrag_topic=hefteintrag_topic,
-        api_key=effective_api_key
-    )
+    if video_mode == "interactive_video":
+        result = await asyncio.to_thread(
+            ai_service.generate_interactive_video_content,
+            files=file_items,
+            context=context,
+            subject=subject,
+            school_type=school_type,
+            task_count=task_count if task_count >= 2 else 4,
+            api_key=effective_api_key
+        )
+    else:
+        result = await asyncio.to_thread(
+            ai_service.generate_differentiated_content,
+            files=file_items,
+            context=context,
+            target_format=target_format,
+            task_count=task_count,
+            subject=subject,
+            school_type=school_type,
+            focus_topic=focus_topic,
+            hefteintrag_topic=hefteintrag_topic,
+            api_key=effective_api_key
+        )
     
     if youtube_url and youtube_url.strip():
         result['youtube_url'] = youtube_url.strip()

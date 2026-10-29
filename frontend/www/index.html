@@ -302,11 +302,23 @@
                         <span class="text-[10px] text-slate-400 font-semibold">Anpassbar</span>
                     </h3>
 
-                    <!-- Optional Einstiegsvideo -->
-                    <div class="space-y-3 bg-red-50/30 border border-red-100 rounded-2xl p-3.5 shadow-sm mb-4">
-                        <label class="block text-xs font-bold text-slate-800">
-                            <i class="fa-solid fa-play text-red-500 mr-1"></i> Einstiegsvideo (Optional)
-                        </label>
+                    <!-- Video-Einbindung -->
+                    <div class="space-y-3 bg-red-50/40 border border-red-200/80 rounded-2xl p-4 shadow-sm mb-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-film text-red-500"></i> Video-Einbindung (Optional)
+                            </label>
+                            <!-- Mode switch -->
+                            <div class="inline-flex items-center gap-1 bg-white border border-red-200 p-1 rounded-xl shadow-xs self-start sm:self-auto">
+                                <button type="button" id="btn-video-mode-branching" onclick="setVideoMode('branching')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-red-600 text-white shadow-xs transition-all flex items-center gap-1">
+                                    <i class="fa-solid fa-play text-[9px]"></i> Einstiegsvideo
+                                </button>
+                                <button type="button" id="btn-video-mode-interactive" onclick="setVideoMode('interactive_video')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-600 hover:text-red-700 hover:bg-red-50 transition-all flex items-center gap-1">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-[9px] text-amber-500"></i> Interaktives Video (Pop-up Quiz)
+                                </button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="input-video-mode" value="branching">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div class="space-y-1.5">
                                 <label class="block text-[10px] font-bold text-slate-600">Option 1: YouTube Link</label>
@@ -317,7 +329,7 @@
                                 <input type="file" id="input-video-file" accept="video/mp4" class="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all shadow-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer">
                             </div>
                         </div>
-                        <p class="text-[10px] text-slate-500 font-medium">Das Video wird automatisch als allererste Folie in dein H5P-Paket eingebaut.</p>
+                        <p id="video-mode-desc" class="text-[10px] text-slate-500 font-medium">Das Video wird automatisch als allererste Folie vor die verzweigten Aufgaben eingebaut.</p>
                     </div>
 
                     <!-- School Type & Target Format Grid -->
@@ -451,7 +463,47 @@
             </div>
 
             <!-- History Section -->
-            <div class="glass-panel p-6 rounded-3xl shadow-xl space-y-4">
+                                <!-- Interaktives Video Editor Container -->
+                    <div id="editor-interactive-video-container" class="hidden glass-panel p-6 rounded-3xl shadow-xl space-y-6 border-l-4 border-red-500">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4 border-slate-100">
+                            <div>
+                                <h3 class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
+                                    <span class="bg-red-100 text-red-600 h-7 w-7 rounded-full inline-flex items-center justify-center text-xs font-bold">🎬</span>
+                                    Interaktives Video (Haltepunkte & Pop-up Quizzes)
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-1">
+                                    Das Video pausiert an diesen Zeitpunkten automatisch und blendet die Frage direkt über dem Video ein.
+                                </p>
+                            </div>
+                            <button type="button" onclick="addInteractionCard()" class="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer">
+                                <i class="fa-solid fa-plus text-xs"></i> Haltepunkt hinzufügen
+                            </button>
+                        </div>
+
+                        <!-- Video Player Preview Info -->
+                        <div id="interactive-video-player-preview" class="p-4 bg-slate-900 text-white rounded-2xl flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="h-10 w-10 rounded-xl bg-red-600/30 border border-red-500/40 flex items-center justify-center text-red-400">
+                                    <i class="fa-solid fa-film text-lg"></i>
+                                </div>
+                                <div>
+                                    <div id="interactive-video-source-label" class="text-xs font-bold text-slate-200">Videoquelle</div>
+                                    <div id="interactive-video-source-sub" class="text-[11px] text-slate-400 font-medium">MP4 oder YouTube</div>
+                                </div>
+                            </div>
+                            <span class="text-[11px] font-bold px-2.5 py-1 bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg">
+                                H5P.InteractiveVideo 1.22
+                            </span>
+                        </div>
+
+                        <!-- Dynamic Interactions List -->
+                        <div id="interactive-video-cards-list" class="space-y-4">
+                            <!-- Cards inserted by app.js -->
+                        </div>
+                    </div>
+
+                    <div id="editor-branching-sections" class="space-y-6">
+<div class="glass-panel p-6 rounded-3xl shadow-xl space-y-4">
                 <h3 class="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3 border-slate-100">
                     <i class="fa-solid fa-clock-rotate-left text-brand-600"></i> Meine Übungen (Verlauf)
                 </h3>
@@ -671,6 +723,7 @@
                         <div id="editor-zusatzaufgaben" class="space-y-3">
                             <!-- Dynamic Zusatzaufgaben go here -->
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>
