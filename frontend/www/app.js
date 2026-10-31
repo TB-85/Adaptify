@@ -1,4 +1,16 @@
 
+// ==================== UTILITY HELPERS ====================
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+window.escapeHtml = escapeHtml;
+
 // ==================== INTERACTIVE VIDEO (H5P.InteractiveVideo) LOGIC ====================
 
 function setVideoMode(mode) {
@@ -6,31 +18,128 @@ function setVideoMode(mode) {
     const btnBranching = document.getElementById('btn-video-mode-branching');
     const btnInteractive = document.getElementById('btn-video-mode-interactive');
     const desc = document.getElementById('video-mode-desc');
+    const branchingOpts = document.getElementById('generator-branching-options');
+    const submitLabel = document.getElementById('btn-submit-label');
+    const btnSubmit = document.getElementById('btn-submit');
+    const dropTitle = document.getElementById('drop-zone-title');
+    const dropSub = document.getElementById('drop-zone-sub');
+    const dropIcon = document.getElementById('drop-zone-icon');
+    const btnMainLabel = document.getElementById('btn-select-main-label');
+    const btnMain = document.getElementById('btn-select-main-file');
+    const dropZone = document.getElementById('drop-zone');
     
     if (input) input.value = mode;
     
     if (mode === 'interactive_video') {
         if (btnInteractive) {
-            btnInteractive.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-red-600 text-white shadow-xs transition-all flex items-center gap-1';
+            btnInteractive.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white shadow-xs transition-all flex items-center gap-1.5';
         }
         if (btnBranching) {
-            btnBranching.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-600 hover:text-red-700 hover:bg-red-50 transition-all flex items-center gap-1';
+            btnBranching.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-red-700 hover:bg-red-50 transition-all flex items-center gap-1.5';
         }
         if (desc) {
-            desc.innerHTML = '<span class="text-red-700 font-bold">🎬 Interaktives Video aktiv:</span> Die KI setzt 3–5 automatische Haltepunkte mit Pop-up Fragen direkt ins laufende Video!';
+            desc.innerHTML = '<strong class="text-red-700 font-bold">🎬 Nur Interaktives Video aktiv:</strong> Die KI setzt 3–5 automatische Haltepunkte mit Pop-up Fragen (Multiple Choice, Wahr/Falsch, Lückentext) direkt ins Video. Verzweigungen können später im Editor jederzeit hinzugeschaltet werden.';
+        }
+        if (branchingOpts) branchingOpts.classList.add('hidden');
+        if (submitLabel) submitLabel.textContent = '🎬 Interaktives Video erstellen';
+        if (btnSubmit) {
+            btnSubmit.classList.remove('bg-brand-600', 'hover:bg-brand-700');
+            btnSubmit.classList.add('bg-red-600', 'hover:bg-red-700');
+        }
+        if (dropTitle) dropTitle.textContent = "Video (MP4) hier ablegen oder auswählen";
+        if (dropSub) dropSub.textContent = "Lade einfach dein Video hoch oder trage rechts einen YouTube-Link ein. Kein Buchfoto nötig!";
+        if (dropIcon) {
+            dropIcon.className = "h-16 w-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center shadow-inner group-hover:scale-110 transition-all duration-300";
+            dropIcon.innerHTML = '<i class="fa-solid fa-film text-2xl"></i>';
+        }
+        if (btnMainLabel) btnMainLabel.textContent = "Video auswählen";
+        if (btnMain) {
+            btnMain.className = "px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-2";
+        }
+        if (dropZone) {
+            dropZone.classList.remove('border-brand-300', 'hover:border-brand-500');
+            dropZone.classList.add('border-red-300', 'hover:border-red-500');
         }
     } else {
         if (btnBranching) {
-            btnBranching.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold bg-red-600 text-white shadow-xs transition-all flex items-center gap-1';
+            btnBranching.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white shadow-xs transition-all flex items-center gap-1.5';
         }
         if (btnInteractive) {
-            btnInteractive.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-600 hover:text-red-700 hover:bg-red-50 transition-all flex items-center gap-1';
+            btnInteractive.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-red-700 hover:bg-red-50 transition-all flex items-center gap-1.5';
         }
         if (desc) {
-            desc.textContent = 'Das Video wird automatisch als allererste Folie vor die verzweigten Aufgaben eingebaut.';
+            desc.innerHTML = '<strong class="text-slate-800 font-bold">🌳 Verzweigtes Szenario mit Video aktiv:</strong> Das Video wird als interaktive Einstiegsfolie eingebunden, gefolgt vom Diagnose-Quiz und verzweigten Aufgaben (Level A/B/C).';
+        }
+        if (branchingOpts) branchingOpts.classList.remove('hidden');
+        if (submitLabel) submitLabel.textContent = '🌳 Verzweigtes Szenario erstellen';
+        if (btnSubmit) {
+            btnSubmit.classList.remove('bg-red-600', 'hover:bg-red-700');
+            btnSubmit.classList.add('bg-brand-600', 'hover:bg-brand-700');
+        }
+        if (dropTitle) dropTitle.textContent = "Buchseite / PDF hier reinziehen";
+        if (dropSub) dropSub.textContent = "Unterstützt Fotos (PNG, JPG) und PDF-Seiten bis 10MB";
+        if (dropIcon) {
+            dropIcon.className = "h-16 w-16 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center shadow-inner group-hover:scale-110 transition-all duration-300";
+            dropIcon.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-2xl"></i>';
+        }
+        if (btnMainLabel) btnMainLabel.textContent = "Datei auswählen";
+        if (btnMain) {
+            btnMain.className = "px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-2";
+        }
+        if (dropZone) {
+            dropZone.classList.remove('border-red-300', 'hover:border-red-500');
+            dropZone.classList.add('border-brand-300', 'hover:border-brand-500');
         }
     }
 }
+window.setVideoMode = setVideoMode;
+
+function toggleBranchingInEditor() {
+    const branchingSec = document.getElementById('editor-branching-sections');
+    const bannerTitle = document.getElementById('editor-mode-title');
+    const bannerDesc = document.getElementById('editor-mode-desc');
+    const bannerPill = document.getElementById('editor-mode-pill');
+    const btnLabel = document.getElementById('btn-toggle-branching-label');
+    const btnIcon = document.querySelector('#btn-toggle-branching-editor i');
+    const bannerIcon = document.getElementById('editor-mode-icon');
+    
+    if (!branchingSec) return;
+    
+    const isCurrentlyHidden = branchingSec.classList.contains('hidden');
+    
+    if (isCurrentlyHidden) {
+        branchingSec.classList.remove('hidden');
+        if (bannerTitle) bannerTitle.textContent = "Interaktives Video + Verzweigtes Szenario";
+        if (bannerDesc) bannerDesc.textContent = "Das interaktive Video dient als Einstieg, gefolgt von der Verzweigung (Diagnose & Level A/B/C).";
+        if (bannerPill) {
+            bannerPill.textContent = "Kombiniert";
+            bannerPill.className = "px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-700";
+        }
+        if (bannerIcon) {
+            bannerIcon.textContent = "🌳";
+            bannerIcon.className = "bg-indigo-100 text-indigo-700 h-9 w-9 rounded-2xl flex items-center justify-center font-bold text-base shadow-xs shrink-0";
+        }
+        if (btnLabel) btnLabel.textContent = "− Verzweigung ausblenden (Nur Video beibehalten)";
+        if (btnIcon) btnIcon.className = "fa-solid fa-eye-slash text-slate-500";
+        
+        branchingSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+        branchingSec.classList.add('hidden');
+        if (bannerTitle) bannerTitle.textContent = "Reines Interaktives Video";
+        if (bannerDesc) bannerDesc.textContent = "Haltepunkte & Quiz-Fragen direkt im Video. Keine überflüssigen Verzweigungen.";
+        if (bannerPill) {
+            bannerPill.textContent = "Aktiv";
+            bannerPill.className = "px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-red-100 text-red-700";
+        }
+        if (bannerIcon) {
+            bannerIcon.textContent = "🎬";
+            bannerIcon.className = "bg-red-100 text-red-600 h-9 w-9 rounded-2xl flex items-center justify-center font-bold text-base shadow-xs shrink-0";
+        }
+        if (btnLabel) btnLabel.textContent = "+ Verzweigtes Szenario (Level A/B/C) hinzuschalten";
+        if (btnIcon) btnIcon.className = "fa-solid fa-code-branch text-brand-600";
+    }
+}
+window.toggleBranchingInEditor = toggleBranchingInEditor;
 
 function formatSecondsToMMSS(sec) {
     const total = Math.max(0, parseInt(sec) || 0);
@@ -321,7 +430,7 @@ function getEditedInteractiveVideoData() {
     });
 
     const videoInput = document.getElementById('input-video-file');
-    const videoFile = (videoInput && videoInput.files.length > 0) ? videoInput.files[0] : null;
+    const videoFile = appState.selectedVideoFile || (videoInput && videoInput.files.length > 0 ? videoInput.files[0] : null);
     const ytInput = document.getElementById('input-youtube-url');
 
     return {
@@ -337,6 +446,7 @@ function getEditedInteractiveVideoData() {
 let appState = {
     selectedFiles: [],
     selectedFile: null,
+    selectedVideoFile: null,
     generatedData: null,
     previewDataUrl: null,
 };
@@ -1139,8 +1249,31 @@ function compressImageFile(file, maxDimension = 1600, quality = 0.85) {
 }
 
 async function handleFile(file) {
+    if (!file) return;
+    
+    const isVideo = (file.type && file.type.startsWith('video/')) || /\.(mp4|m4v|mov|webm)$/i.test(file.name || '');
+    
+    if (isVideo) {
+        appState.selectedVideoFile = file;
+        appState.selectedFile = file;
+        fileName.textContent = file.name;
+        fileSize.textContent = file.size > 1024 * 1024 ? `${(file.size / (1024 * 1024)).toFixed(1)} MB (Video bereit)` : `${(file.size / 1024).toFixed(0)} KB (Video bereit)`;
+        
+        fileInfo.classList.remove('hidden');
+        if (filePreviewThumb) filePreviewThumb.classList.add('hidden');
+        if (fileIconPlaceholder) {
+            fileIconPlaceholder.classList.remove('hidden');
+            fileIconPlaceholder.className = "bg-red-50 text-red-600 p-4 rounded-full border border-red-200";
+            fileIconPlaceholder.innerHTML = '<i class="fa-solid fa-film text-3xl"></i>';
+        }
+        if (btnEditCurrentImage) btnEditCurrentImage.classList.add('hidden');
+        
+        setVideoMode('interactive_video');
+        return;
+    }
+    
     let processedFile = file;
-    if (file && file.type.startsWith('image/')) {
+    if (file && file.type && file.type.startsWith('image/')) {
         processedFile = await compressImageFile(file);
     }
     appState.selectedFile = processedFile;
@@ -1152,7 +1285,7 @@ async function handleFile(file) {
     fileInfo.classList.remove('hidden');
 
     // Read image preview if file is an image
-    if (file.type.startsWith('image/')) {
+    if (file.type && file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (e) => {
             appState.originalDataUrl = e.target.result;
@@ -1173,7 +1306,11 @@ async function handleFile(file) {
         appState.originalDataUrl = null;
         appState.previewDataUrl = null;
         if (filePreviewThumb) filePreviewThumb.classList.add('hidden');
-        if (fileIconPlaceholder) fileIconPlaceholder.classList.remove('hidden');
+        if (fileIconPlaceholder) {
+            fileIconPlaceholder.classList.remove('hidden');
+            fileIconPlaceholder.className = "bg-teal-50 text-teal-700 p-4 rounded-full";
+            fileIconPlaceholder.innerHTML = '<i class="fa-solid fa-file-circle-check text-3xl"></i>';
+        }
         if (btnEditCurrentImage) btnEditCurrentImage.classList.add('hidden');
     }
 }
@@ -1187,14 +1324,49 @@ window.reopenImageEditor = function() {
 
 function resetFileSelection() {
     appState.selectedFile = null;
+    appState.selectedVideoFile = null;
     appState.selectedFiles = [];
     appState.originalDataUrl = null;
     appState.previewDataUrl = null;
     fileInput.value = '';
+    const videoInput = document.getElementById('input-video-file');
+    if (videoInput) videoInput.value = '';
     fileInfo.classList.add('hidden');
     if (filePreviewThumb) filePreviewThumb.classList.add('hidden');
     if (fileIconPlaceholder) fileIconPlaceholder.classList.remove('hidden');
     if (btnEditCurrentImage) btnEditCurrentImage.classList.add('hidden');
+}
+
+// Connect video input and youtube input directly to file selection state
+const inputVideoFileInput = document.getElementById('input-video-file');
+if (inputVideoFileInput) {
+    inputVideoFileInput.addEventListener('change', () => {
+        if (inputVideoFileInput.files && inputVideoFileInput.files.length > 0) {
+            handleFile(inputVideoFileInput.files[0]);
+        }
+    });
+}
+
+const inputYoutubeUrlField = document.getElementById('input-youtube-url');
+if (inputYoutubeUrlField) {
+    inputYoutubeUrlField.addEventListener('input', () => {
+        const val = inputYoutubeUrlField.value.trim();
+        if (val && !appState.selectedVideoFile && !appState.selectedFile) {
+            fileInfo.classList.remove('hidden');
+            fileName.textContent = "YouTube Video";
+            fileSize.textContent = val;
+            if (filePreviewThumb) filePreviewThumb.classList.add('hidden');
+            if (fileIconPlaceholder) {
+                fileIconPlaceholder.classList.remove('hidden');
+                fileIconPlaceholder.className = "bg-red-50 text-red-600 p-4 rounded-full border border-red-200";
+                fileIconPlaceholder.innerHTML = '<i class="fa-brands fa-youtube text-3xl"></i>';
+            }
+            if (btnEditCurrentImage) btnEditCurrentImage.classList.add('hidden');
+            setVideoMode('interactive_video');
+        } else if (!val && !appState.selectedVideoFile && !appState.selectedFile) {
+            fileInfo.classList.add('hidden');
+        }
+    });
 }
 
 function openImageEditor(dataUrl) {
@@ -1494,31 +1666,9 @@ if (btnSaveImageEdit) {
 btnSubmit.addEventListener('click', async (e) => {
     if (e) e.stopPropagation();
     
-    if (!appState.selectedFile) {
-        alert("Bitte wählen Sie zuerst eine Buchseite aus oder machen Sie ein Foto mit der Kamera.");
-        if (dropZone) {
-            dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            dropZone.classList.add('ring-4', 'ring-amber-400');
-            setTimeout(() => dropZone.classList.remove('ring-4', 'ring-amber-400'), 2500);
-        }
-        return;
-    }
-
-    if (loader) loader.classList.remove('hidden');
-    
-    // Dynamic loader status indicator for long requests (e.g. Render cold start)
-    const loaderTextEl = document.querySelector('#loader p') || document.querySelector('#loader span');
-    if (loaderTextEl) loaderTextEl.textContent = "Analysiere Buchseite mit KI...";
-    
-    const slowTimer1 = setTimeout(() => {
-        if (loaderTextEl) loaderTextEl.textContent = "Server wird aufgeweckt & KI verarbeitet Dokument...";
-    }, 6000);
-    const slowTimer2 = setTimeout(() => {
-        if (loaderTextEl) loaderTextEl.textContent = "Erstelle differenzierte H5P- & PDF-Aufgaben...";
-    }, 18000);
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 90000);
+    const isIvMode = (document.getElementById('input-video-mode')?.value === 'interactive_video');
+    const ytVal = (typeof inputYoutubeUrl !== 'undefined' && inputYoutubeUrl) ? inputYoutubeUrl.value.trim() : (document.getElementById('input-youtube-url')?.value || '').trim();
+    const vidFile = appState.selectedVideoFile || document.getElementById('input-video-file')?.files?.[0] || (appState.selectedFile && (appState.selectedFile.type?.startsWith('video/') || appState.selectedFile.name?.toLowerCase().endsWith('.mp4')) ? appState.selectedFile : null);
 
     // Compute focus topic from dynamicTopics or hidden input
     let focusTopicValue = "";
@@ -1536,6 +1686,47 @@ btnSubmit.addEventListener('click', async (e) => {
         if (hiddenEl) focusTopicValue = hiddenEl.value || "";
     }
 
+    // Validation: in interactive video mode, NO document or photo is required!
+    if (isIvMode) {
+        if (!vidFile && !ytVal && !appState.selectedFile && !focusTopicValue) {
+            alert("Bitte wählen Sie ein Video (MP4) aus oder tragen Sie einen YouTube-Link ein.");
+            if (dropZone) {
+                dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                dropZone.classList.add('ring-4', 'ring-red-400');
+                setTimeout(() => dropZone.classList.remove('ring-4', 'ring-red-400'), 2500);
+            }
+            return;
+        }
+    } else {
+        if (!appState.selectedFile) {
+            alert("Bitte wählen Sie zuerst eine Buchseite aus oder machen Sie ein Foto mit der Kamera.");
+            if (dropZone) {
+                dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                dropZone.classList.add('ring-4', 'ring-amber-400');
+                setTimeout(() => dropZone.classList.remove('ring-4', 'ring-amber-400'), 2500);
+            }
+            return;
+        }
+    }
+
+    if (loader) loader.classList.remove('hidden');
+    
+    // Dynamic loader status indicator for long requests
+    const loaderTextEl = document.querySelector('#loader p') || document.querySelector('#loader span');
+    if (loaderTextEl) {
+        loaderTextEl.textContent = isIvMode ? "Analysiere Video & erstelle Haltepunkte mit KI..." : "Analysiere Buchseite mit KI...";
+    }
+    
+    const slowTimer1 = setTimeout(() => {
+        if (loaderTextEl) loaderTextEl.textContent = isIvMode ? "Server wird aufgeweckt & KI verarbeitet Video..." : "Server wird aufgeweckt & KI verarbeitet Dokument...";
+    }, 6000);
+    const slowTimer2 = setTimeout(() => {
+        if (loaderTextEl) loaderTextEl.textContent = isIvMode ? "Erstelle Pop-up Quizfragen direkt ins Video..." : "Erstelle differenzierte H5P- & PDF-Aufgaben...";
+    }, 18000);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000);
+
     const apiKeyVal = (typeof inputApiKey !== 'undefined' && inputApiKey) ? (inputApiKey.value || '').trim() : '';
     const promoCodeVal = (typeof inputPromoCode !== 'undefined' && inputPromoCode) ? (inputPromoCode.value || '').trim() : '';
 
@@ -1544,7 +1735,9 @@ btnSubmit.addEventListener('click', async (e) => {
     if (promoCodeVal) localStorage.setItem('promo_code', promoCodeVal);
 
     const formData = new FormData();
-    if (appState.selectedFiles && appState.selectedFiles.length > 1) {
+    if (vidFile) {
+        formData.append('files', vidFile);
+    } else if (appState.selectedFiles && appState.selectedFiles.length > 1) {
         appState.selectedFiles.forEach((f, idx) => {
             if (idx === 0 && appState.selectedFile) {
                 formData.append('files', appState.selectedFile);
@@ -1552,8 +1745,11 @@ btnSubmit.addEventListener('click', async (e) => {
                 formData.append('files', f);
             }
         });
-    } else {
+    } else if (appState.selectedFile) {
         formData.append('files', appState.selectedFile);
+    } else {
+        const fallbackText = focusTopicValue || ytVal || "Interaktives Erklärvideo";
+        formData.append('files', new Blob([fallbackText], { type: 'text/plain' }), 'video_thema.txt');
     }
     formData.append('school_type', (typeof inputSchoolType !== 'undefined' && inputSchoolType) ? inputSchoolType.value : 'Grundschule');
     formData.append('subject', (Array.isArray(selectedSubjects) && selectedSubjects.length > 0) ? selectedSubjects.join(', ') : 'Deutsch');
@@ -1561,12 +1757,11 @@ btnSubmit.addEventListener('click', async (e) => {
     formData.append('hefteintrag_topic', (typeof inputHefteintragTopic !== 'undefined' && inputHefteintragTopic) ? inputHefteintragTopic.value : '');
     formData.append('context', (typeof inputContext !== 'undefined' && inputContext) ? inputContext.value : '');
     formData.append('target_format', (typeof inputFormat !== 'undefined' && inputFormat) ? inputFormat.value : 'Lückentext');
-    formData.append('task_count', (typeof inputTaskCount !== 'undefined' && inputTaskCount) ? inputTaskCount.value : 1);
+    formData.append('task_count', (typeof inputTaskCount !== 'undefined' && inputTaskCount) ? inputTaskCount.value : 4);
     formData.append('api_key', apiKeyVal);
     formData.append('promo_code', promoCodeVal);
-    formData.append('youtube_url', (typeof inputYoutubeUrl !== 'undefined' && inputYoutubeUrl) ? inputYoutubeUrl.value : '');
-    const videoModeInput = document.getElementById('input-video-mode');
-    formData.append('video_mode', (videoModeInput && videoModeInput.value) ? videoModeInput.value : 'branching');
+    formData.append('youtube_url', ytVal);
+    formData.append('video_mode', isIvMode ? 'interactive_video' : 'branching');
 
     try {
         const response = await fetch(`${API_BASE}/api/generate`, {
@@ -1595,6 +1790,12 @@ btnSubmit.addEventListener('click', async (e) => {
         }
 
         const data = await response.json();
+        if (vidFile && !data.video_filename) {
+            data.video_filename = vidFile.name;
+        }
+        if (ytVal && !data.youtube_url) {
+            data.youtube_url = ytVal;
+        }
         appState.generatedData = data;
         
         // Save to IndexedDB history
@@ -1721,16 +1922,48 @@ function populateEditor(data) {
     editorTitle.value = data.title || "Differenzierte Übung";
     const branchingSections = document.getElementById('editor-branching-sections');
     const interactiveContainer = document.getElementById('editor-interactive-video-container');
+    const bannerTitle = document.getElementById('editor-mode-title');
+    const bannerDesc = document.getElementById('editor-mode-desc');
+    const bannerPill = document.getElementById('editor-mode-pill');
+    const btnLabel = document.getElementById('btn-toggle-branching-label');
+    const btnIcon = document.querySelector('#btn-toggle-branching-editor i');
+    const bannerIcon = document.getElementById('editor-mode-icon');
 
-    if (data.video_mode === 'interactive_video' || (data.interactions && data.interactions.length > 0)) {
+    const isInteractive = (data.video_mode === 'interactive_video' || (data.interactions && data.interactions.length > 0));
+
+    if (isInteractive) {
         if (branchingSections) branchingSections.classList.add('hidden');
         if (interactiveContainer) {
             interactiveContainer.classList.remove('hidden');
             renderInteractiveVideoCards(data.interactions || []);
         }
+        if (bannerTitle) bannerTitle.textContent = "Reines Interaktives Video";
+        if (bannerDesc) bannerDesc.textContent = "Haltepunkte & Quiz-Fragen direkt im Video. Keine überflüssigen Verzweigungen.";
+        if (bannerPill) {
+            bannerPill.textContent = "Aktiv";
+            bannerPill.className = "px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-red-100 text-red-700";
+        }
+        if (bannerIcon) {
+            bannerIcon.textContent = "🎬";
+            bannerIcon.className = "bg-red-100 text-red-600 h-9 w-9 rounded-2xl flex items-center justify-center font-bold text-base shadow-xs shrink-0";
+        }
+        if (btnLabel) btnLabel.textContent = "+ Verzweigtes Szenario (Level A/B/C) hinzuschalten";
+        if (btnIcon) btnIcon.className = "fa-solid fa-code-branch text-brand-600";
     } else {
         if (branchingSections) branchingSections.classList.remove('hidden');
         if (interactiveContainer) interactiveContainer.classList.add('hidden');
+        if (bannerTitle) bannerTitle.textContent = "Verzweigtes Szenario";
+        if (bannerDesc) bannerDesc.textContent = "Diagnose-Test und automatische Verzweigung auf Level A/B/C.";
+        if (bannerPill) {
+            bannerPill.textContent = "Branching";
+            bannerPill.className = "px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-brand-100 text-brand-700";
+        }
+        if (bannerIcon) {
+            bannerIcon.textContent = "🌳";
+            bannerIcon.className = "bg-brand-100 text-brand-700 h-9 w-9 rounded-2xl flex items-center justify-center font-bold text-base shadow-xs shrink-0";
+        }
+        if (btnLabel) btnLabel.textContent = "− Verzweigung ausblenden";
+        if (btnIcon) btnIcon.className = "fa-solid fa-eye-slash text-slate-500";
     }
     editorSourceText.value = data.extracted_text || "";
     
@@ -1878,7 +2111,11 @@ btnBackToUpload.addEventListener('click', () => {
 // PACK & EXPORT FLOW
 // ----------------------------------------------------
 function getEditedData() {
-    if (appState.generatedData && (appState.generatedData.video_mode === 'interactive_video' || document.getElementById('input-video-mode')?.value === 'interactive_video')) {
+    const branchingSec = document.getElementById('editor-branching-sections');
+    const isBranchingVisible = branchingSec && !branchingSec.classList.contains('hidden');
+
+    // If pure interactive video (branching is hidden)
+    if (!isBranchingVisible && appState.generatedData && (appState.generatedData.video_mode === 'interactive_video' || document.getElementById('input-video-mode')?.value === 'interactive_video' || (appState.generatedData.interactions && appState.generatedData.interactions.length > 0))) {
         return getEditedInteractiveVideoData();
     }
     // Reconstruct the JSON model from editor inputs
@@ -1971,7 +2208,7 @@ btnDownloadH5P.addEventListener('click', async () => {
     
     try {
         const videoInput = document.getElementById('input-video-file');
-        const videoFile = (videoInput && videoInput.files.length > 0) ? videoInput.files[0] : null;
+        const videoFile = appState.selectedVideoFile || (videoInput && videoInput.files.length > 0 ? videoInput.files[0] : null);
         
         let formData = new FormData();
         formData.append('data', JSON.stringify(payload));
@@ -2380,7 +2617,7 @@ window.switchEditorTab = function(tabName) {
         
         // Match current route tasks
         const isB = (simState.levelRoute === 'B');
-        simState.tasks = isB ? (simState.data.level_b.tasks || []) : (simState.data.level_a.tasks || []);
+        simState.tasks = isB ? (simState.data?.level_b?.tasks || []) : (simState.data?.level_a?.tasks || []);
         
         renderSimulator();
     }
@@ -2435,6 +2672,66 @@ function renderSimulator() {
     const step = simState.currentStep;
     const data = simState.data;
     if (!frame || !data) return;
+
+    if (data.video_mode === 'interactive_video' || (!data.diagnostic && data.interactions)) {
+        if (simPathIndicator) simPathIndicator.textContent = "Interaktives Video (Live-Vorschau)";
+        if (simScoreIndicator) simScoreIndicator.textContent = `${(data.interactions || []).length} Haltepunkte`;
+
+        let ytEmbedHtml = '';
+        if (data.youtube_url) {
+            const ytMatch = data.youtube_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+            const ytId = ytMatch ? ytMatch[1] : null;
+            if (ytId) {
+                ytEmbedHtml = `<div class="aspect-video w-full rounded-xl overflow-hidden shadow-md bg-black mb-3">
+                    <iframe class="w-full h-full" src="https://www.youtube.com/embed/${ytId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>`;
+            }
+        }
+        if (!ytEmbedHtml) {
+            ytEmbedHtml = `<div class="aspect-video w-full rounded-xl overflow-hidden shadow-md bg-slate-900 flex flex-col items-center justify-center text-slate-300 gap-2 p-4 text-center mb-3">
+                <i class="fa-solid fa-film text-4xl text-red-500"></i>
+                <span class="text-xs font-bold text-white">${escapeHtml(data.video_filename || data.title || "Video")}</span>
+                <span class="text-[10px] text-slate-400">Interaktives Video bereit zum Abspielen in ByCS / LMS</span>
+            </div>`;
+        }
+
+        let interactionsHtml = '';
+        (data.interactions || []).forEach((item, idx) => {
+            interactionsHtml += `
+                <div class="p-3 bg-white border border-slate-200 rounded-xl space-y-1 hover:border-red-300 transition-all shadow-2xs">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <span class="bg-red-100 text-red-700 h-5 w-5 rounded-full inline-flex items-center justify-center text-[10px] font-black">${idx + 1}</span>
+                            ${escapeHtml(item.title || `Haltepunkt ${idx + 1}`)}
+                        </span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 bg-red-50 text-red-700 border border-red-200 rounded-md">
+                            ⏱ ${escapeHtml(item.time_formatted || formatSecondsToMMSS(item.time_seconds || 30))}
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 font-medium pl-6">${escapeHtml(item.question || item.text || '')}</p>
+                    <div class="text-[10px] text-slate-400 pl-6 flex items-center gap-2">
+                        <span>Format: <strong>${escapeHtml(item.format || 'Multiple Choice')}</strong></span>
+                        ${item.explanation ? `<span>• Erklärung vorhanden</span>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+
+        frame.innerHTML = `
+            <div class="space-y-4 p-4 bg-slate-50 min-h-[460px]">
+                ${ytEmbedHtml}
+                <div class="space-y-2">
+                    <h5 class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-list-check text-red-500"></i> Automatische Quiz-Haltepunkte (${(data.interactions || []).length}):
+                    </h5>
+                    <div class="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                        ${interactionsHtml || '<p class="text-xs text-slate-400">Keine Haltepunkte definiert.</p>'}
+                    </div>
+                </div>
+            </div>
+        `;
+        return;
+    }
     
     // Update Indicators
     if (step === 'start') {
@@ -4239,3 +4536,9 @@ window.promptInstallApp = async function() {
 };
 
 
+
+
+// Initialize default mode to interactive video
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof setVideoMode === 'function') setVideoMode('interactive_video');
+});

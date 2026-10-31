@@ -112,7 +112,7 @@ class ExportData(BaseModel):
 
 @app.post("/api/generate")
 async def generate_task(
-    files: List[UploadFile] = File(...),
+    files: List[UploadFile] = File(default=[]),
     subject: str = Form("Deutsch"),
     school_type: str = Form("Grundschule"),
     focus_topic: str = Form(""),
@@ -161,16 +161,21 @@ async def generate_task(
                 mime_type = 'image/png'
             elif ext == '.pdf':
                 mime_type = 'application/pdf'
+            elif ext in ['.mp4', '.m4v', '.mov', '.webm']:
+                mime_type = 'video/mp4'
+            elif ext in ['.txt']:
+                mime_type = 'text/plain'
             else:
                 mime_type = 'image/jpeg'
-        file_items.append({'content': contents, 'mime_type': mime_type})
+        file_items.append({'content': contents, 'mime_type': mime_type, 'filename': uploaded_file.filename})
             
     # Call Gemini API
     if video_mode == "interactive_video":
+        effective_context = focus_topic if (focus_topic and not context) else context
         result = await asyncio.to_thread(
             ai_service.generate_interactive_video_content,
             files=file_items,
-            context=context,
+            context=effective_context,
             subject=subject,
             school_type=school_type,
             task_count=task_count if task_count >= 2 else 4,
@@ -192,6 +197,11 @@ async def generate_task(
     
     if youtube_url and youtube_url.strip():
         result['youtube_url'] = youtube_url.strip()
+    
+    for uf in files:
+        if uf.filename and (uf.filename.lower().endswith(('.mp4', '.m4v', '.mov', '.webm')) or (uf.content_type and uf.content_type.startswith('video/'))):
+            result['video_filename'] = uf.filename
+            break
         
     return result
 

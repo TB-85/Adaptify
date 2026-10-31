@@ -670,6 +670,16 @@ Antworte ausschließlich im vorgegebenen JSON-Format:
                 contents.append(types.Part.from_bytes(data=f['content'], mime_type='application/pdf'))
             elif mime.startswith('image/'):
                 contents.append(types.Part.from_bytes(data=f['content'], mime_type=mime))
+            elif mime.startswith('video/'):
+                if len(f.get('content', b'')) < 20 * 1024 * 1024:
+                    contents.append(types.Part.from_bytes(data=f['content'], mime_type='video/mp4'))
+                else:
+                    filename = f.get('filename', 'video.mp4')
+                    contents.append(f"Videodatei: {filename} (Fach: {subject})")
+            elif mime.startswith('text/'):
+                text_content = f['content'].decode('utf-8', errors='ignore')
+                if text_content.strip():
+                    contents.append(text_content)
 
         contents.append(prompt)
 
