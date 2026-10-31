@@ -956,10 +956,10 @@ class H5PGenerator:
                     }
                 }
             else:
-                used_libraries.add("H5P.AdvancedText")
+                used_libraries.add("H5P.Text")
                 info_text = item.get("text", item.get("question", ""))
                 interaction_obj["action"] = {
-                    "library": "H5P.AdvancedText 1.1",
+                    "library": "H5P.Text 1.1",
                     "params": {
                         "text": f"<h3>{label}</h3><p>{info_text}</p>"
                     },
@@ -1031,8 +1031,11 @@ class H5PGenerator:
         # 4. Build dependencies
         dependencies = [
             {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
+            {"machineName": "jQuery.ui", "majorVersion": 1, "minorVersion": 10},
+            {"machineName": "H5P.DragNBar", "majorVersion": 1, "minorVersion": 5},
+            {"machineName": "H5P.Components", "majorVersion": 1, "minorVersion": 0},
             {"machineName": "H5P.InteractiveVideo", "majorVersion": 1, "minorVersion": 22},
-            {"machineName": "H5P.Video", "majorVersion": 1, "minorVersion": 5},
+            {"machineName": "H5P.Video", "majorVersion": 1, "minorVersion": 6},
             {"machineName": "H5P.Summary", "majorVersion": 1, "minorVersion": 10}
         ]
 
@@ -1040,7 +1043,7 @@ class H5PGenerator:
             "H5P.MultiChoice": {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 16},
             "H5P.TrueFalse": {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 8},
             "H5P.Blanks": {"machineName": "H5P.Blanks", "majorVersion": 1, "minorVersion": 14},
-            "H5P.AdvancedText": {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1}
+            "H5P.Text": {"machineName": "H5P.Text", "majorVersion": 1, "minorVersion": 1}
         }
         for lib_name in used_libraries:
             if lib_name in lib_map and lib_map[lib_name] not in dependencies:
