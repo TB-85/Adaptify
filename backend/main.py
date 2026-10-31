@@ -256,7 +256,11 @@ async def export_h5p(data: str = Form(...), video_file: UploadFile = File(None))
             json_data["video_filename"] = video_file.filename
             
         h5p_bytes = H5PGenerator.create_h5p_zip(json_data)
-        disposition = make_content_disposition(json_data.get("title", "Export"), "differenziert.h5p")
+        if json_data.get("video_mode") == "interactive_video" or json_data.get("is_interactive_video"):
+            suffix = "interaktives_video.h5p"
+        else:
+            suffix = "differenziert.h5p"
+        disposition = make_content_disposition(json_data.get("title", "Export"), suffix)
         
         return Response(
             content=h5p_bytes,

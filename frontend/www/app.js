@@ -1,5 +1,4 @@
-
-// ==================== UTILITY HELPERS ====================
+// ==================== UTILITY & INTERACTION HELPERS ====================
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
     return String(str)
@@ -11,88 +10,185 @@ function escapeHtml(str) {
 }
 window.escapeHtml = escapeHtml;
 
-// ==================== INTERACTIVE VIDEO (H5P.InteractiveVideo) LOGIC ====================
-
-function setVideoMode(mode) {
+// Switch between Screen 1 Main Modes: Interactive Video vs Branching Worksheets
+function switchAppMode(mode) {
     const input = document.getElementById('input-video-mode');
-    const btnBranching = document.getElementById('btn-video-mode-branching');
-    const btnInteractive = document.getElementById('btn-video-mode-interactive');
-    const desc = document.getElementById('video-mode-desc');
-    const branchingOpts = document.getElementById('generator-branching-options');
-    const submitLabel = document.getElementById('btn-submit-label');
-    const btnSubmit = document.getElementById('btn-submit');
-    const dropTitle = document.getElementById('drop-zone-title');
-    const dropSub = document.getElementById('drop-zone-sub');
-    const dropIcon = document.getElementById('drop-zone-icon');
-    const btnMainLabel = document.getElementById('btn-select-main-label');
-    const btnMain = document.getElementById('btn-select-main-file');
-    const dropZone = document.getElementById('drop-zone');
-    
+    const tabInteractive = document.getElementById('tab-mode-interactive');
+    const tabBranching = document.getElementById('tab-mode-branching');
+    const viewInteractive = document.getElementById('view-interactive-video');
+    const viewBranching = document.getElementById('view-branching-worksheets');
+    const subtitle = document.getElementById('mode-subtitle');
+    const btnSubmitLabel = document.getElementById('btn-submit-label');
+
     if (input) input.value = mode;
-    
+
     if (mode === 'interactive_video') {
-        if (btnInteractive) {
-            btnInteractive.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white shadow-xs transition-all flex items-center gap-1.5';
+        if (tabInteractive) {
+            tabInteractive.className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 bg-white text-slate-900 shadow-sm border border-slate-200/80 cursor-pointer";
         }
-        if (btnBranching) {
-            btnBranching.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-red-700 hover:bg-red-50 transition-all flex items-center gap-1.5';
+        if (tabBranching) {
+            tabBranching.className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer";
         }
-        if (desc) {
-            desc.innerHTML = '<strong class="text-red-700 font-bold">🎬 Nur Interaktives Video aktiv:</strong> Die KI setzt 3–5 automatische Haltepunkte mit Pop-up Fragen (Multiple Choice, Wahr/Falsch, Lückentext) direkt ins Video. Verzweigungen können später im Editor jederzeit hinzugeschaltet werden.';
+        if (viewInteractive) viewInteractive.classList.remove('hidden');
+        if (viewBranching) viewBranching.classList.add('hidden');
+        if (subtitle) {
+            subtitle.textContent = "Erstelle in Sekunden interaktive H5P-Videolektionen mit didaktischen Wissens-Stopps für mebis, ByCS und Moodle.";
         }
-        if (branchingOpts) branchingOpts.classList.add('hidden');
-        if (submitLabel) submitLabel.textContent = '🎬 Interaktives Video erstellen';
-        if (btnSubmit) {
-            btnSubmit.classList.remove('bg-brand-600', 'hover:bg-brand-700');
-            btnSubmit.classList.add('bg-red-600', 'hover:bg-red-700');
-        }
-        if (dropTitle) dropTitle.textContent = "Video (MP4) hier ablegen oder auswählen";
-        if (dropSub) dropSub.textContent = "Lade einfach dein Video hoch oder trage rechts einen YouTube-Link ein. Kein Buchfoto nötig!";
-        if (dropIcon) {
-            dropIcon.className = "h-16 w-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center shadow-inner group-hover:scale-110 transition-all duration-300";
-            dropIcon.innerHTML = '<i class="fa-solid fa-film text-2xl"></i>';
-        }
-        if (btnMainLabel) btnMainLabel.textContent = "Video auswählen";
-        if (btnMain) {
-            btnMain.className = "px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-2";
-        }
-        if (dropZone) {
-            dropZone.classList.remove('border-brand-300', 'hover:border-brand-500');
-            dropZone.classList.add('border-red-300', 'hover:border-red-500');
-        }
+        if (btnSubmitLabel) btnSubmitLabel.textContent = "Interaktives Video generieren";
     } else {
-        if (btnBranching) {
-            btnBranching.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white shadow-xs transition-all flex items-center gap-1.5';
+        if (tabBranching) {
+            tabBranching.className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 bg-white text-slate-900 shadow-sm border border-slate-200/80 cursor-pointer";
         }
-        if (btnInteractive) {
-            btnInteractive.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-red-700 hover:bg-red-50 transition-all flex items-center gap-1.5';
+        if (tabInteractive) {
+            tabInteractive.className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer";
         }
-        if (desc) {
-            desc.innerHTML = '<strong class="text-slate-800 font-bold">🌳 Verzweigtes Szenario mit Video aktiv:</strong> Das Video wird als interaktive Einstiegsfolie eingebunden, gefolgt vom Diagnose-Quiz und verzweigten Aufgaben (Level A/B/C).';
+        if (viewBranching) viewBranching.classList.remove('hidden');
+        if (viewInteractive) viewInteractive.classList.add('hidden');
+        if (subtitle) {
+            subtitle.textContent = "Erstelle differenzierte Lernpfade (Diagnose & Level A/B/C) aus Buchseiten und druckbare PDF-Arbeitsblätter.";
         }
-        if (branchingOpts) branchingOpts.classList.remove('hidden');
-        if (submitLabel) submitLabel.textContent = '🌳 Verzweigtes Szenario erstellen';
-        if (btnSubmit) {
-            btnSubmit.classList.remove('bg-red-600', 'hover:bg-red-700');
-            btnSubmit.classList.add('bg-brand-600', 'hover:bg-brand-700');
-        }
-        if (dropTitle) dropTitle.textContent = "Buchseite / PDF hier reinziehen";
-        if (dropSub) dropSub.textContent = "Unterstützt Fotos (PNG, JPG) und PDF-Seiten bis 10MB";
-        if (dropIcon) {
-            dropIcon.className = "h-16 w-16 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center shadow-inner group-hover:scale-110 transition-all duration-300";
-            dropIcon.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-2xl"></i>';
-        }
-        if (btnMainLabel) btnMainLabel.textContent = "Datei auswählen";
-        if (btnMain) {
-            btnMain.className = "px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-2";
-        }
-        if (dropZone) {
-            dropZone.classList.remove('border-red-300', 'hover:border-red-500');
-            dropZone.classList.add('border-brand-300', 'hover:border-brand-500');
-        }
+        if (btnSubmitLabel) btnSubmitLabel.textContent = "Differenzierte Lernpfade generieren";
     }
 }
-window.setVideoMode = setVideoMode;
+window.switchAppMode = switchAppMode;
+window.setVideoMode = switchAppMode;
+
+// Switch Video Source: YouTube vs MP4
+function switchVideoSourceTab(tab) {
+    const tabYt = document.getElementById('tab-src-youtube');
+    const tabMp4 = document.getElementById('tab-src-mp4');
+    const panelYt = document.getElementById('panel-src-youtube');
+    const panelMp4 = document.getElementById('panel-src-mp4');
+
+    if (tab === 'youtube') {
+        if (tabYt) tabYt.className = "py-2 rounded-xl transition-all flex items-center justify-center gap-2 bg-white text-slate-900 shadow-xs cursor-pointer";
+        if (tabMp4) tabMp4.className = "py-2 rounded-xl transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer";
+        if (panelYt) panelYt.classList.remove('hidden');
+        if (panelMp4) panelMp4.classList.add('hidden');
+    } else {
+        if (tabMp4) tabMp4.className = "py-2 rounded-xl transition-all flex items-center justify-center gap-2 bg-white text-slate-900 shadow-xs cursor-pointer";
+        if (tabYt) tabYt.className = "py-2 rounded-xl transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer";
+        if (panelMp4) panelMp4.classList.remove('hidden');
+        if (panelYt) panelYt.classList.add('hidden');
+    }
+}
+window.switchVideoSourceTab = switchVideoSourceTab;
+
+// Real-time YouTube Link Input Handler & Preview
+function handleYouTubeInput(val) {
+    const previewCard = document.getElementById('youtube-preview-card');
+    const iframe = document.getElementById('youtube-preview-iframe');
+    if (!val || !val.trim()) {
+        if (previewCard) previewCard.classList.add('hidden');
+        if (iframe) iframe.src = '';
+        return;
+    }
+    const match = val.trim().match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (match && match[1]) {
+        const ytId = match[1];
+        if (iframe) iframe.src = `https://www.youtube.com/embed/${ytId}`;
+        if (previewCard) previewCard.classList.remove('hidden');
+    } else {
+        if (previewCard) previewCard.classList.add('hidden');
+    }
+}
+window.handleYouTubeInput = handleYouTubeInput;
+
+// Preset loader for educational videos
+function loadYouTubePreset(url, subject, topic) {
+    const inputUrl = document.getElementById('input-youtube-url');
+    const inputTopic = document.getElementById('iv-focus-topic');
+    if (inputUrl) inputUrl.value = url;
+    if (inputTopic) inputTopic.value = topic;
+    switchVideoSourceTab('youtube');
+    handleYouTubeInput(url);
+    selectIvSubject(subject);
+}
+window.loadYouTubePreset = loadYouTubePreset;
+
+// MP4 File Selection Handler
+function handleVideoFileSelection(files) {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    appState.selectedVideoFile = file;
+    appState.selectedFile = file;
+
+    const infoBox = document.getElementById('iv-video-selected-info');
+    const dropzone = document.getElementById('iv-video-dropzone');
+    const nameEl = document.getElementById('iv-video-filename');
+    const sizeEl = document.getElementById('iv-video-filesize');
+
+    if (nameEl) nameEl.textContent = file.name;
+    if (sizeEl) {
+        const mb = (file.size / (1024 * 1024)).toFixed(1);
+        sizeEl.textContent = `${mb} MB (Video bereit zum Einbetten)`;
+    }
+    if (infoBox) infoBox.classList.remove('hidden');
+    if (dropzone) dropzone.classList.add('hidden');
+}
+window.handleVideoFileSelection = handleVideoFileSelection;
+
+function removeSelectedVideoFile() {
+    appState.selectedVideoFile = null;
+    const input = document.getElementById('input-video-file');
+    if (input) input.value = '';
+    const infoBox = document.getElementById('iv-video-selected-info');
+    const dropzone = document.getElementById('iv-video-dropzone');
+    if (infoBox) infoBox.classList.add('hidden');
+    if (dropzone) dropzone.classList.remove('hidden');
+}
+window.removeSelectedVideoFile = removeSelectedVideoFile;
+
+// Subject Selection in Interactive Video Mode
+function selectIvSubject(subjectName) {
+    const input = document.getElementById('iv-selected-subject');
+    if (input) input.value = subjectName;
+
+    const pills = document.querySelectorAll('.iv-subj-pill');
+    pills.forEach(p => {
+        if (p.textContent.trim() === subjectName.trim()) {
+            p.className = 'iv-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-red-600 bg-red-600 text-white shadow-xs cursor-pointer';
+        } else {
+            p.className = 'iv-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50 text-slate-700 hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer';
+        }
+    });
+}
+window.selectIvSubject = selectIvSubject;
+
+// Checkpoint Stepper in Interactive Video Mode
+function selectIvCheckpointCount(count) {
+    const input = document.getElementById('iv-checkpoint-count');
+    if (input) input.value = count;
+
+    [3, 4, 5].forEach(num => {
+        const btn = document.getElementById(`btn-cp-${num}`);
+        if (!btn) return;
+        if (num === count) {
+            btn.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-red-600 text-white shadow-xs cursor-pointer';
+        } else {
+            btn.className = 'px-3 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer';
+        }
+    });
+}
+window.selectIvCheckpointCount = selectIvCheckpointCount;
+
+// Trigger H5P Download directly
+function triggerInteractiveVideoDownload() {
+    if (btnDownloadH5P) {
+        btnDownloadH5P.click();
+    }
+}
+window.triggerInteractiveVideoDownload = triggerInteractiveVideoDownload;
+
+function resetToNewCreation() {
+    navigateToScreen('upload');
+    removeSelectedVideoFile();
+    const ytInput = document.getElementById('input-youtube-url');
+    if (ytInput) ytInput.value = '';
+    handleYouTubeInput('');
+}
+window.resetToNewCreation = resetToNewCreation;
+
 
 function toggleBranchingInEditor() {
     const branchingSec = document.getElementById('editor-branching-sections');
@@ -1037,6 +1133,28 @@ function showScreen(screen) {
     screenExport.classList.add('hidden');
     if (screenAnalytics) screenAnalytics.classList.add('hidden');
     screen.classList.remove('hidden');
+
+    // Dynamic Export Hub Mode Switch
+    if (screen === screenExport) {
+        const isIv = (appState.generatedData?.video_mode === 'interactive_video' || (appState.generatedData?.interactions && !appState.generatedData?.diagnostic));
+        const exportIvSection = document.getElementById('export-interactive-video-section');
+        const exportBranchingSection = document.getElementById('export-branching-section');
+        const filenameLabel = document.getElementById('export-iv-filename');
+        
+        if (exportIvSection && exportBranchingSection) {
+            if (isIv) {
+                exportIvSection.classList.remove('hidden');
+                exportBranchingSection.classList.add('hidden');
+                if (filenameLabel) {
+                    const cleanTitle = (appState.generatedData?.title || "video").replace(/\s+/g, '_');
+                    filenameLabel.textContent = `${cleanTitle}_interaktives_video.h5p`;
+                }
+            } else {
+                exportBranchingSection.classList.remove('hidden');
+                exportIvSection.classList.add('hidden');
+            }
+        }
+    }
     updateNavigationState();
 }
 
@@ -1667,34 +1785,18 @@ btnSubmit.addEventListener('click', async (e) => {
     if (e) e.stopPropagation();
     
     const isIvMode = (document.getElementById('input-video-mode')?.value === 'interactive_video');
-    const ytVal = (typeof inputYoutubeUrl !== 'undefined' && inputYoutubeUrl) ? inputYoutubeUrl.value.trim() : (document.getElementById('input-youtube-url')?.value || '').trim();
-    const vidFile = appState.selectedVideoFile || document.getElementById('input-video-file')?.files?.[0] || (appState.selectedFile && (appState.selectedFile.type?.startsWith('video/') || appState.selectedFile.name?.toLowerCase().endsWith('.mp4')) ? appState.selectedFile : null);
+    const ytVal = (document.getElementById('input-youtube-url')?.value || '').trim();
+    const vidFile = appState.selectedVideoFile || document.getElementById('input-video-file')?.files?.[0] || null;
+    const ivFocusTopic = (document.getElementById('iv-focus-topic')?.value || '').trim();
+    const ivSubject = document.getElementById('iv-selected-subject')?.value || 'Biologie / Natur';
+    const ivSchoolType = document.getElementById('iv-school-type')?.value || 'Mittelschule';
+    const ivCheckpoints = parseInt(document.getElementById('iv-checkpoint-count')?.value || '4');
+    const includeBranchingToggle = document.getElementById('iv-include-branching-toggle')?.checked || false;
 
-    // Compute focus topic from dynamicTopics or hidden input
-    let focusTopicValue = "";
-    if (typeof dynamicTopics !== 'undefined' && Array.isArray(dynamicTopics) && dynamicTopics.length > 0) {
-        const parts = dynamicTopics
-            .filter(t => t.name && t.name.trim() !== "")
-            .map(t => (t.count && t.count > 1) ? `${t.count}x ${t.name.trim()}` : t.name.trim());
-        focusTopicValue = parts.join(', ');
-    }
-    if (!focusTopicValue && typeof inputFocusTopic !== 'undefined' && inputFocusTopic) {
-        focusTopicValue = inputFocusTopic.value || "";
-    }
-    if (!focusTopicValue) {
-        const hiddenEl = document.getElementById('input-focus-topic');
-        if (hiddenEl) focusTopicValue = hiddenEl.value || "";
-    }
-
-    // Validation: in interactive video mode, NO document or photo is required!
+    // Validation
     if (isIvMode) {
-        if (!vidFile && !ytVal && !appState.selectedFile && !focusTopicValue) {
-            alert("Bitte wählen Sie ein Video (MP4) aus oder tragen Sie einen YouTube-Link ein.");
-            if (dropZone) {
-                dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                dropZone.classList.add('ring-4', 'ring-red-400');
-                setTimeout(() => dropZone.classList.remove('ring-4', 'ring-red-400'), 2500);
-            }
+        if (!vidFile && !ytVal && !ivFocusTopic) {
+            alert("Bitte gib einen YouTube-Link ein, lade eine MP4-Datei hoch oder gib ein Video-Thema an.");
             return;
         }
     } else {
@@ -1702,8 +1804,8 @@ btnSubmit.addEventListener('click', async (e) => {
             alert("Bitte wählen Sie zuerst eine Buchseite aus oder machen Sie ein Foto mit der Kamera.");
             if (dropZone) {
                 dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                dropZone.classList.add('ring-4', 'ring-amber-400');
-                setTimeout(() => dropZone.classList.remove('ring-4', 'ring-amber-400'), 2500);
+                dropZone.classList.add('ring-4', 'ring-indigo-400');
+                setTimeout(() => dropZone.classList.remove('ring-4', 'ring-indigo-400'), 2500);
             }
             return;
         }
@@ -1711,17 +1813,16 @@ btnSubmit.addEventListener('click', async (e) => {
 
     if (loader) loader.classList.remove('hidden');
     
-    // Dynamic loader status indicator for long requests
     const loaderTextEl = document.querySelector('#loader p') || document.querySelector('#loader span');
     if (loaderTextEl) {
-        loaderTextEl.textContent = isIvMode ? "Analysiere Video & erstelle Haltepunkte mit KI..." : "Analysiere Buchseite mit KI...";
+        loaderTextEl.textContent = isIvMode ? "Analysiere Video & erstelle didaktische Haltepunkte mit KI..." : "Analysiere Dokument & erstelle differenzierte Aufgaben...";
     }
     
     const slowTimer1 = setTimeout(() => {
-        if (loaderTextEl) loaderTextEl.textContent = isIvMode ? "Server wird aufgeweckt & KI verarbeitet Video..." : "Server wird aufgeweckt & KI verarbeitet Dokument...";
+        if (loaderTextEl) loaderTextEl.textContent = isIvMode ? "Server wird aufgeweckt & KI setzt Pop-up Quizzes..." : "Server wird aufgeweckt & KI verarbeitet Dokument...";
     }, 6000);
     const slowTimer2 = setTimeout(() => {
-        if (loaderTextEl) loaderTextEl.textContent = isIvMode ? "Erstelle Pop-up Quizfragen direkt ins Video..." : "Erstelle differenzierte H5P- & PDF-Aufgaben...";
+        if (loaderTextEl) loaderTextEl.textContent = isIvMode ? "Formuliere gezielte Verständnisfragen & Erklärungen..." : "Erstelle differenzierte H5P- & PDF-Aufgaben...";
     }, 18000);
     
     const controller = new AbortController();
@@ -1730,38 +1831,47 @@ btnSubmit.addEventListener('click', async (e) => {
     const apiKeyVal = (typeof inputApiKey !== 'undefined' && inputApiKey) ? (inputApiKey.value || '').trim() : '';
     const promoCodeVal = (typeof inputPromoCode !== 'undefined' && inputPromoCode) ? (inputPromoCode.value || '').trim() : '';
 
-    // Save API key & promo code to localStorage
     if (apiKeyVal) localStorage.setItem('gemini_api_key', apiKeyVal);
     if (promoCodeVal) localStorage.setItem('promo_code', promoCodeVal);
 
     const formData = new FormData();
-    if (vidFile) {
-        formData.append('files', vidFile);
-    } else if (appState.selectedFiles && appState.selectedFiles.length > 1) {
-        appState.selectedFiles.forEach((f, idx) => {
-            if (idx === 0 && appState.selectedFile) {
-                formData.append('files', appState.selectedFile);
-            } else {
-                formData.append('files', f);
-            }
-        });
-    } else if (appState.selectedFile) {
-        formData.append('files', appState.selectedFile);
+    if (isIvMode) {
+        if (vidFile) {
+            formData.append('files', vidFile);
+        } else {
+            const fallbackText = ivFocusTopic || ytVal || "Interaktives Erklärvideo";
+            formData.append('files', new Blob([fallbackText], { type: 'text/plain' }), 'video_thema.txt');
+        }
+        formData.append('school_type', ivSchoolType);
+        formData.append('subject', ivSubject);
+        formData.append('focus_topic', ivFocusTopic);
+        formData.append('task_count', ivCheckpoints);
+        formData.append('youtube_url', ytVal);
+        formData.append('video_mode', includeBranchingToggle ? 'branching' : 'interactive_video');
     } else {
-        const fallbackText = focusTopicValue || ytVal || "Interaktives Erklärvideo";
-        formData.append('files', new Blob([fallbackText], { type: 'text/plain' }), 'video_thema.txt');
+        if (appState.selectedFiles && appState.selectedFiles.length > 1) {
+            appState.selectedFiles.forEach((f, idx) => {
+                if (idx === 0 && appState.selectedFile) {
+                    formData.append('files', appState.selectedFile);
+                } else {
+                    formData.append('files', f);
+                }
+            });
+        } else if (appState.selectedFile) {
+            formData.append('files', appState.selectedFile);
+        }
+        formData.append('school_type', (typeof inputSchoolType !== 'undefined' && inputSchoolType) ? inputSchoolType.value : 'Mittelschule');
+        formData.append('subject', (Array.isArray(selectedSubjects) && selectedSubjects.length > 0) ? selectedSubjects.join(', ') : 'Deutsch');
+        formData.append('focus_topic', (typeof inputFocusTopic !== 'undefined' && inputFocusTopic) ? inputFocusTopic.value : '');
+        formData.append('hefteintrag_topic', (typeof inputHefteintragTopic !== 'undefined' && inputHefteintragTopic) ? inputHefteintragTopic.value : '');
+        formData.append('context', (typeof inputContext !== 'undefined' && inputContext) ? inputContext.value : '');
+        formData.append('target_format', (typeof inputFormat !== 'undefined' && inputFormat) ? inputFormat.value : 'Lückentext');
+        formData.append('task_count', (typeof inputTaskCount !== 'undefined' && inputTaskCount) ? inputTaskCount.value : 5);
+        formData.append('youtube_url', '');
+        formData.append('video_mode', 'branching');
     }
-    formData.append('school_type', (typeof inputSchoolType !== 'undefined' && inputSchoolType) ? inputSchoolType.value : 'Grundschule');
-    formData.append('subject', (Array.isArray(selectedSubjects) && selectedSubjects.length > 0) ? selectedSubjects.join(', ') : 'Deutsch');
-    formData.append('focus_topic', focusTopicValue);
-    formData.append('hefteintrag_topic', (typeof inputHefteintragTopic !== 'undefined' && inputHefteintragTopic) ? inputHefteintragTopic.value : '');
-    formData.append('context', (typeof inputContext !== 'undefined' && inputContext) ? inputContext.value : '');
-    formData.append('target_format', (typeof inputFormat !== 'undefined' && inputFormat) ? inputFormat.value : 'Lückentext');
-    formData.append('task_count', (typeof inputTaskCount !== 'undefined' && inputTaskCount) ? inputTaskCount.value : 4);
     formData.append('api_key', apiKeyVal);
     formData.append('promo_code', promoCodeVal);
-    formData.append('youtube_url', ytVal);
-    formData.append('video_mode', isIvMode ? 'interactive_video' : 'branching');
 
     try {
         const response = await fetch(`${API_BASE}/api/generate`, {
@@ -1778,13 +1888,9 @@ btnSubmit.addEventListener('click', async (e) => {
             let errMsg = `Server-Fehler (${response.status})`;
             try {
                 const errData = await response.json();
-                if (errData && errData.detail) {
-                    errMsg = errData.detail;
-                }
+                if (errData && errData.detail) errMsg = errData.detail;
             } catch (e) {
-                if (response.statusText) {
-                    errMsg += `: ${response.statusText}`;
-                }
+                if (response.statusText) errMsg += `: ${response.statusText}`;
             }
             throw new Error(errMsg);
         }
@@ -1798,15 +1904,13 @@ btnSubmit.addEventListener('click', async (e) => {
         }
         appState.generatedData = data;
         
-        // Save to IndexedDB history
         try {
             await saveExerciseToHistory(data);
             renderHistoryList();
         } catch (e) {
-            console.error("Failed to save generated exercise to IndexedDB:", e);
+            console.error("Failed to save generated exercise to history:", e);
         }
         
-        // Populate Editor Screen
         populateEditor(data);
         showScreen(screenEditor);
 
@@ -1817,7 +1921,7 @@ btnSubmit.addEventListener('click', async (e) => {
         
         console.error("Failed to generate task:", err);
         if (err.name === 'AbortError' || (err.message && err.message.toLowerCase().includes('aborted'))) {
-            console.log("Request was aborted (page refresh or navigation).");
+            console.log("Request was aborted.");
         } else {
             alert("Fehler bei der Generierung:\n\n" + err.message);
         }
@@ -1825,6 +1929,7 @@ btnSubmit.addEventListener('click', async (e) => {
         if (loader) loader.classList.add('hidden');
     }
 });
+
 
 // ----------------------------------------------------
 // EDITOR SCREEN POPULATION & RENDERING
@@ -2225,7 +2330,8 @@ btnDownloadH5P.addEventListener('click', async () => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${payload.title.replace(/\s+/g, '_')}_differenziert.h5p`;
+        const suffix = (payload.video_mode === 'interactive_video' || (payload.interactions && !payload.diagnostic)) ? '_interaktives_video.h5p' : '_differenziert.h5p';
+        a.download = `${payload.title.replace(/\s+/g, '_')}${suffix}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
