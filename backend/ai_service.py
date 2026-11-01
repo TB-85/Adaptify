@@ -54,27 +54,27 @@ class DifferentiatedContent(BaseModel):
     level_a: LevelContent
     level_b: LevelContent
 class InteractionAnswer(BaseModel):
-    text: str
-    correct: bool
+    text: str = Field(description="Antworttext für Multiple Choice")
+    correct: bool = Field(description="True wenn dies die fachlich richtige Antwort ist, sonst False")
 
 class VideoInteraction(BaseModel):
-    time_seconds: int
-    time_formatted: str
-    title: str
-    format: str # 'Multiple Choice', 'Wahr/Falsch', 'Lückentext', 'Infobox'
-    question: str
-    answers: Optional[List[InteractionAnswer]] = None
-    correct: Optional[bool] = None
-    text_with_blanks: Optional[str] = None
-    text: Optional[str] = None
-    explanation: Optional[str] = None
+    time_seconds: int = Field(description="Exakter Haltepunkt in Sekunden. MUSS exakt 1 bis 3 Sekunden NACH dem Moment liegen, in dem die abgefragte Information im Video gerade vollständig erklärt oder gezeigt wurde!")
+    time_formatted: str = Field(description="Haltepunkt formatiert als MM:SS (z. B. '01:25')")
+    title: str = Field(description="Prägnanter Titel des Quiz-Stopps oder Merkkastens (z. B. '💡 Merkkasten: IPv4-Aufbau' oder 'Verständnis-Check: Subnetzmaske')")
+    format: str = Field(description="Interaktionstyp: 'Multiple Choice', 'Wahr/Falsch', 'Lückentext' oder 'Infobox'")
+    question: str = Field(description="Die konkrete Frage oder Handlungsanweisung, basierend auf dem gerade Gesehenen/Gehörten")
+    answers: Optional[List[InteractionAnswer]] = Field(default=None, description="Für 'Multiple Choice': 3-4 Optionen mit genau 1 korrekten Antwort")
+    correct: Optional[bool] = Field(default=None, description="Für 'Wahr/Falsch': True wenn die Aussage stimmt, sonst False")
+    text_with_blanks: Optional[str] = Field(default=None, description="Für 'Lückentext': Didaktischer Merksatz mit dem gesuchten Schlüsselbegriff in Sternchen (z. B. 'Eine IPv4-Adresse besteht aus *32* Bit.')")
+    text: Optional[str] = Field(default=None, description="Für 'Infobox' (Merkkasten): Zusammenfassung und Kernaussage des gerade gezeigten Abschnitts ('💡 Merke dir: ...')")
+    explanation: Optional[str] = Field(default=None, description="Verständliche didaktische Rückmeldung, die erklärt, warum die Antwort richtig ist und direkt auf das Video verweist")
 
 class InteractiveVideoContent(BaseModel):
-    title: str
+    title: str = Field(description="Prägnanter Titel der Lerneinheit, autonom ermittelt aus dem echten Videoinhalt (z. B. 'Informatik: IP-Adressen und Subnetze')")
     video_mode: str = "interactive_video"
-    subject: str
-    school_type: str
-    interactions: List[VideoInteraction]
+    subject: str = Field(description="Das tatsächliche Schulfach des Videos (z. B. Informatik, Mathematik, Physik, Biologie, Deutsch, Geschichte)")
+    school_type: str = Field(description="Schulart (z. B. Mittelschule, Realschule, Gymnasium)")
+    interactions: List[VideoInteraction] = Field(description="Genau die geforderten Haltepunkte, chronologisch aufsteigend nach time_seconds geordnet")
 
 
 
@@ -182,22 +182,40 @@ class AIService:
             except Exception as e:
                 logger.warning(f"Failed to fetch YouTube oEmbed: {e}")
 
-            # B. Fetch transcript via youtube_transcript_api
+            # B. Fetch transcript via youtube_transcript_api (multi-language & timestamp aware)
             if vid_id:
                 try:
                     from youtube_transcript_api import YouTubeTranscriptApi
                     ytt = YouTubeTranscriptApi()
-                    transcript_pieces = ytt.fetch(vid_id)
-                    if transcript_pieces:
+                    tlist = ytt.list(vid_id)
+                    selected_transcript = None
+                    try:
+                        selected_transcript = tlist.find_transcript(['de', 'de-DE', 'de-AT', 'de-CH', 'en', 'en-US', 'en-GB'])
+                    except Exception:
+                        for tr in tlist:
+                            selected_transcript = tr
+                            break
+
+                    if selected_transcript:
+                        transcript_pieces = selected_transcript.fetch()
                         lines = []
+                        max_timestamp = 0
                         for snippet in transcript_pieces:
-                            m, s = divmod(int(snippet.start), 60)
+                            start_sec = int(snippet.start)
+                            if start_sec > max_timestamp:
+                                max_timestamp = start_sec
+                            m, s = divmod(start_sec, 60)
                             lines.append(f"[{m:02d}:{s:02d}] {snippet.text}")
                         transcript_text = "\n".join(lines)
                         if len(transcript_text) > 40000:
                             transcript_text = transcript_text[:40000] + "\n...[Transkript gekürzt]"
-                        contents.append(f"VOLLSTÄNDIGE TONSPUR / TRANSKRIPT DES YOUTUBE-VIDEOS MIT ZEITSTEMPELN:\n\n{transcript_text}")
-                        logger.info(f"Successfully retrieved YouTube transcript with {len(transcript_pieces)} segments!")
+
+                        m_end, s_end = divmod(max_timestamp, 60)
+                        contents.append(
+                            f"VOLLSTÄNDIGE TONSPUR / TRANSKRIPT DES YOUTUBE-VIDEOS MIT ZEITSTEMPELN "
+                            f"(Gesamtlänge ca. {m_end:02d}:{s_end:02d} / {max_timestamp} Sekunden):\n\n{transcript_text}"
+                        )
+                        logger.info(f"Successfully retrieved YouTube transcript in '{selected_transcript.language_code}' with {len(transcript_pieces)} segments (~{m_end:02d}:{s_end:02d})!")
                 except Exception as e:
                     logger.warning(f"Could not retrieve YouTube transcript for {vid_id}: {e}")
 
@@ -235,6 +253,23 @@ class AIService:
 
                     if gemini_file.state.name == "ACTIVE":
                         logger.info(f"Video file '{fname}' is ACTIVE in Gemini API and ready for multimodal analysis!")
+                        # Probe video duration via ffprobe if available
+                        video_duration_sec = None
+                        try:
+                            import subprocess
+                            ff_res = subprocess.run(
+                                ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', tmp_path],
+                                capture_output=True, text=True, timeout=5
+                            )
+                            if ff_res.returncode == 0 and ff_res.stdout.strip():
+                                video_duration_sec = int(float(ff_res.stdout.strip()))
+                        except Exception as ff_err:
+                            logger.debug(f"Could not probe video duration: {ff_err}")
+
+                        if video_duration_sec:
+                            m_dur, s_dur = divmod(video_duration_sec, 60)
+                            contents.append(f"HINWEIS ZUR VIDEODATEI '{fname}': Die Gesamtlänge des Videos beträgt exakt {m_dur:02d}:{s_dur:02d} ({video_duration_sec} Sekunden). Alle Quiz-Haltepunkte müssen strikt innerhalb dieser Laufzeit liegen!")
+
                         contents.append(gemini_file)
                     else:
                         logger.warning(f"Video file state is '{gemini_file.state.name}', not ACTIVE.")
@@ -773,28 +808,32 @@ Generiere genau dieses JSON:
 
         prompt = f"""Du bist ein didaktischer Experte für digitale Bildung und interaktive Lernvideos (H5P Interactive Video) für bayerische Schulen ({school_type}).
 
-ABSOLUTE PRIORITÄT: VIDEO-INHALTSANALYSE (BILD- UND TONSPUR)
-1. Du hast das Original-Video (bzw. die Tonspur / das Transkript) vorliegen. Analysiere es von Anfang bis Ende gründlich und präzise:
-   - BILDSPUR: Was ist auf dem Bildschirm oder an der Tafel zu sehen? (Folienüberschriften, Programmcode, Diagramme, Schemata, Formeln, hervorgehobene Begriffe).
-   - TONSPUR: Was wird wörtlich erklärt? Welche Definitionen, Fachbegriffe, Beispiele und Schritte nennt die sprechende Person?
-2. THEMEN- UND FACHERKENNUNG:
-   - Ermittle das ECHTE Fach (z. B. Informatik, Mathematik, Physik, Biologie, Deutsch, Geschichte etc.) und das ECHTE Thema (z. B. 'IP-Adressen, IPv4 und Netzwerktechnik') direkt aus dem visuellen und gesprochenen Videoinhalt!
-   - IGNORIERE jegliche abweichenden oder widersprüchlichen Voreinstellungen:
-     Wenn das Video von IP-Adressen, Computernetzwerken oder Informatik handelt, erstelle ZWINGEND Fragen zu Informatik und IP-Adressen und AUF GAR KEINEN FALL zu Biologie, Wasserkreislauf oder anderen Fächern!
-   - Die Bild- und Tonspur des Videos ist die EINZIGE und ABSOLUTE Wahrheitsquelle!
-   - Setze das Feld 'subject' auf das erkannte Fach (z.B. 'Informatik') und 'title' auf einen prägnanten Titel zum erkannten Thema (z.B. 'Informatik: IP-Adressen und Subnetze').
-3. ERSTELLE GENAU {task_count} INTERAKTIVE QUIZ-HALTEPUNKTE:
-   - Die Fragen und Antworten MÜSSEN sich zu 100% auf die konkreten Erklärungen, Fakten und Beispiele aus DIESEM Video beziehen.
-   - Verteile die Haltepunkte ('time_seconds') zeitlich passgenau über das Video an die Stellen, an denen der jeweilige Sachverhalt gerade erklärt wurde.
-4. FRAGETYPEN & DIDAKTIK:
-   - 'Multiple Choice': Genau 1 fachlich richtige Antwort und 2-3 plausible falsche Distraktoren.
-   - 'Wahr/Falsch': Aussage zum Videoinhalt zur schnellen Lernzielkontrolle mit 'correct': true oder false.
-   - 'Lückentext': Prägnanter Merksatz zum Video mit 1-2 Schlüsselwörtern in Sternchen (*Wort*).
-   - 'Infobox': Wichtiger Merksatz oder Praxistipp zum aktuellen Videoabschnitt.
-5. ERKLÄRUNGEN (FEEDBACK):
-   - Jede Frage MUSS eine verständliche Erklärung ('explanation') enthalten, die nach dem Beantworten eingeblendet wird und den Zusammenhang aus dem Video nochmals kurz aufgreift.
+ABSOLUTE ANFORDERUNGEN AN THEMEN-PASSGENAUIGKEIT, ERKLÄRUNGEN UND STOPP-ZEITPUNKTE:
 
-Antworte ausschließlich im vorgegebenen JSON-Format:
+1. THEMA UND FACH (100% PASSGENAU AUS DEM VIDEO):
+   - Das tatsächliche Schulfach (z. B. 'Informatik', 'Mathematik', 'Physik', 'Biologie', 'Chemie', 'Geschichte', 'Deutsch', 'Wirtschaft' etc.) und der genaue Titel (z. B. 'Informatik: Aufbau von IPv4-Adressen und Subnetzen') MÜSSEN zu 100% aus dem tatsächlichen Inhalt des Videos abgeleitet werden.
+   - Bildspur und Tonspur sind die absolute Wahrheitsquelle. Ignoriere irreführende Vorbelegungen oder Standardwerte vollständig.
+
+2. EXAKTER STOPP-ZEITPUNKT (TIMESTAMPS):
+   - Jeder Quiz-Haltepunkt ('time_seconds' und 'time_formatted', z. B. '01:25') MUSS didaktisch exakt an die Stelle platziert werden, an der der abgefragte Sachverhalt im Video gerade vollständig erklärt oder gezeigt wurde!
+   - REGEL ZUM STOPP: Zuerst muss das Video den Begriff, die Formel, das Schema oder den Fakt vollständig genannt oder veranschaulicht haben. Genau 1 bis 3 Sekunden NACH Abschluss dieser Erklärung stoppt das Video für die Frage oder den Merkkasten.
+   - Stoppe NIEMALS bevor die Information im Video genannt wurde (Schüler können es sonst noch nicht wissen).
+   - Wähle KEINE willkürlichen Intervalle (wie stur alle 30s), sondern ermittle die echten Sinnabschnitte und Kapitel des Videos anhand der Tonspur und Folienwechsel.
+   - Haltepunkte müssen chronologisch aufsteigend angeordnet sein (Stopp 1 < Stopp 2 < Stopp 3 ...).
+
+3. FRAGEN UND MERKKÄSTEN (PASSGENAU ZUM VIDEO):
+   - Jede Frage muss eine konkrete, im Video genannte Tatsache, Definition, Zahl, Struktur oder Vorgehensweise abfragen. Keine vagen Allgemeinplätze!
+   - FRAGETYPEN:
+     * 'Multiple Choice': Klare Frage zum soeben erklärten Punkt. Genau 1 richtige Antwort (stimmt exakt mit dem Video überein) und 2-3 plausible falsche Distraktoren.
+     * 'Wahr/Falsch': Präzise Aussage zu dem im Video gezeigten Sachverhalt mit 'correct': true oder false.
+     * 'Lückentext' (als aktiver Merkkasten): Ein didaktischer Merksatz, bei dem der wichtigste soeben gelernte Fachbegriff in Sternchen steht (z. B. "Eine IPv4-Adresse besteht aus *32* Bit."), den die Schüler eintragen.
+     * 'Infobox' (als didaktischer Merkkasten): Ein hervorgehobener Merksatz ('💡 Merke dir: ...'), der die Kernaussage, Formel oder Regel des soeben gesehenen Abschnitts einprägsam zusammenfasst.
+   - Mindestens einer der Haltepunkte sollte als didaktischer Merkkasten ('Infobox' oder 'Lückentext') gestaltet sein, um das Gelernte zu festigen.
+
+4. DIDAKTISCHE RÜCKMELDUNG ('explanation'):
+   - Jede Interaktion MUSS eine verständliche Erklärung enthalten, die dem Schüler direkt nach der Beantwortung den Bezug zum Video bestätigt (z. B. "Richtig! Wie im Video bei 01:18 erklärt wurde, teilt die Subnetzmaske die IP-Adresse in Netz- und Hostanteil auf.").
+
+Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses Video. Antworte ausschließlich im vorgegebenen JSON-Schema:
 """
 
         uploaded_gemini_files = []
@@ -824,7 +863,17 @@ Antworte ausschließlich im vorgegebenen JSON-Format:
                     if response and response.text:
                         parsed = json.loads(response.text)
                         parsed["video_mode"] = "interactive_video"
-                        logger.info(f"Successfully generated interactive video quiz for subject='{parsed.get('subject')}', title='{parsed.get('title')}'")
+
+                        # Validate, format and sort interactions chronologically
+                        if "interactions" in parsed and isinstance(parsed["interactions"], list):
+                            for inter in parsed["interactions"]:
+                                ts = int(inter.get("time_seconds", 0))
+                                m, s = divmod(ts, 60)
+                                inter["time_seconds"] = ts
+                                inter["time_formatted"] = f"{m:02d}:{s:02d}"
+                            parsed["interactions"].sort(key=lambda x: x.get("time_seconds", 0))
+
+                        logger.info(f"Successfully generated interactive video quiz for subject='{parsed.get('subject')}', title='{parsed.get('title')}' with {len(parsed.get('interactions', []))} checkpoints")
                         return parsed
                 except Exception as e:
                     logger.warning(f"Interactive video generation failed with model {model_name}: {e}")
