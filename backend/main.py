@@ -178,7 +178,7 @@ async def generate_task(
             context=effective_context,
             subject=subject,
             school_type=school_type,
-            task_count=task_count if task_count >= 2 else 4,
+            task_count=task_count if task_count >= 1 else 5,
             api_key=effective_api_key,
             youtube_url=youtube_url
         )

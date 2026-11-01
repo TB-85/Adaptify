@@ -404,20 +404,27 @@
                                    class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-xs">
                         </div>
 
-                        <!-- Checkpoint Stepper (3, 4, 5 Haltepunkte) -->
+                        <!-- Checkpoint Stepper mit Plus- und Minus-Tasten (Grundeinstellung 5 Fragen) -->
                         <div class="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
                             <div class="flex justify-between items-center">
                                 <div>
-                                    <label class="block text-xs font-extrabold text-slate-900">Didaktische Haltepunkte (Quiz-Stopps):</label>
-                                    <p class="text-[10px] text-slate-500 font-medium">Automatische Pausen mit interaktiven Fragen</p>
+                                    <label class="block text-xs font-extrabold text-slate-900">Didaktische Haltepunkte (Quiz-Fragen):</label>
+                                    <p class="text-[10px] text-slate-500 font-medium">Anzahl der automatischen Stopps mit Fragen &amp; Merkkästen</p>
                                 </div>
-                                <div class="inline-flex p-1 bg-white border border-slate-200 rounded-xl shadow-xs gap-1">
-                                    <button type="button" onclick="selectIvCheckpointCount(3)" id="btn-cp-3" class="px-3 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer">3</button>
-                                    <button type="button" onclick="selectIvCheckpointCount(4)" id="btn-cp-4" class="px-3 py-1 rounded-lg text-xs font-bold bg-red-600 text-white shadow-xs cursor-pointer">4</button>
-                                    <button type="button" onclick="selectIvCheckpointCount(5)" id="btn-cp-5" class="px-3 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer">5</button>
+                                <div class="flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-xs">
+                                    <button type="button" onclick="adjustIvCheckpointCount(-1)" id="btn-iv-cp-minus" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-black rounded-lg flex items-center justify-center text-sm transition-all cursor-pointer select-none" title="Eine Frage weniger" aria-label="Frage verringern">
+                                        <i class="fa-solid fa-minus text-xs"></i>
+                                    </button>
+                                    <div class="flex flex-col items-center min-w-[36px] px-1">
+                                        <span id="display-iv-checkpoints" class="text-sm font-black text-red-600 leading-none">5</span>
+                                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Fragen</span>
+                                    </div>
+                                    <button type="button" onclick="adjustIvCheckpointCount(1)" id="btn-iv-cp-plus" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-black rounded-lg flex items-center justify-center text-sm transition-all cursor-pointer select-none" title="Eine Frage mehr" aria-label="Frage erhöhen">
+                                        <i class="fa-solid fa-plus text-xs"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <input type="hidden" id="iv-checkpoint-count" value="4">
+                            <input type="hidden" id="iv-checkpoint-count" value="5">
                         </div>
 
                         <!-- Optional Differentiated Branching Accordion / Switch -->
@@ -1837,6 +1844,6 @@
     </div>
 
     <!-- App JavaScript -->
-    <script src="app.js?v=28"></script>
+    <script src="app.js?v=29"></script>
 </body>
 </html>

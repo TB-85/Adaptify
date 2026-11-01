@@ -162,19 +162,25 @@ function selectIvSubject(subjectName) {
 window.selectIvSubject = selectIvSubject;
 
 // Checkpoint Stepper in Interactive Video Mode
+// Adjust Interactive Video Checkpoint / Question Count with Plus & Minus buttons
+function adjustIvCheckpointCount(delta) {
+    const input = document.getElementById('iv-checkpoint-count');
+    const display = document.getElementById('display-iv-checkpoints');
+    let current = parseInt(input ? input.value : '5', 10);
+    if (isNaN(current) || current < 1) current = 5;
+
+    let newCount = Math.min(20, Math.max(1, current + delta));
+    if (input) input.value = newCount;
+    if (display) display.textContent = newCount;
+}
+window.adjustIvCheckpointCount = adjustIvCheckpointCount;
+
+// Backward-compatible alias
 function selectIvCheckpointCount(count) {
     const input = document.getElementById('iv-checkpoint-count');
+    const display = document.getElementById('display-iv-checkpoints');
     if (input) input.value = count;
-
-    [3, 4, 5].forEach(num => {
-        const btn = document.getElementById(`btn-cp-${num}`);
-        if (!btn) return;
-        if (num === count) {
-            btn.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-red-600 text-white shadow-xs cursor-pointer';
-        } else {
-            btn.className = 'px-3 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer';
-        }
-    });
+    if (display) display.textContent = count;
 }
 window.selectIvCheckpointCount = selectIvCheckpointCount;
 
@@ -1802,7 +1808,7 @@ btnSubmit.addEventListener('click', async (e) => {
     const ivFocusTopic = (document.getElementById('iv-focus-topic')?.value || '').trim();
     const ivSubject = document.getElementById('iv-selected-subject')?.value || 'Automatisch (aus Video)';
     const ivSchoolType = document.getElementById('iv-school-type')?.value || 'Mittelschule';
-    const ivCheckpoints = parseInt(document.getElementById('iv-checkpoint-count')?.value || '4');
+    const ivCheckpoints = parseInt(document.getElementById('iv-checkpoint-count')?.value || '5');
     const includeBranchingToggle = document.getElementById('iv-include-branching-toggle')?.checked || false;
 
     // Validation

@@ -772,7 +772,7 @@ Generiere genau dieses JSON:
         context: str = "",
         subject: str = "Informatik",
         school_type: str = "Mittelschule",
-        task_count: int = 4,
+        task_count: int = 5,
         api_key: str = None,
         youtube_url: str = None
     ) -> dict:
@@ -884,7 +884,7 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
         finally:
             self._cleanup_gemini_files(client, uploaded_gemini_files, temp_files_to_remove)
 
-    def _get_mock_interactive_video(self, context: str = "", subject: str = "Informatik", school_type: str = "Mittelschule", task_count: int = 4, error_message: str = None) -> dict:
+    def _get_mock_interactive_video(self, context: str = "", subject: str = "Informatik", school_type: str = "Mittelschule", task_count: int = 5, error_message: str = None) -> dict:
         topic = context.strip() if context else ("IP-Adressen und Rechnernetze" if subject == "Informatik" else f"Grundlagen {subject}")
         is_ip_topic = any(k in topic.lower() for k in ['ip', 'netzwerk', 'informatik', 'subnetz', 'router'])
         
@@ -930,6 +930,19 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                     "question": "Merksatz",
                     "text": "Merke dir: Datenpakete im Internet finden ihren Weg durch Router anhand von Quell- und Ziel-IP-Adressen.",
                     "explanation": ""
+                },
+                {
+                    "time_seconds": 270,
+                    "time_formatted": "04:30",
+                    "title": "💡 Merkkasten: IPv6 Zukunft",
+                    "format": "Multiple Choice",
+                    "question": "Warum wird IPv6 weltweit als neuer Standard eingeführt?",
+                    "answers": [
+                        {"text": "Weil der Adressvorrat von IPv4 durch Milliarden vernetzter Geräte erschöpft ist", "correct": True},
+                        {"text": "Weil IPv4 nur noch auf alten Röhrenmonitoren funktioniert", "correct": False},
+                        {"text": "Weil IPv6 keine IP-Adressen mehr benötigt", "correct": False}
+                    ],
+                    "explanation": "Genau richtig! IPv6 bietet mit 128 Bit praktisch unbegrenzte Adressen für alle internetfähigen Geräte."
                 }
             ][:task_count]
         else:
@@ -973,6 +986,19 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                     "question": "Merksatz",
                     "text": f"Merke dir: Alle Teilschritte von {topic} bauen logisch aufeinander auf. Wiederhole schwierige Abschnitte bei Bedarf.",
                     "explanation": ""
+                },
+                {
+                    "time_seconds": 250,
+                    "time_formatted": "04:10",
+                    "title": "Abschluss-Check",
+                    "format": "Multiple Choice",
+                    "question": f"Welche Schlussfolgerung zieht das Video zu '{topic}'?",
+                    "answers": [
+                        {"text": "Das Gelernte sollte durch gezielte Übungsaufgaben vertieft werden", "correct": True},
+                        {"text": "Das Thema ist ab sofort nicht mehr relevant", "correct": False},
+                        {"text": "Es gibt keine weiteren Anwendungsmöglichkeiten", "correct": False}
+                    ],
+                    "explanation": "Richtig! Übung und Wiederholung festigen das erworbene Wissen."
                 }
             ][:task_count]
 
