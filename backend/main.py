@@ -280,8 +280,10 @@ async def export_pdf(data: ExportData):
     Takes the structured task JSON and generates a premium print-ready PDF worksheet.
     """
     try:
+        is_video = (data.video_mode == "interactive_video" or (data.interactions and not data.diagnostic))
+        suffix = "hefteintrag_begleitblatt.pdf" if is_video else "arbeitsblatt.pdf"
         pdf_bytes = PDFGenerator.generate_worksheet_pdf(data.dict())
-        disposition = make_content_disposition(data.title, "arbeitsblatt.pdf")
+        disposition = make_content_disposition(data.title, suffix)
         
         return Response(
             content=pdf_bytes,

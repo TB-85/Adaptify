@@ -60,6 +60,7 @@ class InteractionAnswer(BaseModel):
 class VideoInteraction(BaseModel):
     time_seconds: int = Field(description="Exakter Haltepunkt in Sekunden. MUSS exakt 1 bis 3 Sekunden NACH dem Moment liegen, in dem die abgefragte Information im Video gerade vollständig erklärt oder gezeigt wurde!")
     time_formatted: str = Field(description="Haltepunkt formatiert als MM:SS (z. B. '01:25')")
+    rewind_seconds: Optional[int] = Field(default=None, description="Sekunde im Video, an der die Erklärung begonnen hat. Dorthin springt das Video bei falscher Antwort automatisch zurück.")
     title: str = Field(description="Prägnanter Titel des Quiz-Stopps oder Merkkastens (z. B. '💡 Merkkasten: IPv4-Aufbau' oder 'Verständnis-Check: Subnetzmaske')")
     format: str = Field(description="Interaktionstyp: 'Multiple Choice', 'Wahr/Falsch', 'Lückentext' oder 'Infobox'")
     question: str = Field(description="Die konkrete Frage oder Handlungsanweisung, basierend auf dem gerade Gesehenen/Gehörten")
@@ -67,6 +68,7 @@ class VideoInteraction(BaseModel):
     correct: Optional[bool] = Field(default=None, description="Für 'Wahr/Falsch': True wenn die Aussage stimmt, sonst False")
     text_with_blanks: Optional[str] = Field(default=None, description="Für 'Lückentext': Didaktischer Merksatz mit dem gesuchten Schlüsselbegriff in Sternchen (z. B. 'Eine IPv4-Adresse besteht aus *32* Bit.')")
     text: Optional[str] = Field(default=None, description="Für 'Infobox' (Merkkasten): Zusammenfassung und Kernaussage des gerade gezeigten Abschnitts ('💡 Merke dir: ...')")
+    hefteintrag_step: Optional[str] = Field(default=None, description="Der wachsende kumulative Hefteintrag bis zu diesem Stopp (Thema + alle bisherigen Punkte + Aufforderung '✍️ Schreibe diesen Punkt jetzt in dein Heft!')")
     explanation: Optional[str] = Field(default=None, description="Verständliche didaktische Rückmeldung, die erklärt, warum die Antwort richtig ist und direkt auf das Video verweist")
 
 class InteractiveVideoContent(BaseModel):
@@ -74,6 +76,7 @@ class InteractiveVideoContent(BaseModel):
     video_mode: str = "interactive_video"
     subject: str = Field(description="Das tatsächliche Schulfach des Videos (z. B. Informatik, Mathematik, Physik, Biologie, Deutsch, Geschichte)")
     school_type: str = Field(description="Schulart (z. B. Mittelschule, Realschule, Gymnasium)")
+    full_hefteintrag: Optional[str] = Field(default=None, description="Das vollständige strukturierte Gesamt-Tafelbild / Hefteintrag für das gesamte Video zur dauerhaften Ergebnissicherung")
     interactions: List[VideoInteraction] = Field(description="Genau die geforderten Haltepunkte, chronologisch aufsteigend nach time_seconds geordnet")
 
 
@@ -832,6 +835,16 @@ ABSOLUTE ANFORDERUNGEN AN THEMEN-PASSGENAUIGKEIT, ERKLÄRUNGEN UND STOPP-ZEITPUN
 
 4. DIDAKTISCHE RÜCKMELDUNG ('explanation'):
    - Jede Interaktion MUSS eine verständliche Erklärung enthalten, die dem Schüler direkt nach der Beantwortung den Bezug zum Video bestätigt (z. B. "Richtig! Wie im Video bei 01:18 erklärt wurde, teilt die Subnetzmaske die IP-Adresse in Netz- und Hostanteil auf.").
+
+5. WACHSENDER HEFTEINTRAG & ADAPTIVER RÜCKSPRUNG (AUTOMATISCH FÜR JEDES VIDEO):
+   - 'full_hefteintrag': Erstelle ein sauberes, strukturiertes Gesamttafelbild für das Heft (Überschrift zum Thema + nummerierte Kernpunkte 1 bis {task_count}).
+   - Für JEDEN Haltepunkt:
+     * 'rewind_seconds': Ermittle exakt die Sekunde im Video, an der die Erklärung zu dieser Frage begonnen hat (z. B. Frage stoppt bei 01:25, Erklärung begann bei 00:48 -> 'rewind_seconds': 48). Dorthin springt das Video bei falscher Antwort automatisch zurück!
+     * 'hefteintrag_step': Generiere den kumulativ wachsenden Hefteintrag bis zu diesem Schritt:
+       Stopp 1: Thema + Punkt 1 + Aufforderung "✍️ Schreibe Datum, Überschrift und Punkt 1 jetzt sauber in dein Schulheft!"
+       Stopp 2: Thema + Punkt 1 + Punkt 2 + Aufforderung "✍️ Ergänze Punkt 2 jetzt in deinem Schulheft!"
+       Stopp 3+: Alle bisherigen Punkte bleiben stehen und der neue Punkt kommt nummeriert hinzu, stets mit dem Schreib-Aufruf!
+   - Mindestens einer der Haltepunkte sollte als didaktischer Merkkasten ('Infobox' oder 'Lückentext') gestaltet sein, der das Tafelbild hervorhebt.
 
 Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses Video. Antworte ausschließlich im vorgegebenen JSON-Schema:
 """

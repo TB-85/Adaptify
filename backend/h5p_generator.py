@@ -617,7 +617,7 @@ class H5PGenerator:
                                 "enableRetry": True, "enableSolutionsButton": True, "singleAnswer": True, 
                                 "singlePoint": True, "randomAnswers": False, "showSolutionsRequiresInput": True, 
                                 "confirmCheckDialog": False, "confirmRetryDialog": False, "autoCheck": False, 
-                                "passPercentage": 100, "type": "auto"
+                                "passPercentage": 80, "type": "auto"
                             },
                             "UI": {
                                 "checkAnswerButton": "Prüfen", "submitAnswerButton": "Absenden", "tryAgainButton": "Wiederholen", 
@@ -881,7 +881,7 @@ class H5PGenerator:
                             "confirmCheckDialog": False,
                             "confirmRetryDialog": False,
                             "autoCheck": False,
-                            "passPercentage": 100,
+                            "passPercentage": 80,
                             "showScorePoints": True
                         },
                         "UI": {
@@ -971,6 +971,39 @@ class H5PGenerator:
                     }
                 }
 
+            # Automatic Adaptivity: On wrong answer, automatically jump back to explanation start!
+            # Require completion before allowing to continue.
+            rewind_sec = int(item.get("rewind_seconds") or item.get("explanation_start_seconds") or max(0, t_sec - 25))
+
+            if fmt in ["Multiple Choice", "Wahr/Falsch", "Wahr / Falsch", "Lückentext", "Lueckentext"]:
+                interaction_obj["adaptivity"] = {
+                    "correct": {
+                        "seekTo": None,
+                        "message": "<div>Klasse! Das ist vollkommen richtig! Weiter geht's.</div>",
+                        "label": "Video fortsetzen"
+                    },
+                    "wrong": {
+                        "seekTo": rewind_sec,
+                        "message": "<div>Das war leider noch nicht ganz richtig. Schau dir die Erklärung im Video noch einmal genau an!</div>",
+                        "label": "Zurück zur Erklärung"
+                    },
+                    "requireCompletion": True
+                }
+            else:
+                interaction_obj["adaptivity"] = {
+                    "correct": {
+                        "seekTo": None,
+                        "message": "",
+                        "label": "Hefteintrag fertig - Weiter"
+                    },
+                    "wrong": {
+                        "seekTo": None,
+                        "message": "",
+                        "label": "Weiter"
+                    },
+                    "requireCompletion": True
+                }
+
             interactions_list.append(interaction_obj)
 
         # 3. Build content.json
@@ -1002,7 +1035,7 @@ class H5PGenerator:
             "override": {
                 "showBookmarksmenuOnLoad": False,
                 "showRewind10": True,
-                "preventSkipping": False,
+                "preventSkipping": True,
                 "deactivateSound": False
             },
             "l10n": {

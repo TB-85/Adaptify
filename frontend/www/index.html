@@ -806,6 +806,21 @@
                             </span>
                         </div>
 
+                        <!-- Wachsender Hefteintrag / Tafelbild Card -->
+                        <div id="iv-hefteintrag-card" class="p-4 bg-sky-50/70 border border-sky-200/80 rounded-2xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-xs font-black text-sky-950 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-book-bookmark text-sky-600"></i>
+                                    <span>📖 Wachsender Hefteintrag (Tafelbild zum Mitschreiben ins Heft)</span>
+                                </h4>
+                                <span class="text-[10px] font-bold px-2 py-0.5 bg-sky-100 text-sky-800 rounded-full">Ergebnissicherung</span>
+                            </div>
+                            <p class="text-[11px] text-slate-600">
+                                Dieser strukturierte Eintrag wächst an den Video-Haltepunkten schrittweise mit. Schüler schreiben ihn während des Videos ins Schulheft ab oder kleben das Begleitblatt ein.
+                            </p>
+                            <textarea id="iv-full-hefteintrag" rows="4" placeholder="Gesamt-Hefteintrag für das Video..." class="w-full p-2.5 bg-white border border-sky-200 rounded-xl text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-2xs leading-relaxed"></textarea>
+                        </div>
+
                         <!-- Dynamic Interactions List -->
                         <div id="interactive-video-cards-list" class="space-y-4">
                             <!-- Cards inserted by app.js -->
@@ -949,8 +964,8 @@
                     </p>
                 </div>
 
-                <!-- Primary Download Card -->
-                <div class="max-w-md mx-auto">
+                <!-- Primary Download Cards (H5P Video + Hefteintrag PDF) -->
+                <div class="max-w-md mx-auto space-y-3">
                     <button id="btn-download-iv-h5p" onclick="triggerInteractiveVideoDownload()" class="w-full flex items-center justify-center gap-4 p-5 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 group hover:-translate-y-1 ring-4 ring-red-100 cursor-pointer">
                         <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white text-2xl group-hover:scale-110 transition-transform">
                             <i class="fa-solid fa-download"></i>
@@ -959,6 +974,18 @@
                             <div class="font-black text-base">H5P-Video herunterladen</div>
                             <div class="text-[11px] text-red-100 font-mono truncate" id="export-iv-filename">interaktives_video.h5p</div>
                         </div>
+                    </button>
+
+                    <!-- Hefteintrag & Begleitblatt PDF Button -->
+                    <button id="btn-download-iv-pdf" onclick="triggerInteractiveVideoPdfDownload()" class="w-full flex items-center justify-center gap-4 p-4 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-200 hover:border-red-400 rounded-3xl shadow-md hover:shadow-lg transition-all duration-300 group hover:-translate-y-0.5 cursor-pointer">
+                        <div class="w-10 h-10 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-file-pdf"></i>
+                        </div>
+                        <div class="text-left min-w-0 flex-1">
+                            <div class="font-bold text-sm text-slate-900">📖 Hefteintrag &amp; Begleitblatt (PDF)</div>
+                            <div class="text-[10px] text-slate-500">Druckvorlage für die Schüler zum Einkleben oder Abschreiben ins Heft</div>
+                        </div>
+                        <i class="fa-solid fa-arrow-down text-slate-400 group-hover:text-red-600 transition-colors mr-2"></i>
                     </button>
                 </div>
 
@@ -1844,6 +1871,6 @@
     </div>
 
     <!-- App JavaScript -->
-    <script src="app.js?v=29"></script>
+    <script src="app.js?v=30"></script>
 </body>
 </html>

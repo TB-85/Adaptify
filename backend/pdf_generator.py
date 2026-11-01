@@ -95,6 +95,8 @@ class PDFGenerator:
 
     @staticmethod
     def generate_worksheet_pdf(data: dict) -> bytes:
+        if data.get("video_mode") == "interactive_video" or (data.get("interactions") and not data.get("level_a")):
+            return PDFGenerator.generate_video_hefteintrag_pdf(data)
         raw_title = data.get("title", "Differenzierte Übung")
         if ":" in raw_title:
             raw_title = raw_title.split(":", 1)[-1].strip()
@@ -581,6 +583,208 @@ class PDFGenerator:
 
         # Level B Solutions
         add_level_tasks_to_story(level_b, f"3. {level_b.get('title', 'Level B')} (Lösungen)", True)
+
+        # Build PDF
+        doc.build(story)
+        pdf_data = buffer.getvalue()
+        buffer.close()
+        return pdf_data
+
+    @staticmethod
+    def generate_video_hefteintrag_pdf(data):
+        """
+        Generates a premium print-ready DIN-A4 Hefteintrag & Video-Begleitblatt
+        designed specifically for gluing or copying into the student's notebook.
+        """
+        import io
+        import uuid
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors
+        from reportlab.lib.units import inch
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            rightMargin=inch*0.5,
+            leftMargin=inch*0.5,
+            topMargin=inch*0.5,
+            bottomMargin=inch*0.5
+        )
+
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'HefteintragTitle',
+            parent=styles['Heading1'],
+            fontName='Helvetica-Bold',
+            fontSize=16,
+            leading=20,
+            textColor=colors.HexColor("#0f172a"),
+            alignment=0
+        )
+        subtitle_style = ParagraphStyle(
+            'HefteintragSubtitle',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=9,
+            leading=12,
+            textColor=colors.HexColor("#0284c7")
+        )
+        section_style = ParagraphStyle(
+            'HefteintragSection',
+            parent=styles['Heading2'],
+            fontName='Helvetica-Bold',
+            fontSize=12,
+            leading=15,
+            textColor=colors.HexColor("#0284c7"),
+            spaceBefore=8,
+            spaceAfter=4
+        )
+        body_style = ParagraphStyle(
+            'HefteintragBody',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=9.5,
+            leading=13.5,
+            textColor=colors.HexColor("#334155")
+        )
+        box_style = ParagraphStyle(
+            'HefteintragBoxText',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=9.5,
+            leading=14,
+            textColor=colors.HexColor("#0f172a")
+        )
+        small_hint_style = ParagraphStyle(
+            'HefteintragHint',
+            parent=styles['Normal'],
+            fontName='Helvetica-Oblique',
+            fontSize=8,
+            leading=10,
+            textColor=colors.HexColor("#64748b")
+        )
+
+        accent_color = colors.HexColor(data.get("pdf_accent_color", "#0284c7"))
+        story = []
+
+        # 1. Header Information
+        title = data.get("title", "Interaktives Video: Hefteintrag")
+        subject = data.get("subject", "Informatik")
+        school_type = data.get("school_type", "Mittelschule")
+        teacher_name = data.get("pdf_teacher_name") or data.get("teacher_name") or ""
+        class_name = data.get("pdf_class_name") or data.get("class_name") or ""
+
+        header_cells = [
+            [
+                Paragraph(f"<b>Fach:</b> {subject} &nbsp;|&nbsp; <b>Schulart:</b> {school_type}" + (f" &nbsp;|&nbsp; <b>Klasse:</b> {class_name}" if class_name else ""), body_style),
+                Paragraph("<b>Datum:</b> ________________", ParagraphStyle('RightDate', parent=body_style, alignment=2))
+            ],
+            [
+                Paragraph("<b>Name:</b> ________________________________________________", body_style),
+                Paragraph(f"<font color='#64748b'>{teacher_name}</font>", ParagraphStyle('RightTeacher', parent=small_hint_style, alignment=2))
+            ]
+        ]
+        header_table = Table(header_cells, colWidths=[inch*4.5, inch*2.0])
+        header_table.setStyle(TableStyle([
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ('TOPPADDING', (0,0), (-1,-1), 2),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ]))
+        story.append(header_table)
+        story.append(Spacer(1, 6))
+
+        # Divider line
+        divider = Table([['']], colWidths=[inch*6.5], rowHeights=[1.5])
+        divider.setStyle(TableStyle([
+            ('LINEABOVE', (0,0), (-1,-1), 1.5, accent_color),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+        ]))
+        story.append(divider)
+        story.append(Spacer(1, 8))
+
+        # 2. Main Title & Instruction
+        story.append(Paragraph(f"📖 <b>Hefteintrag &amp; Begleitblatt:</b> {title}", title_style))
+        story.append(Spacer(1, 4))
+        story.append(Paragraph("✍️ <b>Aufgabe:</b> Schau dir das Lernvideo aufmerksam an. Übertrage das Tafelbild sauber in dein Schulheft (oder klebe dieses Blatt ein) und beantworte die Kontrollfragen zur Selbstüberprüfung.", small_hint_style))
+        story.append(Spacer(1, 8))
+
+        # 3. Tafelbild / Hefteintrag Box
+        hefteintrag_text = data.get("full_hefteintrag") or ""
+        if not hefteintrag_text:
+            # Reconstruct from interaction hefteintrag_steps if available
+            steps = [i.get("hefteintrag_step") for i in data.get("interactions", []) if i.get("hefteintrag_step")]
+            if steps:
+                hefteintrag_text = steps[-1] # final cumulative step
+            else:
+                # Build points from interactions
+                lines = [f"<b>THEMA: {title}</b><br/>"]
+                for idx, inter in enumerate(data.get("interactions", []), 1):
+                    q = inter.get("question") or inter.get("text") or ""
+                    exp = inter.get("explanation") or ""
+                    lines.append(f"<b>{idx}.</b> {inter.get('title', 'Punkt')}: {exp if exp else q}")
+                hefteintrag_text = "<br/><br/>".join(lines)
+
+        clean_heft_html = hefteintrag_text.replace("\r\n", "<br/>").replace("\n", "<br/>")
+
+        hefteintrag_box_data = [[
+            Paragraph(f"<font size=11 color='#0284c7'><b>📌 Tafelbild (Ergebnissicherung zum Übertragen ins Heft)</b></font><br/><br/>{clean_heft_html}", box_style)
+        ]]
+        hefteintrag_table = Table(hefteintrag_box_data, colWidths=[inch*6.5])
+        hefteintrag_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+            ('BOX', (0,0), (-1,-1), 1.5, accent_color),
+            ('PADDING', (0,0), (-1,-1), 10),
+        ]))
+        story.append(hefteintrag_table)
+        story.append(Spacer(1, 10))
+
+        # 4. Video-Quiz & Selbstkontrolle Checkpoints
+        interactions = data.get("interactions", [])
+        if interactions:
+            story.append(Paragraph("🎯 <b>Video-Haltepunkte &amp; Selbstkontrolle:</b>", section_style))
+            story.append(Paragraph("Beantworte diese Kontrollfragen, wenn das Video stoppt:", small_hint_style))
+            story.append(Spacer(1, 4))
+
+            for idx, inter in enumerate(interactions, 1):
+                t_str = inter.get("time_formatted", f"{inter.get('time_seconds', 0)}s")
+                fmt = inter.get("format", "Multiple Choice")
+                q_text = inter.get("question") or inter.get("text") or ""
+                
+                story.append(Paragraph(f"<b>Stopp {idx} [{t_str}] – {inter.get('title', 'Frage')}:</b> {q_text}", body_style))
+                
+                if fmt == "Multiple Choice" and inter.get("answers"):
+                    opts = [f"[ &nbsp; ] {a.get('text', '')}" for a in inter.get("answers", [])]
+                    story.append(Paragraph(" &nbsp;&nbsp;&nbsp;&nbsp; ".join(opts), body_style))
+                elif fmt in ["Wahr/Falsch", "Wahr / Falsch"]:
+                    story.append(Paragraph("[ &nbsp; ] Wahr &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [ &nbsp; ] Falsch", body_style))
+                elif fmt in ["Lückentext", "Lueckentext"]:
+                    blank_txt = inter.get("text_with_blanks", q_text)
+                    blank_formatted = PDFGenerator.parse_blanks_for_student(blank_txt)
+                    story.append(Paragraph(blank_formatted, body_style))
+                elif fmt == "Infobox":
+                    info_t = inter.get("text", "")
+                    if info_t:
+                        story.append(Paragraph(f"<i>💡 {info_t}</i>", small_hint_style))
+                
+                story.append(Spacer(1, 4))
+
+        # 5. Eigene Notizen Line Box
+        story.append(Spacer(1, 6))
+        notes_box = Table([[
+            Paragraph("<b>✍️ Eigene Notizen, Skizzen &amp; Beispiele:</b><br/><br/>____________________________________________________________________________________________<br/><br/>____________________________________________________________________________________________", small_hint_style)
+        ]], colWidths=[inch*6.5])
+        notes_box.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#fafafa")),
+            ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
+            ('PADDING', (0,0), (-1,-1), 8),
+        ]))
+        story.append(notes_box)
 
         # Build PDF
         doc.build(story)

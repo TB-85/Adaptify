@@ -192,6 +192,33 @@ function triggerInteractiveVideoDownload() {
 }
 window.triggerInteractiveVideoDownload = triggerInteractiveVideoDownload;
 
+// Trigger Hefteintrag PDF Download directly for Interactive Video
+async function triggerInteractiveVideoPdfDownload() {
+    const payload = getEditedData();
+    try {
+        const response = await fetch(`${API_BASE}/api/export/pdf`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error("PDF generation failed");
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const cleanTitle = (payload.title || "video").replace(/\s+/g, '_');
+        a.download = `${cleanTitle}_hefteintrag_begleitblatt.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    } catch (err) {
+        console.error("PDF download error:", err);
+        alert("Herunterladen des Hefteintrags als PDF fehlgeschlagen.");
+    }
+}
+window.triggerInteractiveVideoPdfDownload = triggerInteractiveVideoPdfDownload;
+
 function resetToNewCreation() {
     navigateToScreen('upload');
     removeSelectedVideoFile();
@@ -541,12 +568,22 @@ function getEditedInteractiveVideoData() {
     const videoFile = appState.selectedVideoFile || (videoInput && videoInput.files.length > 0 ? videoInput.files[0] : null);
     const ytInput = document.getElementById('input-youtube-url');
 
+    const fullHefteintragVal = document.getElementById('iv-full-hefteintrag')?.value || appState.generatedData?.full_hefteintrag || "";
+
     return {
         title: (typeof editorTitle !== 'undefined' && editorTitle.value) ? editorTitle.value : "Interaktives Video",
         video_mode: "interactive_video",
         video_filename: videoFile ? videoFile.name : (appState.generatedData?.video_filename || ""),
         youtube_url: (ytInput && ytInput.value) ? ytInput.value.trim() : (appState.generatedData?.youtube_url || ""),
-        interactions: interactions
+        interactions: interactions,
+        full_hefteintrag: fullHefteintragVal,
+        hefteintrag: {
+            title: (typeof editorTitle !== 'undefined' && editorTitle.value) ? editorTitle.value : "Hefteintrag",
+            level_a_notes: fullHefteintragVal,
+            summary: fullHefteintragVal
+        },
+        prevent_skipping: true,
+        pass_percentage: 80
     };
 }
 
@@ -2059,6 +2096,10 @@ function populateEditor(data) {
         if (interactiveContainer) {
             interactiveContainer.classList.remove('hidden');
             renderInteractiveVideoCards(data.interactions || []);
+            const ivHefteintragInput = document.getElementById('iv-full-hefteintrag');
+            if (ivHefteintragInput) {
+                ivHefteintragInput.value = data.full_hefteintrag || (data.hefteintrag ? (data.hefteintrag.level_a_notes || data.hefteintrag.summary || '') : '');
+            }
         }
         if (bannerTitle) bannerTitle.textContent = "Reines Interaktives Video";
         if (bannerDesc) bannerDesc.textContent = "Haltepunkte & Quiz-Fragen direkt im Video. Keine überflüssigen Verzweigungen.";
