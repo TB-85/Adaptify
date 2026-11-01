@@ -547,6 +547,12 @@ let appState = {
     previewDataUrl: null,
 };
 
+// Classroom Live Session State (initialized globally to prevent TDZ ReferenceErrors)
+var liveSessionInterval = null;
+var liveSessionPin = '';
+window.liveSessionInterval = null;
+window.liveSessionPin = '';
+
 // DOM Elements
 const screenUpload = document.getElementById('screen-upload');
 const screenEditor = document.getElementById('screen-editor');
@@ -1204,7 +1210,7 @@ function updateNavigationState() {
     }
     
     // Show/hide live session indicator
-    if (liveSessionInterval && liveSessionPin) {
+    if (typeof liveSessionInterval !== 'undefined' && liveSessionInterval && typeof liveSessionPin !== 'undefined' && liveSessionPin) {
         if (liveIndicator) {
             liveIndicator.classList.remove('hidden');
             liveIndicator.classList.add('flex');
@@ -2208,9 +2214,11 @@ function populateEditor(data) {
     });
 }
 
-btnBackToUpload.addEventListener('click', () => {
-    showScreen(screenUpload);
-});
+if (btnBackToUpload) {
+    btnBackToUpload.addEventListener('click', () => {
+        showScreen(screenUpload);
+    });
+}
 
 // ----------------------------------------------------
 // PACK & EXPORT FLOW
@@ -2244,6 +2252,7 @@ function getEditedData() {
     // Reconstruct level tasks
     function extractTasks(container) {
         const tasks = [];
+        if (!container) return tasks;
         container.querySelectorAll('.task-card').forEach(card => {
             const hintInput = card.querySelector('.task-hint');
             const expInput = card.querySelector('.task-explanation');
@@ -2301,14 +2310,17 @@ function getEditedData() {
     };
 }
 
-btnPackH5P.addEventListener('click', () => {
-    showScreen(screenExport);
-});
+if (btnPackH5P) {
+    btnPackH5P.addEventListener('click', () => {
+        showScreen(screenExport);
+    });
+}
 
 // ----------------------------------------------------
 // DOWNLOAD ACTIONS
 // ----------------------------------------------------
-btnDownloadH5P.addEventListener('click', async () => {
+if (btnDownloadH5P) {
+    btnDownloadH5P.addEventListener('click', async () => {
     const payload = getEditedData();
     
     try {
@@ -2342,6 +2354,7 @@ btnDownloadH5P.addEventListener('click', async () => {
         alert("Herunterladen der H5P-Datei fehlgeschlagen.");
     }
 });
+}
 
 let pdfLogoBase64 = null;
 const pdfLogoFile = document.getElementById('pdf-logo-file');
@@ -2420,68 +2433,72 @@ window.copyIframeEmbedCode = async function() {
     }
 };
 
-btnDownloadPDF.addEventListener('click', async () => {
-    const payload = getEditedData();
-    
-    // Inject PDF customization parameters
-    payload.pdf_teacher_name = document.getElementById('pdf-teacher-name')?.value || "";
-    payload.pdf_class_name = document.getElementById('pdf-class-name')?.value || "";
-    payload.pdf_accent_color = document.getElementById('pdf-accent-color')?.value || "#0284c7";
-    payload.pdf_include_lehrplan = document.getElementById('pdf-include-lehrplan')?.checked ?? false;
-    payload.pdf_include_level_c = document.getElementById('pdf-include-level-c')?.checked ?? false;
-    payload.pdf_logo_base64 = pdfLogoBase64;
-    
-    const includeQR = document.getElementById('pdf-include-qr')?.checked ?? true;
-    if (includeQR) {
-        try {
-            // Create session to generate live QR solution URL
-            const sessRes = await fetch(`${API_BASE}/api/sessions/create`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: payload.title, data: payload })
-            });
-            if (sessRes.ok) {
-                const sessData = await sessRes.json();
-                payload.session_pin = sessData.pin;
-                payload.solution_url = `${window.location.origin}/play.html?pin=${sessData.pin}`;
+if (btnDownloadPDF) {
+    btnDownloadPDF.addEventListener('click', async () => {
+        const payload = getEditedData();
+        
+        // Inject PDF customization parameters
+        payload.pdf_teacher_name = document.getElementById('pdf-teacher-name')?.value || "";
+        payload.pdf_class_name = document.getElementById('pdf-class-name')?.value || "";
+        payload.pdf_accent_color = document.getElementById('pdf-accent-color')?.value || "#0284c7";
+        payload.pdf_include_lehrplan = document.getElementById('pdf-include-lehrplan')?.checked ?? false;
+        payload.pdf_include_level_c = document.getElementById('pdf-include-level-c')?.checked ?? false;
+        payload.pdf_logo_base64 = pdfLogoBase64;
+        
+        const includeQR = document.getElementById('pdf-include-qr')?.checked ?? true;
+        if (includeQR) {
+            try {
+                // Create session to generate live QR solution URL
+                const sessRes = await fetch(`${API_BASE}/api/sessions/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: payload.title, data: payload })
+                });
+                if (sessRes.ok) {
+                    const sessData = await sessRes.json();
+                    payload.session_pin = sessData.pin;
+                    payload.solution_url = `${window.location.origin}/play.html?pin=${sessData.pin}`;
+                }
+            } catch (e) {
+                console.warn("Could not register live session for QR-Code:", e);
             }
-        } catch (e) {
-            console.warn("Could not register live session for QR-Code:", e);
         }
-    }
-    
-    try {
-        const response = await fetch(`${API_BASE}/api/export/pdf`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
+        
+        try {
+            const response = await fetch(`${API_BASE}/api/export/pdf`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
 
-        if (!response.ok) throw new Error("Failed to download PDF");
+            if (!response.ok) throw new Error("Failed to download PDF");
 
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${payload.title.replace(/\s+/g, '_')}_arbeitsblatt.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${payload.title.replace(/\s+/g, '_')}_arbeitsblatt.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
 
-    } catch (err) {
-        console.error("PDF Download error:", err);
-        alert("Herunterladen des PDF-Arbeitsblattes fehlgeschlagen.");
-    }
-});
+        } catch (err) {
+            console.error("PDF Download error:", err);
+            alert("Herunterladen des PDF-Arbeitsblattes fehlgeschlagen.");
+        }
+    });
+}
 
-btnRestart.addEventListener('click', () => {
-    resetFileSelection();
-    inputContext.value = '';
-    showScreen(screenUpload);
-});
+if (btnRestart) {
+    btnRestart.addEventListener('click', () => {
+        resetFileSelection();
+        if (inputContext) inputContext.value = '';
+        showScreen(screenUpload);
+    });
+}
 
 // ====================================================
 // H5P BRANCHING-SCENARIO SIMULATOR
@@ -3755,8 +3772,7 @@ initDB().then(() => {
 // ----------------------------------------------------
 // CLASSROOM LIVE SESSION MANAGEMENT
 // ----------------------------------------------------
-let liveSessionInterval = null;
-let liveSessionPin = '';
+// (liveSessionInterval and liveSessionPin initialized globally at top of app.js)
 
 window.startLiveSession = async function() {
     const data = getEditedData();
@@ -3837,21 +3853,27 @@ window.startLiveSession = async function() {
 };
 
 window.stopLiveSession = function() {
-    if (liveSessionInterval) {
+    if (typeof liveSessionInterval !== 'undefined' && liveSessionInterval) {
         clearInterval(liveSessionInterval);
         liveSessionInterval = null;
     }
-    document.getElementById('live-session-active').classList.add('hidden');
-    document.getElementById('live-session-setup').classList.remove('hidden');
+    const liveActive = document.getElementById('live-session-active');
+    if (liveActive) liveActive.classList.add('hidden');
+    const liveSetup = document.getElementById('live-session-setup');
+    if (liveSetup) liveSetup.classList.remove('hidden');
     
-    document.getElementById('live-results-table-body').innerHTML = `
-        <tr id="live-results-empty">
-            <td colspan="4" class="px-3 py-6 text-center text-slate-400 font-semibold">
-                Warten auf erste Abgaben...
-            </td>
-        </tr>
-    `;
-    document.getElementById('live-results-count').textContent = '0';
+    const resultsTbody = document.getElementById('live-results-table-body');
+    if (resultsTbody) {
+        resultsTbody.innerHTML = `
+            <tr id="live-results-empty">
+                <td colspan="4" class="px-3 py-6 text-center text-slate-400 font-semibold">
+                    Warten auf erste Abgaben...
+                </td>
+            </tr>
+        `;
+    }
+    const resultsCount = document.getElementById('live-results-count');
+    if (resultsCount) resultsCount.textContent = '0';
     updateNavigationState();
 };
 
