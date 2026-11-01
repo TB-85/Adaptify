@@ -179,7 +179,8 @@ async def generate_task(
             subject=subject,
             school_type=school_type,
             task_count=task_count if task_count >= 2 else 4,
-            api_key=effective_api_key
+            api_key=effective_api_key,
+            youtube_url=youtube_url
         )
     else:
         result = await asyncio.to_thread(

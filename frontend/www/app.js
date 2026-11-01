@@ -1,3 +1,9 @@
+// Classroom Live Session State (attached to window to guarantee zero TDZ ReferenceErrors)
+window.liveSessionInterval = window.liveSessionInterval || null;
+window.liveSessionPin = window.liveSessionPin || '';
+var liveSessionInterval = window.liveSessionInterval;
+var liveSessionPin = window.liveSessionPin;
+
 // ==================== UTILITY & INTERACTION HELPERS ====================
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -547,11 +553,9 @@ let appState = {
     previewDataUrl: null,
 };
 
-// Classroom Live Session State (initialized globally to prevent TDZ ReferenceErrors)
-var liveSessionInterval = null;
-var liveSessionPin = '';
-window.liveSessionInterval = null;
-window.liveSessionPin = '';
+// Classroom Live Session State references
+liveSessionInterval = window.liveSessionInterval;
+liveSessionPin = window.liveSessionPin;
 
 // DOM Elements
 const screenUpload = document.getElementById('screen-upload');
@@ -1210,12 +1214,14 @@ function updateNavigationState() {
     }
     
     // Show/hide live session indicator
-    if (typeof liveSessionInterval !== 'undefined' && liveSessionInterval && typeof liveSessionPin !== 'undefined' && liveSessionPin) {
+    const currentInterval = window.liveSessionInterval || (typeof liveSessionInterval !== 'undefined' ? liveSessionInterval : null);
+    const currentPin = window.liveSessionPin || (typeof liveSessionPin !== 'undefined' ? liveSessionPin : '');
+    if (currentInterval && currentPin) {
         if (liveIndicator) {
             liveIndicator.classList.remove('hidden');
             liveIndicator.classList.add('flex');
         }
-        if (livePinSpan) livePinSpan.textContent = liveSessionPin;
+        if (livePinSpan) livePinSpan.textContent = currentPin;
     } else {
         if (liveIndicator) {
             liveIndicator.classList.remove('flex');
@@ -1794,7 +1800,7 @@ btnSubmit.addEventListener('click', async (e) => {
     const ytVal = (document.getElementById('input-youtube-url')?.value || '').trim();
     const vidFile = appState.selectedVideoFile || document.getElementById('input-video-file')?.files?.[0] || null;
     const ivFocusTopic = (document.getElementById('iv-focus-topic')?.value || '').trim();
-    const ivSubject = document.getElementById('iv-selected-subject')?.value || 'Biologie / Natur';
+    const ivSubject = document.getElementById('iv-selected-subject')?.value || 'Automatisch (aus Video)';
     const ivSchoolType = document.getElementById('iv-school-type')?.value || 'Mittelschule';
     const ivCheckpoints = parseInt(document.getElementById('iv-checkpoint-count')?.value || '4');
     const includeBranchingToggle = document.getElementById('iv-include-branching-toggle')?.checked || false;
@@ -1821,18 +1827,18 @@ btnSubmit.addEventListener('click', async (e) => {
     
     const loaderTextEl = document.querySelector('#loader p') || document.querySelector('#loader span');
     if (loaderTextEl) {
-        loaderTextEl.textContent = isIvMode ? "Analysiere Video & erstelle didaktische Haltepunkte mit KI..." : "Analysiere Dokument & erstelle differenzierte Aufgaben...";
+        loaderTextEl.textContent = isIvMode ? "Analysiere Video (Bildspur & Tonspur) mit multimodaler KI..." : "Analysiere Dokument & erstelle differenzierte Aufgaben...";
     }
     
     const slowTimer1 = setTimeout(() => {
-        if (loaderTextEl) loaderTextEl.textContent = isIvMode ? "Server wird aufgeweckt & KI setzt Pop-up Quizzes..." : "Server wird aufgeweckt & KI verarbeitet Dokument...";
+        if (loaderTextEl) loaderTextEl.textContent = isIvMode ? "KI schaut sich die Videobilder an & lauscht der Tonspur..." : "Server wird aufgeweckt & KI verarbeitet Dokument...";
     }, 6000);
     const slowTimer2 = setTimeout(() => {
-        if (loaderTextEl) loaderTextEl.textContent = isIvMode ? "Formuliere gezielte Verständnisfragen & Erklärungen..." : "Erstelle differenzierte H5P- & PDF-Aufgaben...";
-    }, 18000);
+        if (loaderTextEl) loaderTextEl.textContent = isIvMode ? "Erkenne Thema & formuliere passgenaue H5P-Quiz-Haltepunkte..." : "Erstelle differenzierte H5P- & PDF-Aufgaben...";
+    }, 20000);
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 90000);
+    const timeoutId = setTimeout(() => controller.abort(), isIvMode ? 180000 : 90000);
 
     const apiKeyVal = (typeof inputApiKey !== 'undefined' && inputApiKey) ? (inputApiKey.value || '').trim() : '';
     const promoCodeVal = (typeof inputPromoCode !== 'undefined' && inputPromoCode) ? (inputPromoCode.value || '').trim() : '';
@@ -2398,7 +2404,8 @@ window.downloadSCORMPackage = async function() {
 };
 
 window.copyIframeEmbedCode = async function() {
-    if (!liveSessionPin) {
+    let pin = window.liveSessionPin || (typeof liveSessionPin !== 'undefined' ? liveSessionPin : '');
+    if (!pin) {
         const data = getEditedData();
         if (data) {
             try {
@@ -2409,7 +2416,9 @@ window.copyIframeEmbedCode = async function() {
                 });
                 if (sessionRes.ok) {
                     const sessionJson = await sessionRes.json();
-                    liveSessionPin = sessionJson.pin;
+                    pin = sessionJson.pin;
+                    window.liveSessionPin = pin;
+                    liveSessionPin = pin;
                     updateNavigationState();
                 }
             } catch (e) {
@@ -2418,7 +2427,7 @@ window.copyIframeEmbedCode = async function() {
         }
     }
     
-    const pin = liveSessionPin || 'LIVE';
+    pin = window.liveSessionPin || pin || 'LIVE';
     const embedUrl = `${window.location.origin}/play.html?pin=${pin}`;
     const iframeCode = `<iframe src="${embedUrl}" width="100%" height="650" style="border:0; border-radius:16px; overflow:hidden;" allow="camera; microphone; autoplay; fullscreen"></iframe>`;
     
@@ -3800,6 +3809,7 @@ window.startLiveSession = async function() {
         });
         if (!sessionRes.ok) throw new Error("Could not create session");
         const sessionJson = await sessionRes.json();
+        window.liveSessionPin = sessionJson.pin;
         liveSessionPin = sessionJson.pin;
         
         // 2. Build Student link (Cloud/Render vs Localhost)
@@ -3840,7 +3850,8 @@ window.startLiveSession = async function() {
         
         // 5. Start Polling scoreboard
         pollLiveResults();
-        liveSessionInterval = setInterval(pollLiveResults, 3000);
+        window.liveSessionInterval = setInterval(pollLiveResults, 3000);
+        liveSessionInterval = window.liveSessionInterval;
         updateNavigationState();
         
     } catch (err) {
@@ -3853,6 +3864,10 @@ window.startLiveSession = async function() {
 };
 
 window.stopLiveSession = function() {
+    if (window.liveSessionInterval) {
+        clearInterval(window.liveSessionInterval);
+        window.liveSessionInterval = null;
+    }
     if (typeof liveSessionInterval !== 'undefined' && liveSessionInterval) {
         clearInterval(liveSessionInterval);
         liveSessionInterval = null;
@@ -3899,9 +3914,10 @@ window.toggleAnonymizeNames = function() {
 };
 
 async function pollLiveResults() {
-    if (!liveSessionPin) return;
+    const pin = window.liveSessionPin || (typeof liveSessionPin !== 'undefined' ? liveSessionPin : '');
+    if (!pin) return;
     try {
-        const response = await fetch(`${API_BASE}/api/sessions/${liveSessionPin}/results`);
+        const response = await fetch(`${API_BASE}/api/sessions/${pin}/results`);
         if (!response.ok) return;
         const resData = await response.json();
         lastLiveResults = resData.results || [];
@@ -4078,7 +4094,8 @@ window.downloadResultsCSV = function() {
     const encodedUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUrl);
-    link.setAttribute("download", `Adaptify_Ergebnisse_${liveSessionPin || 'Sitzung'}.csv`);
+    const pin = window.liveSessionPin || (typeof liveSessionPin !== 'undefined' ? liveSessionPin : '') || 'Sitzung';
+    link.setAttribute("download", `Adaptify_Ergebnisse_${pin}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -4430,7 +4447,8 @@ window.openProjectorView = function(event) {
     if (!modal) return;
     
     // Set PIN and IP
-    document.getElementById('proj-pin').textContent = liveSessionPin || 'CODE';
+    const pin = window.liveSessionPin || (typeof liveSessionPin !== 'undefined' ? liveSessionPin : '') || 'CODE';
+    document.getElementById('proj-pin').textContent = pin;
     
     const ipLabel = document.getElementById('live-session-ip-label');
     document.getElementById('proj-ip').textContent = ipLabel ? ipLabel.textContent : '127.0.0.1';

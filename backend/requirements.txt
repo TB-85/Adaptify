@@ -6,3 +6,4 @@ google-genai
 reportlab
 pydantic
 httpx
+youtube-transcript-api

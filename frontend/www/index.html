@@ -18,6 +18,8 @@
                 .replace(/'/g, '&#039;');
         }
         window.escapeHtml = escapeHtml;
+        window.liveSessionInterval = null;
+        window.liveSessionPin = '';
     </script>
     <title>Adaptify – KI-gestützter H5P-Differenzierungs-Generator</title>
     <!-- PWA Support -->
@@ -366,6 +368,8 @@
                         <div class="space-y-2">
                             <label class="block text-xs font-bold text-slate-700">Schulfach:</label>
                             <div class="flex flex-wrap gap-1.5" id="iv-subject-pills">
+                                <button type="button" onclick="selectIvSubject('Automatisch (aus Video)')" class="iv-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-red-600 bg-red-600 text-white shadow-xs transition-all cursor-pointer">🤖 Automatisch (aus Video)</button>
+                                <button type="button" onclick="selectIvSubject('Informatik')" class="iv-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50 text-slate-700 hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer">Informatik</button>
                                 <button type="button" onclick="selectIvSubject('Biologie / Natur')" class="iv-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50 text-slate-700 hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer">Biologie / Natur</button>
                                 <button type="button" onclick="selectIvSubject('Mathematik')" class="iv-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50 text-slate-700 hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer">Mathematik</button>
                                 <button type="button" onclick="selectIvSubject('Deutsch')" class="iv-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50 text-slate-700 hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer">Deutsch</button>
@@ -374,7 +378,7 @@
                                 <button type="button" onclick="selectIvSubject('Physik / Chemie')" class="iv-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50 text-slate-700 hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer">Physik / Chemie</button>
                                 <button type="button" onclick="selectIvSubject('Sonstiges')" class="iv-subj-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50 text-slate-700 hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer">Sonstiges</button>
                             </div>
-                            <input type="hidden" id="iv-selected-subject" value="Biologie / Natur">
+                            <input type="hidden" id="iv-selected-subject" value="Automatisch (aus Video)">
                         </div>
 
                         <!-- Schulart Dropdown -->
@@ -1833,6 +1837,6 @@
     </div>
 
     <!-- App JavaScript -->
-    <script src="app.js?v=27"></script>
+    <script src="app.js?v=28"></script>
 </body>
 </html>

@@ -2,6 +2,10 @@ import os
 import json
 import logging
 import io
+import tempfile
+import time
+import re
+from urllib.parse import quote
 import zipfile
 import xml.etree.ElementTree as ET
 from google import genai
@@ -142,6 +146,132 @@ class AIService:
             except Exception as e:
                 logger.error(f"Failed to initialize Gemini Client: {e}")
 
+
+    def _prepare_gemini_contents(self, client, files: list, youtube_url: str = None) -> tuple:
+        """
+        Processes multi-modal attachments:
+        - Videos (.mp4, .mov, etc.) are written to a temp file, uploaded to Gemini Files API, and polled until ACTIVE.
+        - YouTube URLs have their oEmbed metadata and timestamped transcripts fetched via youtube_transcript_api.
+        - Word DOCX files have their text extracted.
+        - PDFs and images are passed as Part.from_bytes.
+        Returns (contents_list, uploaded_gemini_files, temp_files_to_remove).
+        """
+        contents = []
+        uploaded_gemini_files = []
+        temp_files_to_remove = []
+
+        # 1. Process YouTube URL if provided
+        if youtube_url and youtube_url.strip():
+            url = youtube_url.strip()
+            vid_id = None
+            yt_m = re.search(r'(?:v=|/|youtu\.be/|embed/)([0-9A-Za-z_-]{11})', url)
+            if yt_m:
+                vid_id = yt_m.group(1)
+
+            # A. Fetch video title via oEmbed
+            try:
+                import httpx
+                oembed_url = f"https://www.youtube.com/oembed?url={quote(url)}&format=json"
+                resp = httpx.get(oembed_url, timeout=5.0)
+                if resp.status_code == 200:
+                    meta = resp.json()
+                    title = meta.get('title', '')
+                    author = meta.get('author_name', '')
+                    contents.append(f"YouTube-Videotitel: '{title}' (Kanal: '{author}').")
+                    logger.info(f"YouTube oEmbed metadata: title='{title}', author='{author}'")
+            except Exception as e:
+                logger.warning(f"Failed to fetch YouTube oEmbed: {e}")
+
+            # B. Fetch transcript via youtube_transcript_api
+            if vid_id:
+                try:
+                    from youtube_transcript_api import YouTubeTranscriptApi
+                    ytt = YouTubeTranscriptApi()
+                    transcript_pieces = ytt.fetch(vid_id)
+                    if transcript_pieces:
+                        lines = []
+                        for snippet in transcript_pieces:
+                            m, s = divmod(int(snippet.start), 60)
+                            lines.append(f"[{m:02d}:{s:02d}] {snippet.text}")
+                        transcript_text = "\n".join(lines)
+                        if len(transcript_text) > 40000:
+                            transcript_text = transcript_text[:40000] + "\n...[Transkript gekürzt]"
+                        contents.append(f"VOLLSTÄNDIGE TONSPUR / TRANSKRIPT DES YOUTUBE-VIDEOS MIT ZEITSTEMPELN:\n\n{transcript_text}")
+                        logger.info(f"Successfully retrieved YouTube transcript with {len(transcript_pieces)} segments!")
+                except Exception as e:
+                    logger.warning(f"Could not retrieve YouTube transcript for {vid_id}: {e}")
+
+        # 2. Process uploaded files
+        for f in (files or []):
+            fc = f.get('content', b'')
+            mt = f.get('mime_type', '')
+            fname = f.get('filename', '')
+
+            if not fc:
+                continue
+
+            is_video = (mt.startswith('video/') or 
+                        any(fname.lower().endswith(ext) for ext in ['.mp4', '.mov', '.webm', '.m4v', '.avi']))
+
+            if is_video:
+                ext = os.path.splitext(fname)[1] or '.mp4'
+                with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+                    tmp.write(fc)
+                    tmp_path = tmp.name
+                temp_files_to_remove.append(tmp_path)
+
+                try:
+                    logger.info(f"Uploading video file '{fname}' ({len(fc)} bytes) to Gemini Files API...")
+                    gemini_file = client.files.upload(file=tmp_path)
+                    uploaded_gemini_files.append(gemini_file)
+
+                    # Poll until ACTIVE
+                    poll_count = 0
+                    while gemini_file.state.name == "PROCESSING" and poll_count < 35:
+                        time.sleep(2)
+                        gemini_file = client.files.get(name=gemini_file.name)
+                        poll_count += 1
+                        logger.info(f"Video '{fname}' processing state: {gemini_file.state.name} ({poll_count * 2}s)")
+
+                    if gemini_file.state.name == "ACTIVE":
+                        logger.info(f"Video file '{fname}' is ACTIVE in Gemini API and ready for multimodal analysis!")
+                        contents.append(gemini_file)
+                    else:
+                        logger.warning(f"Video file state is '{gemini_file.state.name}', not ACTIVE.")
+                except Exception as upload_err:
+                    logger.error(f"Failed to upload video to Gemini Files API: {upload_err}", exc_info=True)
+                    contents.append(f"Videodatei: {fname}")
+
+            elif mt == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or fname.endswith('.docx'):
+                extracted = extract_text_from_docx(fc)
+                if extracted:
+                    contents.append(f"Extrahierter Text aus Word-Dokument ({fname}):\n\n{extracted}")
+            elif mt == 'application/pdf':
+                contents.append(types.Part.from_bytes(data=fc, mime_type='application/pdf'))
+            elif mt.startswith('image/'):
+                contents.append(types.Part.from_bytes(data=fc, mime_type=mt))
+            elif mt.startswith('text/'):
+                text_str = fc.decode('utf-8', errors='ignore')
+                if text_str.strip():
+                    contents.append(text_str)
+
+        return contents, uploaded_gemini_files, temp_files_to_remove
+
+    def _cleanup_gemini_files(self, client, uploaded_gemini_files: list, temp_files_to_remove: list):
+        if client:
+            for gf in (uploaded_gemini_files or []):
+                try:
+                    client.files.delete(name=gf.name)
+                    logger.info(f"Deleted Gemini file: {gf.name}")
+                except Exception as e:
+                    logger.warning(f"Could not delete Gemini file {gf.name}: {e}")
+        for tp in (temp_files_to_remove or []):
+            try:
+                if os.path.exists(tp):
+                    os.remove(tp)
+            except Exception:
+                pass
+
     def generate_differentiated_content(
         self,
         files: list,
@@ -185,6 +315,7 @@ class AIService:
         # If API key is missing, return mock data for demonstration
         if not client:
             logger.warning("Gemini Client not initialized (missing GEMINI_API_KEY). Returning high-quality mock data.")
+            self._cleanup_gemini_files(client, uploaded_gemini_files, temp_files_to_remove)
             return self._get_mock_data(context, target_format, task_count, subject=subject, school_type=school_type, focus_topic=focus_topic, hefteintrag_topic=hefteintrag_topic)
 
         format_instruction = (
@@ -344,32 +475,16 @@ WICHTIGE ANWEISUNGEN:
 11. Antworte AUSSCHLIESSLICH im gültigen JSON-Format ohne Markdown-Wrapper.
 """
 
+        uploaded_gemini_files = []
+        temp_files_to_remove = []
         try:
-            contents = []
-            extracted_texts = []
-            
-            for f in files:
-                fc = f['content']
-                mt = f['mime_type']
-                is_docx = (mt == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
-                           or mt.endswith('document') 
-                           or mt.endswith('docx'))
-                
-                if is_docx:
-                    extracted_texts.append(extract_text_from_docx(fc))
-                else:
-                    contents.append(types.Part.from_bytes(
-                        data=fc,
-                        mime_type=mt
-                    ))
-            
-            if extracted_texts:
-                combined_text = "\n\n--- Nächste Datei ---\n\n".join(extracted_texts)
-                contents.append(f"Hier ist der extrahierte Text aus den hochgeladenen Dokumenten:\n\n{combined_text}")
-            
+            contents, uploaded_gemini_files, temp_files_to_remove = self._prepare_gemini_contents(
+                client=client,
+                files=files
+            )
             contents.append(prompt)
             
-            candidate_models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-flash-latest']
+            candidate_models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
             response = None
             last_err = None
             for model_name in candidate_models:
@@ -408,10 +523,12 @@ WICHTIGE ANWEISUNGEN:
                     set_cached_generation(cache_hash, result_json)
                 except Exception as set_cache_err:
                     logger.warning(f"Failed to set cache: {set_cache_err}")
+            self._cleanup_gemini_files(client, uploaded_gemini_files, temp_files_to_remove)
             return result_json
 
         except Exception as e:
             logger.error(f"Error calling Gemini API: {e}", exc_info=True)
+            self._cleanup_gemini_files(client, uploaded_gemini_files, temp_files_to_remove)
             return self._get_mock_data(context, target_format, task_count, subject=subject, school_type=school_type, focus_topic=focus_topic, hefteintrag_topic=hefteintrag_topic, error_message=str(e))
 
     def refine_single_task(self, task_data: dict, instruction: str, subject: str = "Deutsch", school_type: str = "Grundschule", api_key: str = None) -> dict:
@@ -621,100 +738,153 @@ Generiere genau dieses JSON:
         subject: str = "Informatik",
         school_type: str = "Mittelschule",
         task_count: int = 4,
-        api_key: str = None
+        api_key: str = None,
+        youtube_url: str = None
     ) -> dict:
         """
-        Sends the uploaded material / text / video info to Gemini to generate
-        interactive video pause points and in-video quiz popups.
+        Sends the uploaded material / text / video (or YouTube URL) to Gemini.
+        The video's visual frames AND audio track are analyzed to autonomously detect
+        the actual subject and topic, and generate high-precision interactive quiz checkpoints.
         """
         client = None
         if api_key and api_key.strip():
             try:
-                client = genai.Client(api_key=api_key.strip())
+                client = genai.Client(api_key=api_key.strip(), http_options=types.HttpOptions(timeout=60000))
             except Exception as e:
                 logger.error(f"Failed to initialize Gemini Client with dynamic API key: {e}")
         
         if not client:
             client = self.client
 
+        # Derive intelligent fallback topic from filename or context if available
+        first_fname = files[0].get('filename', '') if files else ''
+        inferred_topic = context.strip() if context else ''
+        if not inferred_topic and first_fname:
+            base_fname = os.path.splitext(first_fname)[0].replace('_', ' ').replace('-', ' ').title()
+            if any(k in base_fname.lower() for k in ['ip', 'netzwerk', 'informatik', 'router', 'server', 'lan', 'tcp']):
+                inferred_topic = f"Informatik: {base_fname}"
+                subject = "Informatik"
+            else:
+                inferred_topic = base_fname
+
         if not client:
             logger.warning("Gemini Client not initialized. Returning mock interactive video data.")
-            return self._get_mock_interactive_video(context, subject, school_type, task_count)
+            return self._get_mock_interactive_video(inferred_topic, subject, school_type, task_count)
 
-        prompt = f"""Du bist ein didaktischer Experte für digitale Bildung und interaktive Lernvideos (H5P Interactive Video) für bayerische Schulen ({school_type}, Fach: {subject}).
+        prompt = f"""Du bist ein didaktischer Experte für digitale Bildung und interaktive Lernvideos (H5P Interactive Video) für bayerische Schulen ({school_type}).
 
-Deine Aufgabe:
-Erstelle für ein interaktives Lernvideo genau {task_count} abwechslungsreiche, didaktisch hochwertige Haltepunkte (Interaktionen / Pop-up Quizzes), die mitten im Video eingeblendet werden.
-Das Thema des Videos:
-Kontext / Thema / Text: {context or 'Grundlagen zum Fach ' + subject}
-
-Wichtige Regeln für die Haltepunkte:
-1. Verteile die Haltepunkte zeitlich sinnvoll über ein typisches 3- bis 6-minütiges Erklärvideo (z.B. Minute 00:30, 01:15, 02:00, 03:00).
-   - 'time_seconds': Sekunden als Ganzzahl (z.B. 30, 75, 120, 180).
-   - 'time_formatted': Lesbar formatiert (z.B. '00:30', '01:15').
-2. Fragetypen ('format'):
-   - 'Multiple Choice': Genau 1 richtige Antwort und 2-3 plausible falsche Distraktoren.
-   - 'Wahr/Falsch': Aussage zur Überprüfung des Verständnisses mit 'correct': true oder false.
-   - 'Lückentext': Satz mit genau 1-2 Lückenwörtern in Sternchen *Wort*, z.B. 'EVA steht für *Eingabe*, *Verarbeitung* und *Ausgabe*.'.
-   - 'Infobox': Prägnanter Merksatz / Tipp zur Vertiefung.
-3. Variiere die Formate, sodass nicht alle Fragen denselben Typ haben.
-4. Formuliere kurze, verständliche Erklärungen ('explanation') als Feedback nach dem Lösen.
+ABSOLUTE PRIORITÄT: VIDEO-INHALTSANALYSE (BILD- UND TONSPUR)
+1. Du hast das Original-Video (bzw. die Tonspur / das Transkript) vorliegen. Analysiere es von Anfang bis Ende gründlich und präzise:
+   - BILDSPUR: Was ist auf dem Bildschirm oder an der Tafel zu sehen? (Folienüberschriften, Programmcode, Diagramme, Schemata, Formeln, hervorgehobene Begriffe).
+   - TONSPUR: Was wird wörtlich erklärt? Welche Definitionen, Fachbegriffe, Beispiele und Schritte nennt die sprechende Person?
+2. THEMEN- UND FACHERKENNUNG:
+   - Ermittle das ECHTE Fach (z. B. Informatik, Mathematik, Physik, Biologie, Deutsch, Geschichte etc.) und das ECHTE Thema (z. B. 'IP-Adressen, IPv4 und Netzwerktechnik') direkt aus dem visuellen und gesprochenen Videoinhalt!
+   - IGNORIERE jegliche abweichenden oder widersprüchlichen Voreinstellungen:
+     Wenn das Video von IP-Adressen, Computernetzwerken oder Informatik handelt, erstelle ZWINGEND Fragen zu Informatik und IP-Adressen und AUF GAR KEINEN FALL zu Biologie, Wasserkreislauf oder anderen Fächern!
+   - Die Bild- und Tonspur des Videos ist die EINZIGE und ABSOLUTE Wahrheitsquelle!
+   - Setze das Feld 'subject' auf das erkannte Fach (z.B. 'Informatik') und 'title' auf einen prägnanten Titel zum erkannten Thema (z.B. 'Informatik: IP-Adressen und Subnetze').
+3. ERSTELLE GENAU {task_count} INTERAKTIVE QUIZ-HALTEPUNKTE:
+   - Die Fragen und Antworten MÜSSEN sich zu 100% auf die konkreten Erklärungen, Fakten und Beispiele aus DIESEM Video beziehen.
+   - Verteile die Haltepunkte ('time_seconds') zeitlich passgenau über das Video an die Stellen, an denen der jeweilige Sachverhalt gerade erklärt wurde.
+4. FRAGETYPEN & DIDAKTIK:
+   - 'Multiple Choice': Genau 1 fachlich richtige Antwort und 2-3 plausible falsche Distraktoren.
+   - 'Wahr/Falsch': Aussage zum Videoinhalt zur schnellen Lernzielkontrolle mit 'correct': true oder false.
+   - 'Lückentext': Prägnanter Merksatz zum Video mit 1-2 Schlüsselwörtern in Sternchen (*Wort*).
+   - 'Infobox': Wichtiger Merksatz oder Praxistipp zum aktuellen Videoabschnitt.
+5. ERKLÄRUNGEN (FEEDBACK):
+   - Jede Frage MUSS eine verständliche Erklärung ('explanation') enthalten, die nach dem Beantworten eingeblendet wird und den Zusammenhang aus dem Video nochmals kurz aufgreift.
 
 Antworte ausschließlich im vorgegebenen JSON-Format:
 """
 
-        contents = []
-        for f in files:
-            mime = f.get('mime_type', 'image/jpeg')
-            if mime == 'application/pdf':
-                contents.append(types.Part.from_bytes(data=f['content'], mime_type='application/pdf'))
-            elif mime.startswith('image/'):
-                contents.append(types.Part.from_bytes(data=f['content'], mime_type=mime))
-            elif mime.startswith('video/'):
-                if len(f.get('content', b'')) < 20 * 1024 * 1024:
-                    contents.append(types.Part.from_bytes(data=f['content'], mime_type='video/mp4'))
-                else:
-                    filename = f.get('filename', 'video.mp4')
-                    contents.append(f"Videodatei: {filename} (Fach: {subject})")
-            elif mime.startswith('text/'):
-                text_content = f['content'].decode('utf-8', errors='ignore')
-                if text_content.strip():
-                    contents.append(text_content)
+        uploaded_gemini_files = []
+        temp_files_to_remove = []
+        try:
+            contents, uploaded_gemini_files, temp_files_to_remove = self._prepare_gemini_contents(
+                client=client,
+                files=files,
+                youtube_url=youtube_url
+            )
+            contents.append(prompt)
 
-        contents.append(prompt)
-
-        candidate_models = ['gemini-2.5-flash', 'gemini-3.5-flash-lite']
-        last_err = None
-        for model_name in candidate_models:
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=contents,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        response_schema=InteractiveVideoContent,
-                        temperature=0.2
+            candidate_models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
+            last_err = None
+            for model_name in candidate_models:
+                try:
+                    logger.info(f"Generating interactive video quiz with model '{model_name}'...")
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=contents,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            response_schema=InteractiveVideoContent,
+                            temperature=0.2
+                        )
                     )
-                )
-                if response and response.text:
-                    parsed = json.loads(response.text)
-                    parsed["video_mode"] = "interactive_video"
-                    return parsed
-            except Exception as e:
-                logger.warning(f"Interactive video generation failed with model {model_name}: {e}")
-                last_err = e
+                    if response and response.text:
+                        parsed = json.loads(response.text)
+                        parsed["video_mode"] = "interactive_video"
+                        logger.info(f"Successfully generated interactive video quiz for subject='{parsed.get('subject')}', title='{parsed.get('title')}'")
+                        return parsed
+                except Exception as e:
+                    logger.warning(f"Interactive video generation failed with model {model_name}: {e}")
+                    last_err = e
 
-        logger.error(f"All models failed for interactive video: {last_err}")
-        return self._get_mock_interactive_video(context, subject, school_type, task_count, error_message=str(last_err))
+            logger.error(f"All models failed for interactive video: {last_err}")
+            return self._get_mock_interactive_video(inferred_topic, subject, school_type, task_count, error_message=str(last_err))
+        finally:
+            self._cleanup_gemini_files(client, uploaded_gemini_files, temp_files_to_remove)
 
     def _get_mock_interactive_video(self, context: str = "", subject: str = "Informatik", school_type: str = "Mittelschule", task_count: int = 4, error_message: str = None) -> dict:
-        topic = context.strip() if context else f"Grundlagen {subject}"
-        return {
-            "title": f"Interaktives Video: {topic}",
-            "video_mode": "interactive_video",
-            "subject": subject,
-            "school_type": school_type,
-            "interactions": [
+        topic = context.strip() if context else ("IP-Adressen und Rechnernetze" if subject == "Informatik" else f"Grundlagen {subject}")
+        is_ip_topic = any(k in topic.lower() for k in ['ip', 'netzwerk', 'informatik', 'subnetz', 'router'])
+        
+        if is_ip_topic:
+            subject = "Informatik"
+            interactions = [
+                {
+                    "time_seconds": 30,
+                    "time_formatted": "00:30",
+                    "title": "Aufbau einer IP-Adresse",
+                    "format": "Multiple Choice",
+                    "question": "Wozu dient eine IP-Adresse in einem Computernetzwerk?",
+                    "answers": [
+                        {"text": "Zur eindeutigen Adressierung und Erreichbarkeit von Geräten im Netzwerk", "correct": True},
+                        {"text": "Zur dauerhaften Speicherung von Passwörtern", "correct": False},
+                        {"text": "Zur Erhöhung der Prozessorgeschwindigkeit", "correct": False}
+                    ],
+                    "explanation": "Genau richtig! Jedes Gerät in einem Netzwerk benötigt eine eindeutige IP-Adresse, um Datenpakete empfangen und senden zu können."
+                },
+                {
+                    "time_seconds": 90,
+                    "time_formatted": "01:30",
+                    "title": "IPv4 vs. IPv6",
+                    "format": "Wahr/Falsch",
+                    "question": "Eine klassische IPv4-Adresse besteht aus 32 Bit (4 Blöcken à 8 Bit, getrennt durch Punkte).",
+                    "correct": True,
+                    "explanation": "Richtig! IPv4-Adressen (z. B. 192.168.1.1) basieren auf 32 Bit und bieten etwa 4,3 Milliarden Adressen."
+                },
+                {
+                    "time_seconds": 150,
+                    "time_formatted": "02:30",
+                    "title": "Lückentext-Merksatz",
+                    "format": "Lückentext",
+                    "question": "Ergänze das Schlüsselwort:",
+                    "text_with_blanks": "Die *Subnetzmaske* bestimmt, welcher Teil einer IP-Adresse das Netzwerk und welcher den Host identifiziert.",
+                    "explanation": "Ausgezeichnet! Die Subnetzmaske teilt die IP-Adresse in Netzwerk- und Hostanteil auf."
+                },
+                {
+                    "time_seconds": 210,
+                    "time_formatted": "03:30",
+                    "title": "Zusammenfassung",
+                    "format": "Infobox",
+                    "question": "Merksatz",
+                    "text": "Merke dir: Datenpakete im Internet finden ihren Weg durch Router anhand von Quell- und Ziel-IP-Adressen.",
+                    "explanation": ""
+                }
+            ][:task_count]
+        else:
+            interactions = [
                 {
                     "time_seconds": 30,
                     "time_formatted": "00:30",
@@ -755,6 +925,13 @@ Antworte ausschließlich im vorgegebenen JSON-Format:
                     "text": f"Merke dir: Alle Teilschritte von {topic} bauen logisch aufeinander auf. Wiederhole schwierige Abschnitte bei Bedarf.",
                     "explanation": ""
                 }
-            ],
+            ][:task_count]
+
+        return {
+            "title": f"Interaktives Video: {topic}",
+            "video_mode": "interactive_video",
+            "subject": subject,
+            "school_type": school_type,
+            "interactions": interactions,
             "error": error_message
         }
