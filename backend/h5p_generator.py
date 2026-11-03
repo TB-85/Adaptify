@@ -848,8 +848,8 @@ class H5PGenerator:
     @staticmethod
     def build_growing_hefteintrag_html(topic_title, all_points, current_idx, is_final=False):
         """
-        Renders the progressive digital Tafelbild (growing notebook entry) for H5P.Text posters.
-        Displays all previous points plus the new current point highlighted with an action prompt.
+        Renders the progressive digital Tafelbild (growing notebook entry).
+        Can be displayed inside question feedback or as a standalone poster.
         """
         import re
         total_count = len(all_points)
@@ -864,17 +864,17 @@ class H5PGenerator:
             if not is_final and i == current_idx:
                 # Newly added point in this step (highlighted!)
                 points_html_parts.append(
-                    f"<div style='color:#0f172a; font-size:14px; font-weight:600; line-height:1.55; margin-bottom:8px; "
-                    f"background:#eff6ff; border-left:4px solid #0284c7; padding:8px 12px; border-radius:6px;'>"
+                    f"<div style='color:#0f172a; font-size:13.5px; font-weight:600; line-height:1.5; margin-bottom:7px; "
+                    f"background:#eff6ff; border-left:4px solid #0284c7; padding:7px 10px; border-radius:5px;'>"
                     f"<b>{pt_num}.</b> {pt_text} "
-                    f"<span style='background:#0284c7; color:#ffffff; font-size:10px; font-weight:800; padding:2px 7px; "
-                    f"border-radius:10px; margin-left:6px; vertical-align:middle; text-transform:uppercase;'>Neu ins Heft</span>"
+                    f"<span style='background:#0284c7; color:#ffffff; font-size:9.5px; font-weight:800; padding:1px 6px; "
+                    f"border-radius:8px; margin-left:6px; vertical-align:middle; text-transform:uppercase;'>Neu ins Heft</span>"
                     f"</div>"
                 )
             else:
                 # Normal established point
                 points_html_parts.append(
-                    f"<div style='color:#475569; font-size:13.5px; line-height:1.5; margin-bottom:7px; padding-left:4px;'>"
+                    f"<div style='color:#475569; font-size:13px; line-height:1.45; margin-bottom:6px; padding-left:4px;'>"
                     f"<b>{pt_num}.</b> {pt_text}"
                     f"</div>"
                 )
@@ -884,36 +884,38 @@ class H5PGenerator:
         if is_final:
             badge_text = "Gesamttafelbild"
             notebook_task = "✍️ <b>Aufgabe für dein Heft:</b> Vergleiche deinen fertigen Hefteintrag im Schulheft mit diesem vollständigen Tafelbild und hake alle Punkte ab!"
+            continue_notice = "▶️ Klicke auf <b>Play ▶</b> oder das <b>✕</b>, um das Video abzuschließen."
         elif step_num == 1:
             badge_text = f"Schritt 1 von {total_count}"
             notebook_task = "✍️ <b>Aufgabe für dein Heft:</b> Schreibe Datum, Thema und <b>Punkt 1</b> jetzt sauber in dein Schulheft!"
+            continue_notice = "▶️ Sobald du fertig geschrieben hast: Klicke unten auf <b>„Video fortsetzen“</b> oder Play ▶!"
         elif step_num == total_count:
             badge_text = f"Schritt {step_num} von {total_count}"
             notebook_task = f"✍️ <b>Aufgabe für dein Heft:</b> Ergänze den letzten <b>Punkt {step_num}</b> jetzt sauber in deinem Schulheft!"
+            continue_notice = "▶️ Sobald du fertig geschrieben hast: Klicke unten auf <b>„Video fortsetzen“</b> oder Play ▶!"
         else:
             badge_text = f"Schritt {step_num} von {total_count}"
             notebook_task = f"✍️ <b>Aufgabe für dein Heft:</b> Ergänze <b>Punkt {step_num}</b> jetzt sauber in deinem Schulheft!"
-
-        continue_notice = "▶️ <b>Weiter geht's:</b> Klicke oben rechts auf das <b>✕</b> oder unten auf <b>Play ▶</b>, sobald du fertig geschrieben hast!"
+            continue_notice = "▶️ Sobald du fertig geschrieben hast: Klicke unten auf <b>„Video fortsetzen“</b> oder Play ▶!"
 
         return (
-            f"<div style='background:#ffffff; border:2px solid #0284c7; border-radius:14px; padding:18px; "
-            f"font-family:sans-serif; box-shadow:0 8px 24px rgba(0,0,0,0.1);'>"
-            f"<div style='display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #e0f2fe; padding-bottom:8px; margin-bottom:12px;'>"
-            f"<div style='display:flex; align-items:center; gap:8px;'>"
-            f"<span style='font-size:22px;'>📖</span>"
-            f"<span style='font-size:15px; font-weight:800; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px;'>Wachsender Hefteintrag</span>"
+            f"<div style='background:#ffffff; border:2px solid #0284c7; border-radius:12px; padding:14px; margin-top:8px; "
+            f"font-family:sans-serif; box-shadow:0 6px 18px rgba(0,0,0,0.08); text-align:left;'>"
+            f"<div style='display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #e0f2fe; padding-bottom:6px; margin-bottom:10px;'>"
+            f"<div style='display:flex; align-items:center; gap:6px;'>"
+            f"<span style='font-size:18px;'>📖</span>"
+            f"<span style='font-size:14px; font-weight:800; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px;'>Wachsender Hefteintrag</span>"
             f"</div>"
-            f"<span style='background:#e0f2fe; color:#0369a1; font-size:12px; font-weight:700; padding:4px 10px; border-radius:12px;'>{badge_text}</span>"
+            f"<span style='background:#e0f2fe; color:#0369a1; font-size:11px; font-weight:700; padding:3px 8px; border-radius:10px;'>{badge_text}</span>"
             f"</div>"
-            f"<div style='color:#0f172a; font-size:16px; font-weight:800; margin:0 0 10px 0;'>Thema: {clean_title}</div>"
-            f"<div style='background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:14px;'>"
+            f"<div style='color:#0f172a; font-size:14.5px; font-weight:800; margin:0 0 8px 0;'>Thema: {clean_title}</div>"
+            f"<div style='background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin-bottom:10px;'>"
             f"{points_html}"
             f"</div>"
-            f"<div style='background:#fef3c7; border-left:4px solid #f59e0b; padding:10px 14px; border-radius:8px; margin-bottom:14px; color:#92400e; font-size:13.5px; font-weight:700; line-height:1.45;'>"
+            f"<div style='background:#fef3c7; border-left:4px solid #f59e0b; padding:8px 12px; border-radius:6px; margin-bottom:10px; color:#92400e; font-size:13px; font-weight:700; line-height:1.4;'>"
             f"{notebook_task}"
             f"</div>"
-            f"<div style='padding-top:10px; border-top:1px dashed #cbd5e1; font-size:12px; color:#64748b; font-weight:600;'>"
+            f"<div style='padding-top:8px; border-top:1px dashed #cbd5e1; font-size:11.5px; color:#64748b; font-weight:600;'>"
             f"{continue_notice}"
             f"</div>"
             f"</div>"
@@ -939,7 +941,9 @@ class H5PGenerator:
                 "copyright": {"license": "U"}
             }]
         else:
-            files_source = []        # 2. Build interactions & digital growing Hefteintrag
+            files_source = []
+
+        # 2. Build interactions & digital growing Hefteintrag
         interactions_list = []
         bookmarks_list = []
         used_libraries = set()
@@ -959,15 +963,18 @@ class H5PGenerator:
             label = item.get("title", f"Haltepunkt {idx + 1}")
             fmt = item.get("format", "Multiple Choice")
             sub_id = str(uuid.uuid4())
+            hefteintrag_html = H5PGenerator.build_growing_hefteintrag_html(title, all_points, idx)
+            explanation_text = (item.get("explanation") or "").strip()
 
+            # Duration from == to guarantees pop-up disappears immediately on resume!
             interaction_obj = {
-                "x": 12,
-                "y": 10,
-                "width": 76,
-                "height": 78,
+                "x": 10,
+                "y": 8,
+                "width": 80,
+                "height": 84,
                 "duration": {
                     "from": t_sec,
-                    "to": t_sec + 5
+                    "to": t_sec
                 },
                 "pause": True,
                 "displayType": "poster",
@@ -981,14 +988,22 @@ class H5PGenerator:
 
             if fmt == "Multiple Choice":
                 used_libraries.add("H5P.MultiChoice")
+                # Growing Hefteintrag embedded directly in feedback on correct answer!
+                # Zero video playback between correct answer and Hefteintrag.
+                if explanation_text:
+                    feedback_content = f"<div style='font-size:14px; font-weight:600; color:#15803d; margin-bottom:10px;'>Klasse! {explanation_text}</div>{hefteintrag_html}"
+                else:
+                    feedback_content = f"<div style='font-size:14px; font-weight:600; color:#15803d; margin-bottom:10px;'>Klasse! Das ist vollkommen richtig!</div>{hefteintrag_html}"
+
                 answers = []
                 for ans in item.get("answers", []):
+                    is_ans_correct = bool(ans.get("correct", False))
                     answers.append({
                         "text": f"<div>{ans.get('text', '')}</div>\n",
-                        "correct": bool(ans.get("correct", False)),
+                        "correct": is_ans_correct,
                         "tipsAndFeedback": {
                             "tip": "",
-                            "chosenFeedback": f"<div>{item.get('explanation', '')}</div>" if ans.get("correct") else "",
+                            "chosenFeedback": feedback_content if is_ans_correct else "",
                             "notChosenFeedback": ""
                         }
                     })
@@ -1028,6 +1043,11 @@ class H5PGenerator:
             elif fmt in ["Wahr/Falsch", "Wahr / Falsch"]:
                 used_libraries.add("H5P.TrueFalse")
                 is_correct = str(item.get("correct", "true")).lower() in ["true", "wahr", "1"]
+                if explanation_text:
+                    feedback_content = f"<div style='font-size:14px; font-weight:600; color:#15803d; margin-bottom:10px;'>Klasse! {explanation_text}</div>{hefteintrag_html}"
+                else:
+                    feedback_content = f"<div style='font-size:14px; font-weight:600; color:#15803d; margin-bottom:10px;'>Klasse! Das ist vollkommen richtig!</div>{hefteintrag_html}"
+
                 interaction_obj["action"] = {
                     "library": "H5P.TrueFalse 1.8",
                     "params": {
@@ -1036,7 +1056,7 @@ class H5PGenerator:
                         "l10n": {
                             "trueText": "Wahr",
                             "falseText": "Falsch",
-                            "feedback": item.get("explanation", "")
+                            "feedback": feedback_content
                         },
                         "behaviour": {
                             "enableRetry": True,
@@ -1056,12 +1076,24 @@ class H5PGenerator:
                 used_libraries.add("H5P.Blanks")
                 text_with_blanks = item.get("text_with_blanks", item.get("question", ""))
                 formatted_blanks = H5PGenerator.format_blanks_text(text_with_blanks) if hasattr(H5PGenerator, "format_blanks_text") else text_with_blanks
+                if explanation_text:
+                    feedback_content = f"<div style='font-size:14px; font-weight:600; color:#15803d; margin-bottom:10px;'>Klasse! {explanation_text}</div>{hefteintrag_html}"
+                else:
+                    feedback_content = f"<div style='font-size:14px; font-weight:600; color:#15803d; margin-bottom:10px;'>Klasse! Das ist vollkommen richtig!</div>{hefteintrag_html}"
+
                 interaction_obj["action"] = {
                     "library": "H5P.Blanks 1.14",
                     "params": {
                         "text": f"<p>{item.get('question', 'Fülle die Lücken aus:')}</p>",
                         "questions": [f"<p>{formatted_blanks}</p>"],
                         "score": "Du hast @score von @total Punkten erreicht.",
+                        "overallFeedback": [
+                            {
+                                "from": 100,
+                                "to": 100,
+                                "feedback": feedback_content
+                            }
+                        ],
                         "checkAnswer": "Prüfen",
                         "tryAgain": "Wiederholen",
                         "showSolution": "Lösung anzeigen",
@@ -1084,7 +1116,6 @@ class H5PGenerator:
             else:
                 # Infobox (Merkkasten) -> Renders the progressive Tafelbild directly!
                 used_libraries.add("H5P.Text")
-                hefteintrag_html = H5PGenerator.build_growing_hefteintrag_html(title, all_points, idx)
                 interaction_obj["action"] = {
                     "library": "H5P.Text 1.1",
                     "params": {
@@ -1098,12 +1129,16 @@ class H5PGenerator:
                     }
                 }
 
+            # Adaptivity & Rewind: strictly capped to max 30 seconds rewind
+            raw_rewind = int(item.get("rewind_seconds") or item.get("explanation_start_seconds") or (t_sec - 15))
+            rewind_sec = max(t_sec - 30, raw_rewind)
+            rewind_sec = min(rewind_sec, max(0, t_sec - 5))
+
             if fmt in ["Multiple Choice", "Wahr/Falsch", "Wahr / Falsch", "Lückentext", "Lueckentext"]:
                 bookmarks_list.append({
                     "time": t_sec,
                     "label": f"❓ Frage {idx+1}: {label}"
                 })
-                rewind_sec = int(item.get("rewind_seconds") or item.get("explanation_start_seconds") or max(0, t_sec - 25))
                 interaction_obj["adaptivity"] = {
                     "wrong": {
                         "seekTo": rewind_sec,
@@ -1113,71 +1148,29 @@ class H5PGenerator:
                     },
                     "requireCompletion": True
                 }
-                interactions_list.append(interaction_obj)
-
-                # Add companion progressive Hefteintrag poster right after the question!
-                used_libraries.add("H5P.Text")
-                companion_id = str(uuid.uuid4())
-                next_t_sec = int(raw_interactions[idx + 1].get("time_seconds", t_sec + 30)) if (idx + 1 < total_count) else (t_sec + 30)
-                hefteintrag_time = t_sec + 2 if (t_sec + 2 < next_t_sec) else t_sec + 1
-
-                hefteintrag_html = H5PGenerator.build_growing_hefteintrag_html(title, all_points, idx)
-                hefteintrag_obj = {
-                    "x": 12,
-                    "y": 10,
-                    "width": 76,
-                    "height": 78,
-                    "duration": {
-                        "from": hefteintrag_time,
-                        "to": hefteintrag_time + 5
-                    },
-                    "pause": True,
-                    "displayType": "poster",
-                    "buttonOnMobile": False,
-                    "label": f"📖 Hefteintrag {idx+1}: {label}",
-                    "visuals": {
-                        "backgroundColor": "rgba(255, 255, 255, 0.98)",
-                        "boxShadow": True
-                    },
-                    "action": {
-                        "library": "H5P.Text 1.1",
-                        "params": {
-                            "text": hefteintrag_html
-                        },
-                        "subContentId": companion_id,
-                        "metadata": {
-                            "contentType": "Text",
-                            "license": "U",
-                            "title": f"📖 Hefteintrag Schritt {idx+1}"
-                        }
-                    }
-                }
-                interactions_list.append(hefteintrag_obj)
-                bookmarks_list.append({
-                    "time": hefteintrag_time,
-                    "label": f"📖 Hefteintrag {idx+1}"
-                })
             else:
                 bookmarks_list.append({
                     "time": t_sec,
                     "label": f"📖 Hefteintrag {idx+1}: {label}"
                 })
-                interactions_list.append(interaction_obj)
+
+            interactions_list.append(interaction_obj)
 
         # Final Summary Poster: Complete Tafelbild for all points
         if total_count >= 2:
             last_t = max(int(it.get("time_seconds", 30)) for it in raw_interactions)
-            final_time = last_t + 10
+            final_time = last_t + 8
             final_poster_html = H5PGenerator.build_growing_hefteintrag_html(title, all_points, len(all_points) - 1, is_final=True)
             final_id = str(uuid.uuid4())
+            used_libraries.add("H5P.Text")
             final_obj = {
                 "x": 10,
                 "y": 8,
                 "width": 80,
-                "height": 82,
+                "height": 84,
                 "duration": {
                     "from": final_time,
-                    "to": final_time + 5
+                    "to": final_time
                 },
                 "pause": True,
                 "displayType": "poster",

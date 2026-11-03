@@ -818,13 +818,12 @@ ABSOLUTE ANFORDERUNGEN AN THEMEN-PASSGENAUIGKEIT, ERKLÄRUNGEN UND STOPP-ZEITPUN
    - Das tatsächliche Schulfach (z. B. 'Informatik', 'Mathematik', 'Physik', 'Biologie', 'Chemie', 'Geschichte', 'Deutsch', 'Wirtschaft' etc.) und der genaue Titel (z. B. 'Informatik: Aufbau von IPv4-Adressen und Subnetzen') MÜSSEN zu 100% aus dem tatsächlichen Inhalt des Videos abgeleitet werden.
    - Bildspur und Tonspur sind die absolute Wahrheitsquelle. Ignoriere irreführende Vorbelegungen oder Standardwerte vollständig.
 
-2. EXAKTER STOPP-ZEITPUNKT (TIMESTAMPS – NIEMALS MITTEN IM SATZ STOPPEN!):
-   - ABSOLUTE TIMING-PFLICHT: Das Pop-up darf NIEMALS mitten im Satz oder während eines noch unfertigen Gedankens aufpoppen!
-   - Der Sprecher muss den erklärenden Satz VOLLSTÄNDIG beendet haben (achte im Transkript auf Satzzeichen wie . ! ? und in der Audiospur auf die natürliche Sprechpause).
-   - Platziere den Haltepunkt ('time_seconds' und 'time_formatted') GENAU 2 BIS 4 SEKUNDEN NACHDEM der letzte Satz der Erklärung verklungen ist und der Sprecher pausiert oder zum nächsten Gedanken überleitet.
-   - Stoppe NIEMALS bevor die abgefragte Information im Video genannt wurde (Schüler können es sonst noch nicht wissen).
-   - Wähle KEINE willkürlichen Intervalle (wie stur alle 30s), sondern ermittle die echten Sinnabschnitte und Kapitel des Videos anhand der Tonspur und Folienwechsel.
-   - Haltepunkte müssen chronologisch aufsteigend angeordnet sein (Stopp 1 < Stopp 2 < Stopp 3 ...).
+2. EXAKTER STOPP-ZEITPUNKT (TIMESTAMPS – DIREKT NACH DEM FERTIGEN SATZ STOPPEN!):
+   - ABSOLUTE TIMING-PFLICHT: Stoppe DIREKT in der natürlichen Atempause (0,5 bis maximal 1 Sekunde) nach dem allerletzten Wort des erklärenden Satzes!
+   - NIEMALS ZU LANGE WARTEN: Wenn du 2 bis 4 Sekunden wartest, beginnt der Sprecher im Video bereits den nächsten Satz! Das darf keinesfalls passieren.
+   - NIEMALS mitten im Satz oder während eines noch unfertigen Wortes stoppen.
+   - Nutze die Transkript-Zeitstempel und Satzzeichen (. ! ?): Wenn der erklärende Satz bei Sekunde 24 endet, stoppe exakt bei Sekunde 24 oder 25 – direkt nach dem Schlusspunkt, bevor das erste Wort des nächsten Satzes fällt.
+   - Haltepunkte müssen streng chronologisch aufsteigend angeordnet sein (Stopp 1 < Stopp 2 < Stopp 3 ...).
 
 3. FRAGEN UND MERKKÄSTEN (PASSGENAU ZUM VIDEO MIT KLARER SCHÜLER-ANWEISUNG):
    - Jede Frage muss eine konkrete, im Video genannte Tatsache, Definition, Zahl, Struktur oder Vorgehensweise abfragen. Keine vagen Allgemeinplätze!
@@ -847,7 +846,8 @@ ABSOLUTE ANFORDERUNGEN AN THEMEN-PASSGENAUIGKEIT, ERKLÄRUNGEN UND STOPP-ZEITPUN
    - Für JEDEN Haltepunkt (unabhängig von der gewählten Aufgabenanzahl 1 bis {task_count}):
      * 'hefteintrag_point': Formuliere genau den 1 prägnanten didaktischen Merksatz für diesen Schritt (z. B. 'Eine IPv4-Adresse besteht aus vier 8-Bit-Zahlenblöcken (32 Bit), getrennt durch Punkte.'). Dieser Punkt erscheint digital im H5P-Video auf dem Tafelbild!
      * 'hefteintrag_step': Der kumulativ wachsende Hefteintrag bis zu diesem Schritt (Thema + alle bisherigen Punkte 1 bis aktuell + Schreibaufgabe für das Schulheft).
-     * 'rewind_seconds': Die Sekunde im Video, an der die Erklärung zu dieser Frage begonnen hat (Dorthin springt das Video bei falscher Antwort zurück).
+     * 'rewind_seconds': Die genaue Sekunde im Video, an der die Erklärung zu dieser konkreten Frage begonnen hat.
+       STRIKTE REGEL: Maximal 10 bis maximal 30 Sekunden zurückspringen (niemals weiter als 30s zurück!). Ziel ist es, den Schüler punktgenau an die Stelle zurückzusetzen, an der die für die Frage benötigte Information genannt wird.
    - Mindestens einer der Haltepunkte sollte als didaktischer Merkkasten ('Infobox' oder 'Lückentext') gestaltet sein, der das Tafelbild hervorhebt.
 
 Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses Video. Antworte ausschließlich im vorgegebenen JSON-Schema:
