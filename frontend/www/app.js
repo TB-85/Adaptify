@@ -371,6 +371,15 @@ function createInteractionCardElement(item, idx) {
             <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Erklärung / Feedback nach der Antwort:</label>
             <input type="text" value="${escapeHtml(item.explanation || '')}" placeholder="z. B. Sehr gut erklärt! Der Begriff steht für..." class="iv-explanation w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500 bg-slate-50/50">
         </div>
+
+        <!-- Wachsender Hefteintrag (Digitaler Stichpunkt für das H5P Tafelbild) -->
+        <div class="space-y-1 pt-1 border-t border-slate-100">
+            <div class="flex items-center justify-between">
+                <label class="block text-[10px] font-bold text-sky-700 uppercase tracking-wider">📖 Wachsender Hefteintrag (Punkt ${idx + 1} für das Tafelbild):</label>
+                <span class="text-[10px] text-sky-600 font-semibold bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">Erscheint digital im H5P-Video</span>
+            </div>
+            <input type="text" value="${escapeHtml(item.hefteintrag_point || item.hefteintrag_step || '')}" placeholder="z. B. Eine IPv4-Adresse besteht aus 4 Zahlenblöcken (32 Bit)..." class="iv-hefteintrag-point w-full px-3 py-1.5 border border-sky-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500 bg-sky-50/30">
+        </div>
     `;
 
     return card;
@@ -535,13 +544,19 @@ function getEditedInteractiveVideoData() {
         const question = card.querySelector('.iv-question')?.value || '';
         const explanation = card.querySelector('.iv-explanation')?.value || '';
 
+        const hefteintragPoint = card.querySelector('.iv-hefteintrag-point')?.value || '';
+        const rewindSec = card.querySelector('.iv-rewind-sec')?.value ? parseInt(card.querySelector('.iv-rewind-sec').value) : (appState.generatedData?.interactions?.[idx]?.rewind_seconds || Math.max(0, timeSec - 25));
+
         const item = {
             time_seconds: timeSec,
             time_formatted: formatSecondsToMMSS(timeSec),
             title: title,
             format: format,
             question: question,
-            explanation: explanation
+            explanation: explanation,
+            hefteintrag_point: hefteintragPoint,
+            hefteintrag_step: hefteintragPoint,
+            rewind_seconds: rewindSec
         };
 
         if (format === 'Multiple Choice') {

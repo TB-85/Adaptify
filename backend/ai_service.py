@@ -68,6 +68,7 @@ class VideoInteraction(BaseModel):
     correct: Optional[bool] = Field(default=None, description="Für 'Wahr/Falsch': True wenn die Aussage stimmt, sonst False")
     text_with_blanks: Optional[str] = Field(default=None, description="Für 'Lückentext': Didaktischer Merksatz mit dem gesuchten Schlüsselbegriff in Sternchen (z. B. 'Eine IPv4-Adresse besteht aus *32* Bit.')")
     text: Optional[str] = Field(default=None, description="Für 'Infobox' (Merkkasten): Zusammenfassung und Kernaussage des gerade gezeigten Abschnitts ('💡 Merke dir: ...')")
+    hefteintrag_point: Optional[str] = Field(default=None, description="Der konkrete, prägnante Stichpunkt für diesen Haltepunkt (z. B. 'Eine IPv4-Adresse besteht aus vier 8-Bit-Zahlenblöcken (32 Bit), getrennt durch Punkte.'), der als wachsende Zeile in das digitale Tafelbild / Schulheft aufgenommen wird.")
     hefteintrag_step: Optional[str] = Field(default=None, description="Der wachsende kumulative Hefteintrag bis zu diesem Stopp (Thema + alle bisherigen Punkte + Aufforderung '✍️ Schreibe diesen Punkt jetzt in dein Heft!')")
     explanation: Optional[str] = Field(default=None, description="Verständliche didaktische Rückmeldung, die erklärt, warum die Antwort richtig ist und direkt auf das Video verweist")
 
@@ -841,14 +842,12 @@ ABSOLUTE ANFORDERUNGEN AN THEMEN-PASSGENAUIGKEIT, ERKLÄRUNGEN UND STOPP-ZEITPUN
 4. DIDAKTISCHE RÜCKMELDUNG ('explanation'):
    - Jede Interaktion MUSS eine verständliche Erklärung enthalten, die dem Schüler direkt nach der Beantwortung den Bezug zum Video bestätigt (z. B. "Richtig! Wie im Video bei 01:18 erklärt wurde, teilt die Subnetzmaske die IP-Adresse in Netz- und Hostanteil auf.").
 
-5. WACHSENDER HEFTEINTRAG & ADAPTIVER RÜCKSPRUNG (AUTOMATISCH FÜR JEDES VIDEO):
+5. DIGITALER WACHSENDER HEFTEINTRAG & ADAPTIVER RÜCKSPRUNG (FÜR JEDE AUFGABENANZAHL {task_count}):
    - 'full_hefteintrag': Erstelle ein sauberes, strukturiertes Gesamttafelbild für das Heft (Überschrift zum Thema + nummerierte Kernpunkte 1 bis {task_count}).
-   - Für JEDEN Haltepunkt:
-     * 'rewind_seconds': Ermittle exakt die Sekunde im Video, an der die Erklärung zu dieser Frage begonnen hat (z. B. Frage stoppt bei 01:25, Erklärung begann bei 00:48 -> 'rewind_seconds': 48). Dorthin springt das Video bei falscher Antwort automatisch zurück!
-     * 'hefteintrag_step': Generiere den kumulativ wachsenden Hefteintrag bis zu diesem Schritt:
-       Stopp 1: Thema + Punkt 1 + Aufforderung "✍️ Schreibe Datum, Überschrift und Punkt 1 jetzt sauber in dein Schulheft!"
-       Stopp 2: Thema + Punkt 1 + Punkt 2 + Aufforderung "✍️ Ergänze Punkt 2 jetzt in deinem Schulheft!"
-       Stopp 3+: Alle bisherigen Punkte bleiben stehen und der neue Punkt kommt nummeriert hinzu, stets mit dem Schreib-Aufruf!
+   - Für JEDEN Haltepunkt (unabhängig von der gewählten Aufgabenanzahl 1 bis {task_count}):
+     * 'hefteintrag_point': Formuliere genau den 1 prägnanten didaktischen Merksatz für diesen Schritt (z. B. 'Eine IPv4-Adresse besteht aus vier 8-Bit-Zahlenblöcken (32 Bit), getrennt durch Punkte.'). Dieser Punkt erscheint digital im H5P-Video auf dem Tafelbild!
+     * 'hefteintrag_step': Der kumulativ wachsende Hefteintrag bis zu diesem Schritt (Thema + alle bisherigen Punkte 1 bis aktuell + Schreibaufgabe für das Schulheft).
+     * 'rewind_seconds': Die Sekunde im Video, an der die Erklärung zu dieser Frage begonnen hat (Dorthin springt das Video bei falscher Antwort zurück).
    - Mindestens einer der Haltepunkte sollte als didaktischer Merkkasten ('Infobox' oder 'Lückentext') gestaltet sein, der das Tafelbild hervorhebt.
 
 Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses Video. Antworte ausschließlich im vorgegebenen JSON-Schema:
@@ -913,6 +912,7 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                     "time_seconds": 30,
                     "time_formatted": "00:30",
                     "title": "Aufbau einer IP-Adresse",
+                    "hefteintrag_point": "Eine IP-Adresse dient zur eindeutigen Identifikation von Geräten im Netzwerk.",
                     "format": "Multiple Choice",
                     "question": "Wozu dient eine IP-Adresse in einem Computernetzwerk?",
                     "answers": [
@@ -926,6 +926,7 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                     "time_seconds": 90,
                     "time_formatted": "01:30",
                     "title": "IPv4 vs. IPv6",
+                    "hefteintrag_point": "Eine klassische IPv4-Adresse besteht aus 32 Bit (4 Blöcken à 8 Bit, getrennt durch Punkte).",
                     "format": "Wahr/Falsch",
                     "question": "Eine klassische IPv4-Adresse besteht aus 32 Bit (4 Blöcken à 8 Bit, getrennt durch Punkte).",
                     "correct": True,
@@ -935,6 +936,7 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                     "time_seconds": 150,
                     "time_formatted": "02:30",
                     "title": "Lückentext-Merksatz",
+                    "hefteintrag_point": "Die Subnetzmaske bestimmt, welcher Teil einer IP-Adresse das Netzwerk und welcher den Host identifiziert.",
                     "format": "Lückentext",
                     "question": "Ergänze das Schlüsselwort:",
                     "text_with_blanks": "Die *Subnetzmaske* bestimmt, welcher Teil einer IP-Adresse das Netzwerk und welcher den Host identifiziert.",
@@ -953,6 +955,7 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                     "time_seconds": 270,
                     "time_formatted": "04:30",
                     "title": "💡 Merkkasten: IPv6 Zukunft",
+                    "hefteintrag_point": "IPv6 löst IPv4 mit 128 Bit ab und bietet praktisch unbegrenzte Adressen für alle vernetzten Geräte.",
                     "format": "Multiple Choice",
                     "question": "Warum wird IPv6 weltweit als neuer Standard eingeführt?",
                     "answers": [
@@ -991,6 +994,7 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                     "time_seconds": 130,
                     "time_formatted": "02:10",
                     "title": "Lückentext-Merksatz",
+                    "hefteintrag_point": "Die Subnetzmaske bestimmt, welcher Teil einer IP-Adresse das Netzwerk und welcher den Host identifiziert.",
                     "format": "Lückentext",
                     "question": "Ergänze das Schlüsselwort:",
                     "text_with_blanks": f"Beim Thema {topic} ist vor allem die *Struktur* und *Genauigkeit* entscheidend.",
