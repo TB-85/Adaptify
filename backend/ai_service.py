@@ -228,22 +228,27 @@ class AIService:
             fc = f.get('content', b'')
             mt = f.get('mime_type', '')
             fname = f.get('filename', '')
+            fpath = f.get('file_path')
 
-            if not fc:
+            if not fc and not fpath:
                 continue
 
             is_video = (mt.startswith('video/') or 
                         any(fname.lower().endswith(ext) for ext in ['.mp4', '.mov', '.webm', '.m4v', '.avi']))
 
             if is_video:
-                ext = os.path.splitext(fname)[1] or '.mp4'
-                with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
-                    tmp.write(fc)
-                    tmp_path = tmp.name
-                temp_files_to_remove.append(tmp_path)
+                if fpath and os.path.exists(fpath):
+                    tmp_path = fpath
+                else:
+                    ext = os.path.splitext(fname)[1] or '.mp4'
+                    with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+                        tmp.write(fc)
+                        tmp_path = tmp.name
+                    temp_files_to_remove.append(tmp_path)
 
                 try:
-                    logger.info(f"Uploading video file '{fname}' ({len(fc)} bytes) to Gemini Files API...")
+                    fsize = os.path.getsize(tmp_path) if os.path.exists(tmp_path) else (len(fc) if fc else 0)
+                    logger.info(f"Uploading video file '{fname}' ({fsize} bytes) to Gemini Files API...")
                     gemini_file = client.files.upload(file=tmp_path)
                     uploaded_gemini_files.append(gemini_file)
 
@@ -331,7 +336,7 @@ class AIService:
         # Check SQLite Generation Cache first
         try:
             from database import compute_cache_hash, get_cached_generation, set_cached_generation
-            combined_content = b"".join([f['content'] for f in files])
+            combined_content = b"".join([f.get('content') or b"" for f in files])
             cache_hash = compute_cache_hash(combined_content, subject, school_type, focus_topic, task_count, target_format, hefteintrag_topic)
             cached_res = get_cached_generation(cache_hash)
             if cached_res:

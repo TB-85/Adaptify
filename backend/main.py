@@ -3,6 +3,8 @@ import os
 import json
 import logging
 import asyncio
+import shutil
+import tempfile
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, FileResponse
@@ -150,61 +152,103 @@ async def generate_task(
         effective_api_key = None
         
     file_items = []
-    for uploaded_file in files:
-        contents = await uploaded_file.read()
-        mime_type = uploaded_file.content_type
-        if not mime_type:
-            ext = os.path.splitext(uploaded_file.filename)[1].lower()
-            if ext in ['.jpg', '.jpeg']:
-                mime_type = 'image/jpeg'
-            elif ext == '.png':
-                mime_type = 'image/png'
-            elif ext == '.pdf':
-                mime_type = 'application/pdf'
-            elif ext in ['.mp4', '.m4v', '.mov', '.webm']:
-                mime_type = 'video/mp4'
-            elif ext in ['.txt']:
-                mime_type = 'text/plain'
+    temp_saved_files = []
+    try:
+        for uploaded_file in files:
+            mime_type = uploaded_file.content_type
+            filename = uploaded_file.filename or ""
+            if not mime_type:
+                ext = os.path.splitext(filename)[1].lower()
+                if ext in ['.jpg', '.jpeg']:
+                    mime_type = 'image/jpeg'
+                elif ext == '.png':
+                    mime_type = 'image/png'
+                elif ext == '.pdf':
+                    mime_type = 'application/pdf'
+                elif ext in ['.mp4', '.m4v', '.mov', '.webm', '.avi']:
+                    mime_type = 'video/mp4'
+                elif ext in ['.txt']:
+                    mime_type = 'text/plain'
+                elif ext in ['.docx']:
+                    mime_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                else:
+                    mime_type = 'image/jpeg'
+
+            is_video = (mime_type.startswith('video/') or 
+                        any(filename.lower().endswith(ve) for ve in ['.mp4', '.m4v', '.mov', '.webm', '.avi']))
+
+            if is_video:
+                # Stream directly to temporary disk file in chunks to keep RAM usage near 0 MB (critical for 512 MB Render Free Tier)
+                ext = os.path.splitext(filename)[1] or '.mp4'
+                tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+                tmp_path = tmp.name
+                shutil.copyfileobj(uploaded_file.file, tmp)
+                tmp.close()
+                temp_saved_files.append(tmp_path)
+                file_items.append({
+                    'content': None,
+                    'file_path': tmp_path,
+                    'mime_type': mime_type,
+                    'filename': filename
+                })
             else:
-                mime_type = 'image/jpeg'
-        file_items.append({'content': contents, 'mime_type': mime_type, 'filename': uploaded_file.filename})
-            
-    # Call Gemini API
-    if video_mode == "interactive_video":
-        effective_context = focus_topic if (focus_topic and not context) else context
-        result = await asyncio.to_thread(
-            ai_service.generate_interactive_video_content,
-            files=file_items,
-            context=effective_context,
-            subject=subject,
-            school_type=school_type,
-            task_count=task_count if task_count >= 1 else 5,
-            api_key=effective_api_key,
-            youtube_url=youtube_url
-        )
-    else:
-        result = await asyncio.to_thread(
-            ai_service.generate_differentiated_content,
-            files=file_items,
-            context=context,
-            target_format=target_format,
-            task_count=task_count,
-            subject=subject,
-            school_type=school_type,
-            focus_topic=focus_topic,
-            hefteintrag_topic=hefteintrag_topic,
-            api_key=effective_api_key
-        )
-    
-    if youtube_url and youtube_url.strip():
-        result['youtube_url'] = youtube_url.strip()
-    
-    for uf in files:
-        if uf.filename and (uf.filename.lower().endswith(('.mp4', '.m4v', '.mov', '.webm')) or (uf.content_type and uf.content_type.startswith('video/'))):
-            result['video_filename'] = uf.filename
-            break
+                # Small documents/images/PDFs read into memory
+                contents = await uploaded_file.read()
+                file_items.append({
+                    'content': contents,
+                    'file_path': None,
+                    'mime_type': mime_type,
+                    'filename': filename
+                })
+                
+        # Call Gemini API
+        if video_mode == "interactive_video":
+            effective_context = focus_topic if (focus_topic and not context) else context
+            result = await asyncio.to_thread(
+                ai_service.generate_interactive_video_content,
+                files=file_items,
+                context=effective_context,
+                subject=subject,
+                school_type=school_type,
+                task_count=task_count if task_count >= 1 else 5,
+                api_key=effective_api_key,
+                youtube_url=youtube_url
+            )
+        else:
+            result = await asyncio.to_thread(
+                ai_service.generate_differentiated_content,
+                files=file_items,
+                context=context,
+                target_format=target_format,
+                task_count=task_count,
+                subject=subject,
+                school_type=school_type,
+                focus_topic=focus_topic,
+                hefteintrag_topic=hefteintrag_topic,
+                api_key=effective_api_key
+            )
         
-    return result
+        if youtube_url and youtube_url.strip():
+            result['youtube_url'] = youtube_url.strip()
+        
+        for uf in files:
+            if uf.filename and (uf.filename.lower().endswith(('.mp4', '.m4v', '.mov', '.webm')) or (uf.content_type and uf.content_type.startswith('video/'))):
+                result['video_filename'] = uf.filename
+                break
+            
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in generate_task endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Fehler bei der Generierung: {str(e)}")
+    finally:
+        for p in temp_saved_files:
+            try:
+                if os.path.exists(p):
+                    os.remove(p)
+            except Exception:
+                pass
 
 import re
 from urllib.parse import quote

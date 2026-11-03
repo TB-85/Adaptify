@@ -2,6 +2,24 @@
 window.liveSessionInterval = window.liveSessionInterval || null;
 window.liveSessionPin = window.liveSessionPin || '';
 
+// Proactive Server Wake-Up Ping (mitigates Render Free Tier 15-min idle cold-starts)
+function wakeUpServer() {
+    try {
+        fetch(`${(typeof API_BASE !== 'undefined' ? API_BASE : '')}/api/system/ip`, { method: 'GET', cache: 'no-store' })
+            .catch(() => {});
+    } catch (e) {}
+}
+window.wakeUpServer = wakeUpServer;
+
+if (typeof window !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wakeUpServer);
+    } else {
+        wakeUpServer();
+    }
+    window.addEventListener('focus', wakeUpServer);
+}
+
 // ==================== UTILITY & INTERACTION HELPERS ====================
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -16,6 +34,7 @@ window.escapeHtml = escapeHtml;
 
 // Switch between Screen 1 Main Modes: Interactive Video vs Branching Worksheets
 function switchAppMode(mode) {
+    wakeUpServer();
     const input = document.getElementById('input-video-mode');
     const tabInteractive = document.getElementById('tab-mode-interactive');
     const tabBranching = document.getElementById('tab-mode-branching');
@@ -59,6 +78,7 @@ window.setVideoMode = switchAppMode;
 
 // Switch Video Source: YouTube vs MP4
 function switchVideoSourceTab(tab) {
+    wakeUpServer();
     const tabYt = document.getElementById('tab-src-youtube');
     const tabMp4 = document.getElementById('tab-src-mp4');
     const panelYt = document.getElementById('panel-src-youtube');
@@ -80,6 +100,7 @@ window.switchVideoSourceTab = switchVideoSourceTab;
 
 // Real-time YouTube Link Input Handler & Preview
 function handleYouTubeInput(val) {
+    wakeUpServer();
     const previewCard = document.getElementById('youtube-preview-card');
     const iframe = document.getElementById('youtube-preview-iframe');
     if (!val || !val.trim()) {
@@ -1869,6 +1890,11 @@ btnSubmit.addEventListener('click', async (e) => {
             alert("Bitte gib einen YouTube-Link ein, lade eine MP4-Datei hoch oder gib ein Video-Thema an.");
             return;
         }
+        if (vidFile && vidFile.size > 85 * 1024 * 1024) {
+            const mb = Math.round(vidFile.size / (1024 * 1024));
+            const proceed = confirm(`⚠️ Hinweis: Deine Videodatei ist ${mb} MB groß.\n\nAufgrund von Speicher- und Upload-Limits im Cloud-Hosting (Render Free Tier) kann die Übertragung abbrechen.\n\n💡 Tipp: Für eine stabilere und schnellere Verarbeitung empfiehlt sich ein YouTube-Link oder ein komprimiertes MP4 (unter 50 MB).\n\nMöchtest du es trotzdem versuchen?`);
+            if (!proceed) return;
+        }
     } else {
         if (!appState.selectedFile) {
             alert("Bitte wählen Sie zuerst eine Buchseite aus oder machen Sie ein Foto mit der Kamera.");
@@ -1896,7 +1922,7 @@ btnSubmit.addEventListener('click', async (e) => {
     }, 20000);
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), isIvMode ? 180000 : 90000);
+    const timeoutId = setTimeout(() => controller.abort(), isIvMode ? 180000 : 120000);
 
     const apiKeyVal = (typeof inputApiKey !== 'undefined' && inputApiKey) ? (inputApiKey.value || '').trim() : '';
     const promoCodeVal = (typeof inputPromoCode !== 'undefined' && inputPromoCode) ? (inputPromoCode.value || '').trim() : '';
@@ -1944,11 +1970,32 @@ btnSubmit.addEventListener('click', async (e) => {
     formData.append('promo_code', promoCodeVal);
 
     try {
-        const response = await fetch(`${API_BASE}/api/generate`, {
-            method: 'POST',
-            body: formData,
-            signal: controller.signal
-        });
+        let response = null;
+        const maxAttempts = 2;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                if (attempt > 1 && loaderTextEl) {
+                    loaderTextEl.textContent = "Server wird aufgeweckt (Render Cold-Start)... Bitte kurz warten...";
+                }
+                response = await fetch(`${API_BASE}/api/generate`, {
+                    method: 'POST',
+                    body: formData,
+                    signal: controller.signal
+                });
+                break;
+            } catch (fetchErr) {
+                if (controller.signal.aborted || fetchErr.name === 'AbortError') {
+                    throw fetchErr;
+                }
+                if (attempt < maxAttempts) {
+                    console.warn(`Generierungsversuch ${attempt} fehlgeschlagen (${fetchErr.message}). Warte 4 Sekunden auf Render-Container...`);
+                    await new Promise(res => setTimeout(res, 4000));
+                    continue;
+                }
+                throw fetchErr;
+            }
+        }
         
         clearTimeout(slowTimer1);
         clearTimeout(slowTimer2);
@@ -1991,9 +2038,23 @@ btnSubmit.addEventListener('click', async (e) => {
         
         console.error("Failed to generate task:", err);
         if (err.name === 'AbortError' || (err.message && err.message.toLowerCase().includes('aborted'))) {
-            console.log("Request was aborted.");
+            alert("Zeitüberschreitung bei der Generierung (Timeout).\n\nBei sehr langen Videos oder schwächerer Internetverbindung kann die Analyse etwas mehr Zeit in Anspruch nehmen. Bitte versuche es noch einmal.");
         } else {
-            alert("Fehler bei der Generierung:\n\n" + err.message);
+            const rawMsg = err.message || '';
+            const isNetworkError = rawMsg.includes('Failed to fetch') || 
+                                   rawMsg.includes('NetworkError') || 
+                                   rawMsg.includes('Load failed') ||
+                                   rawMsg.includes('Network request failed');
+            if (isNetworkError) {
+                alert(
+                    "Verbindungsfehler zum Server (Render Cold-Start oder Netzwerkunterbrechung):\n\n" +
+                    "• Der Server war im Ruhezustand und startet gerade neu (dauert ca. 30–60 Sekunden).\n" +
+                    "• Bitte klicke in wenigen Sekunden einfach erneut auf 'Generieren' (der Server ist jetzt aufgewacht).\n\n" +
+                    "💡 Tipp für Videos: Bei sehr großen Videodateien empfiehlt sich ein YouTube-Link oder ein komprimiertes MP4 unter 50 MB."
+                );
+            } else {
+                alert("Fehler bei der Generierung:\n\n" + rawMsg);
+            }
         }
     } finally {
         if (loader) loader.classList.add('hidden');
