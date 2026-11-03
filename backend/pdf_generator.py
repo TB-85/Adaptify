@@ -364,6 +364,21 @@ class PDFGenerator:
             story.append(qr_wrapper)
             story.append(Spacer(1, 8))
 
+        # Situated Reading Text Box if present (ISB-Qualitätstableau: Lebensweltbezug)
+        extracted_text = (data.get("extracted_text") or "").strip()
+        if extracted_text and len(extracted_text) > 40 and not extracted_text.startswith("Der erkannte Text des Originaldokumentes"):
+            story.append(Paragraph("📖 Lesetext &amp; Ausgangssituation", section_style))
+            clean_reading_text = extracted_text.replace("\n", "<br/>")
+            reading_box_data = [[Paragraph(clean_reading_text, body_style)]]
+            reading_table = Table(reading_box_data, colWidths=[inch*6.5])
+            reading_table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+                ('BOX', (0,0), (-1,-1), 1.0, colors.HexColor("#cbd5e1")),
+                ('PADDING', (0,0), (-1,-1), 8),
+            ]))
+            story.append(reading_table)
+            story.append(Spacer(1, 8))
+
         # Hefteintrag Section (Board Entry / Merkkasten)
         hefteintrag = data.get("hefteintrag")
         if hefteintrag and (hefteintrag.get("level_a_notes") or hefteintrag.get("level_b_notes") or hefteintrag.get("summary")):
