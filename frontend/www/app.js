@@ -664,9 +664,52 @@ let appState = {
     selectedFiles: [],
     selectedFile: null,
     selectedVideoFile: null,
+    branchingSourceMode: 'file', // 'file' or 'prompt'
     generatedData: null,
     previewDataUrl: null,
 };
+
+function switchBranchingSourceMode(mode) {
+    appState.branchingSourceMode = mode;
+    const tabFile = document.getElementById('tab-branching-file');
+    const tabPrompt = document.getElementById('tab-branching-prompt');
+    const panelFile = document.getElementById('panel-branching-file');
+    const panelPrompt = document.getElementById('panel-branching-prompt');
+
+    if (mode === 'prompt') {
+        if (tabPrompt) {
+            tabPrompt.className = "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 bg-white text-brand-700 shadow-sm cursor-pointer";
+        }
+        if (tabFile) {
+            tabFile.className = "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer";
+        }
+        if (panelFile) panelFile.classList.add('hidden');
+        if (panelPrompt) {
+            panelPrompt.classList.remove('hidden');
+            const textarea = document.getElementById('input-topic-prompt');
+            if (textarea && !textarea.value) textarea.focus();
+        }
+    } else {
+        if (tabFile) {
+            tabFile.className = "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 bg-white text-brand-700 shadow-sm cursor-pointer";
+        }
+        if (tabPrompt) {
+            tabPrompt.className = "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer";
+        }
+        if (panelFile) panelFile.classList.remove('hidden');
+        if (panelPrompt) panelPrompt.classList.add('hidden');
+    }
+}
+window.switchBranchingSourceMode = switchBranchingSourceMode;
+
+function setTopicPrompt(text) {
+    const el = document.getElementById('input-topic-prompt');
+    if (el) {
+        el.value = text;
+        el.focus();
+    }
+}
+window.setTopicPrompt = setTopicPrompt;
 
 // Classroom Live Session State accessed strictly via window.liveSession*
 
@@ -1946,29 +1989,67 @@ btnSubmit.addEventListener('click', async (e) => {
             if (!proceed) return;
         }
     } else {
-        if (!appState.selectedFile) {
-            alert("Bitte wählen Sie zuerst eine Buchseite aus oder machen Sie ein Foto mit der Kamera.");
-            if (dropZone) {
-                dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                dropZone.classList.add('ring-4', 'ring-indigo-400');
-                setTimeout(() => dropZone.classList.remove('ring-4', 'ring-indigo-400'), 2500);
+        const isPromptMode = (appState.branchingSourceMode === 'prompt');
+        const topicPromptInput = document.getElementById('input-topic-prompt');
+        const topicPromptVal = (topicPromptInput ? topicPromptInput.value : '').trim();
+
+        if (isPromptMode || (!appState.selectedFile && topicPromptVal)) {
+            if (!topicPromptVal) {
+                alert("Bitte gib ein Thema oder eine kurze Beschreibung der gewünschten Unterrichtseinheit ein (z. B. 'Eine Einheit über 2x 45 min zum Thema Wortarten').");
+                if (topicPromptInput) {
+                    topicPromptInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    topicPromptInput.focus();
+                }
+                return;
             }
-            return;
+        } else {
+            if (!appState.selectedFile) {
+                alert("Bitte wählen Sie zuerst eine Buchseite aus oder machen Sie ein Foto mit der Kamera – oder wechseln Sie oben auf 'Thema / Einheit beschreiben'.");
+                if (dropZone) {
+                    dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    dropZone.classList.add('ring-4', 'ring-indigo-400');
+                    setTimeout(() => dropZone.classList.remove('ring-4', 'ring-indigo-400'), 2500);
+                }
+                return;
+            }
         }
     }
 
     if (loader) loader.classList.remove('hidden');
     
+    const isPromptActive = (!isIvMode && (appState.branchingSourceMode === 'prompt' || (!appState.selectedFile && !!document.getElementById('input-topic-prompt')?.value.trim())));
     const loaderTextEl = document.querySelector('#loader p') || document.querySelector('#loader span');
     if (loaderTextEl) {
-        loaderTextEl.textContent = isIvMode ? "Analysiere Video (Bildspur & Tonspur) mit multimodaler KI..." : "Analysiere Dokument & erstelle differenzierte Aufgaben...";
+        if (isIvMode) {
+            loaderTextEl.textContent = "Analysiere Video (Bildspur & Tonspur) mit multimodaler KI...";
+        } else if (isPromptActive) {
+            loaderTextEl.textContent = "Generiere differenzierte Unterrichtseinheit auf Basis des ISB-Qualitätstableaus...";
+        } else {
+            loaderTextEl.textContent = "Analysiere Dokument & erstelle differenzierte Aufgaben...";
+        }
     }
     
     const slowTimer1 = setTimeout(() => {
-        if (loaderTextEl) loaderTextEl.textContent = isIvMode ? "KI schaut sich die Videobilder an & lauscht der Tonspur..." : "Server wird aufgeweckt & KI verarbeitet Dokument...";
+        if (loaderTextEl) {
+            if (isIvMode) {
+                loaderTextEl.textContent = "KI schaut sich die Videobilder an & lauscht der Tonspur...";
+            } else if (isPromptActive) {
+                loaderTextEl.textContent = "Verfasse lebensnahen Basistext & binnendifferenzierte Aufgaben...";
+            } else {
+                loaderTextEl.textContent = "Server wird aufgeweckt & KI verarbeitet Dokument...";
+            }
+        }
     }, 6000);
     const slowTimer2 = setTimeout(() => {
-        if (loaderTextEl) loaderTextEl.textContent = isIvMode ? "Erkenne Thema & formuliere passgenaue H5P-Quiz-Haltepunkte..." : "Erstelle differenzierte H5P- & PDF-Aufgaben...";
+        if (loaderTextEl) {
+            if (isIvMode) {
+                loaderTextEl.textContent = "Erkenne Thema & formuliere passgenaue H5P-Quiz-Haltepunkte...";
+            } else if (isPromptActive) {
+                loaderTextEl.textContent = "Strukturiere Tafelbild & erstelle Transferaufgaben...";
+            } else {
+                loaderTextEl.textContent = "Erstelle differenzierte H5P- & PDF-Aufgaben...";
+            }
+        }
     }, 20000);
     
     const controller = new AbortController();
@@ -1995,6 +2076,9 @@ btnSubmit.addEventListener('click', async (e) => {
         formData.append('youtube_url', ytVal);
         formData.append('video_mode', includeBranchingToggle ? 'branching' : 'interactive_video');
     } else {
+        const topicPromptInput = document.getElementById('input-topic-prompt');
+        const topicPromptVal = (topicPromptInput ? topicPromptInput.value : '').trim();
+
         if (appState.selectedFiles && appState.selectedFiles.length > 1) {
             appState.selectedFiles.forEach((f, idx) => {
                 if (idx === 0 && appState.selectedFile) {
@@ -2005,12 +2089,26 @@ btnSubmit.addEventListener('click', async (e) => {
             });
         } else if (appState.selectedFile) {
             formData.append('files', appState.selectedFile);
+        } else if (topicPromptVal) {
+            formData.append('files', new Blob([topicPromptVal], { type: 'text/plain' }), 'unterrichtseinheit.txt');
         }
+
+        const effectiveFocusTopic = (typeof inputFocusTopic !== 'undefined' && inputFocusTopic?.value.trim())
+            ? inputFocusTopic.value.trim()
+            : topicPromptVal;
+
+        let effectiveContext = (typeof inputContext !== 'undefined' && inputContext?.value.trim())
+            ? inputContext.value.trim()
+            : '';
+        if (topicPromptVal && !effectiveContext.includes(topicPromptVal)) {
+            effectiveContext = effectiveContext ? `${effectiveContext} | Anforderung: ${topicPromptVal}` : topicPromptVal;
+        }
+
         formData.append('school_type', (typeof inputSchoolType !== 'undefined' && inputSchoolType) ? inputSchoolType.value : 'Mittelschule');
         formData.append('subject', (Array.isArray(selectedSubjects) && selectedSubjects.length > 0) ? selectedSubjects.join(', ') : 'Deutsch');
-        formData.append('focus_topic', (typeof inputFocusTopic !== 'undefined' && inputFocusTopic) ? inputFocusTopic.value : '');
+        formData.append('focus_topic', effectiveFocusTopic);
         formData.append('hefteintrag_topic', (typeof inputHefteintragTopic !== 'undefined' && inputHefteintragTopic) ? inputHefteintragTopic.value : '');
-        formData.append('context', (typeof inputContext !== 'undefined' && inputContext) ? inputContext.value : '');
+        formData.append('context', effectiveContext);
         formData.append('target_format', (typeof inputFormat !== 'undefined' && inputFormat) ? inputFormat.value : 'Lückentext');
         formData.append('task_count', (typeof inputTaskCount !== 'undefined' && inputTaskCount) ? inputTaskCount.value : 5);
         formData.append('youtube_url', '');

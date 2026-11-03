@@ -417,15 +417,58 @@ class AIService:
         focus_instruction = f"Übungsschwerpunkte: {focus_topic} (Erstelle gezielt Aufgaben für JEDEN dieser Schwerpunkte!)." if focus_topic else "Übungsschwerpunkte: Automatisch aus dem Dokument ermitteln."
         hefteintrag_instruction = f"Thema für den Hefteintrag / Merkkasten: {hefteintrag_topic}." if hefteintrag_topic else (f"Thema für den Hefteintrag: {focus_topic}" if focus_topic else "Thema für den Hefteintrag: Hauptthema des Dokuments.")
 
+        # Check if media (image/pdf) was uploaded, or if this is a topic/prompt-driven unit (ISB quality rubric)
+        has_media = any(
+            f.get('mime_type', '').startswith('image/') or f.get('mime_type') == 'application/pdf'
+            for f in (files or [])
+        )
+
+        role_description = (
+            f"Du bist eine didaktisch herausragende Lehrkraft an einer {school_type} und ein Experte für differenzierten Unterricht nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau für digitalen Content.\n"
+            f"Deine Aufgabe ist es, das hochgeladene Dokument (Buchseite, Arbeitsblatt, PDF) zu lesen (OCR) und darauf basierend ein qualitätsgeprüftes, differenziertes Lernpaket im JSON-Format für die Schulart '{school_type}' zu generieren."
+        ) if has_media else (
+            f"Du bist eine didaktisch herausragende Lehrkraft an einer {school_type} und ein Experte für kompetenzorientierten Unterricht nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau für digitalen Content.\n"
+            f"Die Lehrkraft plant eine komplette, lebensnahe Unterrichtseinheit (z. B. 2x 45 min) und hat kein Buchseiten-Foto hochgeladen, sondern ein Thema/eine Anforderung vorgegeben: '{focus_topic or context}'.\n"
+            f"Deine didaktische Kernaufgabe ist es, im Feld 'extracted_text' ZWINGEND einen packenden, zusammenhängenden, altersgerechten Basistext (ca. 180 bis 300 Wörter) aus dem Schüleralltag ({school_type}) passend zu Fach '{subject}' und Thema '{focus_topic or context}' zu verfassen. "
+            f"Alle nachfolgenden differenzierten Aufgaben (Diagnose, Level A, Level B, Level C, Zusatzaufgaben und Tafelbild) MÜSSEN sich zwingend auf diesen situativen Basistext beziehen!"
+        )
+
+        source_instruction = (
+            "1. BILDVORLAGE & OCR: Extrahiere den Kerninhalt des Textes aus dem Bild/PDF getreu im Feld 'extracted_text'."
+        ) if has_media else (
+            "1. ISB-QUALITÄTSTABLEAU & SITUIERTER BASISTEXT (OHNE BILDVORLAGE):\n"
+            "   - Da kein Buchseiten-Scan hochgeladen wurde, formulierst du im Feld 'extracted_text' ZWINGEND einen packenden, zusammenhängenden und altersgerechten Basistext (180 bis 300 Wörter) aus dem Schüleralltag (z. B. Schulalltag, Pause, Sportfest, Klassenfahrt, Jugendthemen).\n"
+            "   - Dieser Text dient als thematische und sprachliche Grundlage für die gesamte Einheit (situierter Kontext, ISB-Kriterium Lebensweltbezug).\n"
+            "   - Alle nachfolgenden Aufgaben (Diagnose, Level A, Level B, Level C, Zusatzaufgaben) MÜSSEN sich direkt auf die Wörter, Sätze, Daten oder Figuren dieses Textes beziehen!"
+        )
+
+        text_basis_instruction = (
+            "4. STRIKTE ANLEHNUNG AN DEN ORIGINALTEXT:\n"
+            "   - Alle Aufgaben, Fragen, Merkkästen und Erklärungen MÜSSEN auf dem extrahierten Originaltext und den darin enthaltenen Zahlen, Definitionen und Beispielen basieren.\n"
+            "   - Nimm mathematische Bezeichnungen, Variablen (z. B. 'U' oder 'Uk', Pi-Symbol 'π' oder Wert '3,14') exakt so an, wie sie in der Vorlage stehen. Verändere keine fachlichen Bezeichnungen aus dem Ausgangstext!\n"
+            "   - Erfinde keine zusätzlichen, nicht behandelten Themen."
+        ) if has_media else (
+            "4. STRIKTE ANLEHNUNG AN DEN ERSTELLTEN BASISTEXT (ISB-LEBENSWELTBEZUG):\n"
+            "   - Alle Aufgaben, Fragen, Merkkästen und Erklärungen MÜSSEN sich zwingend auf den im Feld 'extracted_text' generierten Basistext beziehen!\n"
+            "   - Bei Grammatik/Wortarten: Verwende konkrete Sätze und Wörter aus dem Basistext für die Aufgaben!"
+        )
+
+        isb_rubric_instruction = """
+- ISB-QUALITÄTSSTANDARDS (Automatisch im Hintergrund aktiv):
+  • Lebenswelt- und Situationsbezug: Authentischer, altersgerechter Kontext für die Schulart.
+  • Passgenaue Binnendifferenzierung: Fördern (Level A mit Scaffolding/Tipps), Fordern (Level B mit kognitiver Aktivierung und Transfer), Inklusion (Level C in Leichter Sprache) und Diagnose zur Einstufung.
+  • Strukturierter Hefteintrag: Überschrift als leitende W-Frage, Merksatz, strukturierte Erklärung und konkretes Beispiel.
+  • LehrplanPLUS Bayern: Exakte Ausrichtung auf die bayerischen Bildungsstandards mit offiziellem Lehrplancode.
+"""
+
         prompt = f"""
-Du bist eine professionelle Lehrkraft an einer {school_type} und ein H5P-Experte für Differenzierung im Unterricht.
-Deine Aufgabe ist es, das hochgeladene Dokument (Buchseite, Arbeitsblatt, PDF) zu lesen (OCR) und darauf basierend ein differenziertes Lernpaket im JSON-Format für die Schulart '{school_type}' zu generieren.
+{role_description}
 
 Schulart: {school_type}
 {subject_instruction}
 {focus_instruction}
 {hefteintrag_instruction}
-Zusätzlicher Kontext (Klasse/Thema): {context}
+Zusätzlicher Kontext (Klasse/Thema/Zeitvorgabe): {context}
 Gewünschtes Standard-Aufgabenformat: {target_format}
 Anzahl der zu generierenden Aufgaben pro Niveau: {task_count}
 
@@ -434,7 +477,7 @@ Generiere genau folgendes JSON-Schema:
   "title": "Titel der Übung (z.B. {school_type} - {subject}: {focus_topic if focus_topic else 'Unterrichtspaket'})",
   "lehrplan_code": "Offizieller LehrplanPlus Bayern Code (z.B. 'M6 EG 2', 'D5 L1' oder 'E6 G1')",
   "lehrplan_competency": "Kurzbezeichnung der Kompetenz im Lehrplan (z. B. 'Anteile und Brüche im Alltag darstellen')",
-  "extracted_text": "Der erkannte Text des Originaldokumentes sowie detaillierte Bildbeschreibungen von eventuell vorhandenen Illustrationen/Grafiken/Bildern zur Vorschau für die Lehrkraft",
+  "extracted_text": "{'Der erkannte Text des Originaldokumentes sowie detaillierte Bildbeschreibungen von eventuell vorhandenen Illustrationen/Grafiken/Bildern zur Vorschau für die Lehrkraft' if has_media else 'Der vollständige, packende und lebensnahe Basistext (180-300 Wörter) aus dem Schüleralltag, der als Arbeits- und Lesegrundlage für alle Aufgaben dient'}",
   "diagnostic": {{
     "questions": [
       {{
@@ -504,17 +547,15 @@ Generiere genau folgendes JSON-Schema:
 }}
 
 WICHTIGE ANWEISUNGEN:
-1. Extrahiere den Kerninhalt des Textes aus dem Bild.
+{source_instruction}
 2. WICHTIG: Falls mehrere Übungsschwerpunkte angegeben sind ({focus_topic}), erstelle Aufgaben, die ALLE diese Schwerpunkte abdecken!
 3. LÜCKENTEXT-REGELN, SYNONYME & EXAKTHEIT:
    - Erstelle bei 'Lückentext' und 'Drag the Words' KEINE Einzelsätze, sondern ZWINGEND zusammenhängende Fließtexte aus 4 bis 6 Sätzen mit mindestens 4 bis 6 Lücken.
    - SYNONYME: Um Frust bei Schülern zu vermeiden, MÜSSEN inhaltlich oder mathematisch mehrdeutige Lücken alle gängigen Synonyme und Schreibweisen enthalten, getrennt durch einen Schrägstrich `/` (z.B. `*teilen/dividieren*`, `*3,14/3.14*`, `*verdoppeln/mal zwei nehmen/multiplizieren*`, `*Zahl/Konstante/Kreiszahl*`).
    - MAL-ZEICHEN: Verwende in mathematischen Formeln und Texten NIEMALS das Sternchen '*' als Multiplikationszeichen (Malzeichen), da dies Lücken-Parser irritiert. Benutze stattdessen ZWINGEND das offizielle Multiplikationszeichen '·' (Mittelpunkt / Malpunkt).
    - FACHLICHE RICHTIGKEIT: Alle mathematischen Formeln, Berechnungen und logischen Aussagen MÜSSEN zu 100% fachlich korrekt und präzise sein. Prüfe deine Aufgaben vor der Ausgabe kritisch auf inhaltliche Fehler!
-4. STRIKTE ANLEHNUNG AN DIE QUELLE:
-   - Alle Aufgaben, Fragen, Merkkästen und Erklärungen MÜSSEN auf dem extrahierten Originaltext und den darin enthaltenen Zahlen, Definitionen und Beispielen basieren.
-   - Nimm mathematische Bezeichnungen, Variablen (z. B. 'U' oder 'Uk', Pi-Symbol 'π' oder Wert '3,14') exakt so an, wie sie in der Vorlage stehen. Verändere keine fachlichen Bezeichnungen aus dem Ausgangstext!
-   - Erfinde keine zusätzlichen, nicht behandelten Themen (z. B. Berechnung der Kreisfläche, wenn im Quelltext nur der Umfang erklärt wird).
+{text_basis_instruction}
+{isb_rubric_instruction}
 5. STRIKTE AUFGABEN-FORMATIERUNGSREGELN FÜR DEN FELDINHALT 'text':
    - MULTIPLE CHOICE: Der Feldinhalt 'text' MUSS zwingend im folgenden Format sein:
      [Hier steht die Frage]
