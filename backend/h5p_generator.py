@@ -849,7 +849,8 @@ class H5PGenerator:
     def build_growing_hefteintrag_html(topic_title, all_points, current_idx, is_final=False):
         """
         Renders the progressive digital Tafelbild (growing notebook entry).
-        Can be displayed inside question feedback or as a standalone poster.
+        Uses strictly valid semantic HTML (h3, p, hr, ol, li, strong, em) compliant with H5P.Text 1.1.
+        Eliminates any doubling of numbers (e.g. '1. 1.') and prevents tag-stripping/raw code leaks.
         """
         import re
         total_count = len(all_points)
@@ -857,69 +858,44 @@ class H5PGenerator:
 
         clean_title = re.sub(r'^(?:🎬|📖|💡|Informatik:\s*|Biologie:\s*|\w+:\s*)', '', topic_title).strip()
 
-        points_html_parts = []
-        for i in range(step_num):
-            pt_text = all_points[i]
-            pt_num = i + 1
-            if not is_final and i == current_idx:
-                # Newly added point in this step (highlighted!)
-                points_html_parts.append(
-                    f"<div style='color:#0f172a; font-size:13.5px; font-weight:600; line-height:1.5; margin-bottom:7px; "
-                    f"background:#eff6ff; border-left:4px solid #0284c7; padding:7px 10px; border-radius:5px;'>"
-                    f"<b>{pt_num}.</b> {pt_text} "
-                    f"<span style='background:#0284c7; color:#ffffff; font-size:9.5px; font-weight:800; padding:1px 6px; "
-                    f"border-radius:8px; margin-left:6px; vertical-align:middle; text-transform:uppercase;'>Neu ins Heft</span>"
-                    f"</div>"
-                )
-            else:
-                # Normal established point
-                points_html_parts.append(
-                    f"<div style='color:#475569; font-size:13px; line-height:1.45; margin-bottom:6px; padding-left:4px;'>"
-                    f"<b>{pt_num}.</b> {pt_text}"
-                    f"</div>"
-                )
-
-        points_html = "".join(points_html_parts)
-
         if is_final:
             badge_text = "Gesamttafelbild"
-            notebook_task = "✍️ <b>Aufgabe für dein Heft:</b> Vergleiche deinen fertigen Hefteintrag im Schulheft mit diesem vollständigen Tafelbild und hake alle Punkte ab!"
-            continue_notice = "▶️ Klicke auf <b>Play ▶</b> oder das <b>✕</b>, um das Video abzuschließen."
+            notebook_task = "Vergleiche deinen fertigen Hefteintrag im Schulheft mit diesem vollständigen Tafelbild und hake alle Punkte ab!"
+            continue_notice = "Klicke auf Play ▶ oder das ✕, um das Video abzuschließen."
         elif step_num == 1:
             badge_text = f"Schritt 1 von {total_count}"
-            notebook_task = "✍️ <b>Aufgabe für dein Heft:</b> Schreibe Datum, Thema und <b>Punkt 1</b> jetzt sauber in dein Schulheft!"
-            continue_notice = "▶️ Sobald du fertig geschrieben hast: Klicke unten auf <b>„Video fortsetzen“</b> oder Play ▶!"
+            notebook_task = "Schreibe Datum, Thema und Punkt 1 jetzt sauber in dein Schulheft!"
+            continue_notice = "Sobald du fertig geschrieben hast: Klicke oben rechts auf ✕ oder Play ▶!"
         elif step_num == total_count:
             badge_text = f"Schritt {step_num} von {total_count}"
-            notebook_task = f"✍️ <b>Aufgabe für dein Heft:</b> Ergänze den letzten <b>Punkt {step_num}</b> jetzt sauber in deinem Schulheft!"
-            continue_notice = "▶️ Sobald du fertig geschrieben hast: Klicke unten auf <b>„Video fortsetzen“</b> oder Play ▶!"
+            notebook_task = f"Ergänze den letzten Punkt {step_num} jetzt sauber in deinem Schulheft!"
+            continue_notice = "Sobald du fertig geschrieben hast: Klicke oben rechts auf ✕ oder Play ▶!"
         else:
             badge_text = f"Schritt {step_num} von {total_count}"
-            notebook_task = f"✍️ <b>Aufgabe für dein Heft:</b> Ergänze <b>Punkt {step_num}</b> jetzt sauber in deinem Schulheft!"
-            continue_notice = "▶️ Sobald du fertig geschrieben hast: Klicke unten auf <b>„Video fortsetzen“</b> oder Play ▶!"
+            notebook_task = f"Ergänze Punkt {step_num} jetzt sauber in deinem Schulheft!"
+            continue_notice = "Sobald du fertig geschrieben hast: Klicke oben rechts auf ✕ oder Play ▶!"
 
-        return (
-            f"<div style='background:#ffffff; border:2px solid #0284c7; border-radius:12px; padding:14px; margin-top:8px; "
-            f"font-family:sans-serif; box-shadow:0 6px 18px rgba(0,0,0,0.08); text-align:left;'>"
-            f"<div style='display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #e0f2fe; padding-bottom:6px; margin-bottom:10px;'>"
-            f"<div style='display:flex; align-items:center; gap:6px;'>"
-            f"<span style='font-size:18px;'>📖</span>"
-            f"<span style='font-size:14px; font-weight:800; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px;'>Wachsender Hefteintrag</span>"
-            f"</div>"
-            f"<span style='background:#e0f2fe; color:#0369a1; font-size:11px; font-weight:700; padding:3px 8px; border-radius:10px;'>{badge_text}</span>"
-            f"</div>"
-            f"<div style='color:#0f172a; font-size:14.5px; font-weight:800; margin:0 0 8px 0;'>Thema: {clean_title}</div>"
-            f"<div style='background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin-bottom:10px;'>"
-            f"{points_html}"
-            f"</div>"
-            f"<div style='background:#fef3c7; border-left:4px solid #f59e0b; padding:8px 12px; border-radius:6px; margin-bottom:10px; color:#92400e; font-size:13px; font-weight:700; line-height:1.4;'>"
-            f"{notebook_task}"
-            f"</div>"
-            f"<div style='padding-top:8px; border-top:1px dashed #cbd5e1; font-size:11.5px; color:#64748b; font-weight:600;'>"
-            f"{continue_notice}"
-            f"</div>"
-            f"</div>"
-        )
+        lines = []
+        lines.append(f"<h3>📖 Wachsender Hefteintrag: {clean_title}</h3>")
+        lines.append(f"<p><strong>Status:</strong> <em>{badge_text}</em></p>")
+        lines.append("<hr/>")
+        lines.append("<ol>")
+        for i in range(step_num):
+            pt_text = all_points[i]
+            # Strip any preexisting '1. ', '1) ', 'Punkt 1: ' so ol/li doesn't double-number
+            clean_pt = re.sub(r'^(?:Punkt\s*)?\d+[\.\):\s-]+\s*', '', pt_text).strip()
+            if not clean_pt:
+                continue
+            if not is_final and i == current_idx:
+                lines.append(f"<li><strong>{clean_pt}</strong> <em>[Neu ins Heft]</em></li>")
+            else:
+                lines.append(f"<li>{clean_pt}</li>")
+        lines.append("</ol>")
+        lines.append("<hr/>")
+        lines.append(f"<p>✍️ <strong>Aufgabe für dein Heft:</strong> {notebook_task}</p>")
+        lines.append(f"<p>▶️ <em>{continue_notice}</em></p>")
+
+        return "".join(lines)
 
     @staticmethod
     def create_interactive_video_h5p_zip(data):
@@ -965,6 +941,8 @@ class H5PGenerator:
             sub_id = str(uuid.uuid4())
             hefteintrag_html = H5PGenerator.build_growing_hefteintrag_html(title, all_points, idx)
             explanation_text = (item.get("explanation") or "").strip()
+            curr_raw_pt = all_points[idx] if idx < len(all_points) else ""
+            clean_curr_pt = re.sub(r'^(?:Punkt\s*)?\d+[\.\):\s-]+\s*', '', curr_raw_pt).strip()
 
             # Duration from == to guarantees pop-up disappears immediately on resume!
             interaction_obj = {
@@ -988,12 +966,12 @@ class H5PGenerator:
 
             if fmt == "Multiple Choice":
                 used_libraries.add("H5P.MultiChoice")
-                # Growing Hefteintrag embedded directly in feedback on correct answer!
-                # Zero video playback between correct answer and Hefteintrag.
+                mc_feedback_parts = ["<p><strong>Klasse! Das ist vollkommen richtig!</strong></p>"]
                 if explanation_text:
-                    feedback_content = f"<div style='font-size:14px; font-weight:600; color:#15803d; margin-bottom:10px;'>Klasse! {explanation_text}</div>{hefteintrag_html}"
-                else:
-                    feedback_content = f"<div style='font-size:14px; font-weight:600; color:#15803d; margin-bottom:10px;'>Klasse! Das ist vollkommen richtig!</div>{hefteintrag_html}"
+                    mc_feedback_parts.append(f"<p>{explanation_text}</p>")
+                if clean_curr_pt:
+                    mc_feedback_parts.append(f"<p>✍️ <strong>Punkt {idx+1} für dein Heft:</strong> {clean_curr_pt}</p>")
+                feedback_content = "".join(mc_feedback_parts)
 
                 answers = []
                 for ans in item.get("answers", []):
@@ -1043,10 +1021,9 @@ class H5PGenerator:
             elif fmt in ["Wahr/Falsch", "Wahr / Falsch"]:
                 used_libraries.add("H5P.TrueFalse")
                 is_correct = str(item.get("correct", "true")).lower() in ["true", "wahr", "1"]
-                if explanation_text:
-                    feedback_content = f"<div style='font-size:14px; font-weight:600; color:#15803d; margin-bottom:10px;'>Klasse! {explanation_text}</div>{hefteintrag_html}"
-                else:
-                    feedback_content = f"<div style='font-size:14px; font-weight:600; color:#15803d; margin-bottom:10px;'>Klasse! Das ist vollkommen richtig!</div>{hefteintrag_html}"
+                heft_hint = f" ✍️ Für dein Heft (Punkt {idx+1}): {clean_curr_pt}" if clean_curr_pt else ""
+                correct_msg = f"Klasse! Richtig.{heft_hint}"
+                wrong_msg = f"Leider nicht richtig. {explanation_text}".strip() if explanation_text else "Leider nicht richtig."
 
                 interaction_obj["action"] = {
                     "library": "H5P.TrueFalse 1.8",
@@ -1056,7 +1033,8 @@ class H5PGenerator:
                         "l10n": {
                             "trueText": "Wahr",
                             "falseText": "Falsch",
-                            "feedback": feedback_content
+                            "correctAnswerMessage": correct_msg,
+                            "wrongAnswerMessage": wrong_msg
                         },
                         "behaviour": {
                             "enableRetry": True,
@@ -1076,10 +1054,8 @@ class H5PGenerator:
                 used_libraries.add("H5P.Blanks")
                 text_with_blanks = item.get("text_with_blanks", item.get("question", ""))
                 formatted_blanks = H5PGenerator.format_blanks_text(text_with_blanks) if hasattr(H5PGenerator, "format_blanks_text") else text_with_blanks
-                if explanation_text:
-                    feedback_content = f"<div style='font-size:14px; font-weight:600; color:#15803d; margin-bottom:10px;'>Klasse! {explanation_text}</div>{hefteintrag_html}"
-                else:
-                    feedback_content = f"<div style='font-size:14px; font-weight:600; color:#15803d; margin-bottom:10px;'>Klasse! Das ist vollkommen richtig!</div>{hefteintrag_html}"
+                heft_hint = f" ✍️ Für dein Heft (Punkt {idx+1}): {clean_curr_pt}" if clean_curr_pt else ""
+                blanks_feedback = f"Klasse! Richtig gelöst.{heft_hint}"
 
                 interaction_obj["action"] = {
                     "library": "H5P.Blanks 1.14",
@@ -1091,7 +1067,7 @@ class H5PGenerator:
                             {
                                 "from": 100,
                                 "to": 100,
-                                "feedback": feedback_content
+                                "feedback": blanks_feedback
                             }
                         ],
                         "checkAnswer": "Prüfen",
