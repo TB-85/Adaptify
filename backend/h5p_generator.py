@@ -957,11 +957,24 @@ class H5PGenerator:
                 }
             else:
                 used_libraries.add("H5P.Text")
-                info_text = item.get("text", item.get("question", ""))
+                info_text = (item.get("text") or item.get("question") or "").strip()
+                notebook_instruction = "✍️ <b>Aufgabe für dein Heft:</b> Übertrage diesen Merkkasten jetzt sauber in dein Schulheft!"
+                continue_instruction = "▶️ <b>So geht's weiter:</b> Klicke oben rechts auf das <b>✕</b> (Schließen) oder unten auf <b>Play ▶</b>, sobald du fertig geschrieben hast!"
+                
+                if "Aufgabe für dein Heft" not in info_text and "Schulheft" not in info_text:
+                    body_html = (
+                        f"<div style='font-size:15px; line-height:1.6; color:#1e293b; margin-bottom:14px;'>{info_text}</div>"
+                        f"<div style='background:#fef3c7; border-left:4px solid #f59e0b; padding:10px 14px; border-radius:8px; font-weight:bold; color:#92400e; font-size:14px; margin-bottom:14px;'>{notebook_instruction}</div>"
+                    )
+                else:
+                    body_html = f"<div style='font-size:15px; line-height:1.6; color:#1e293b; margin-bottom:14px;'>{info_text}</div>"
+
+                footer_html = f"<div style='padding-top:10px; border-top:1px dashed #cbd5e1; font-size:12px; color:#64748b; font-weight:600;'>{continue_instruction}</div>"
+
                 interaction_obj["action"] = {
                     "library": "H5P.Text 1.1",
                     "params": {
-                        "text": f"<h3>{label}</h3><p>{info_text}</p>"
+                        "text": f"<div style='padding:6px; font-family:sans-serif;'><h3 style='color:#0369a1; font-size:18px; margin-top:0; margin-bottom:12px;'>💡 {label}</h3>{body_html}{footer_html}</div>"
                     },
                     "subContentId": sub_id,
                     "metadata": {
@@ -972,34 +985,16 @@ class H5PGenerator:
                 }
 
             # Automatic Adaptivity: On wrong answer, automatically jump back to explanation start!
-            # Require completion before allowing to continue.
+            # Only question interactions (with score) require completion. Static text cards must NOT have adaptivity or requireCompletion!
             rewind_sec = int(item.get("rewind_seconds") or item.get("explanation_start_seconds") or max(0, t_sec - 25))
 
             if fmt in ["Multiple Choice", "Wahr/Falsch", "Wahr / Falsch", "Lückentext", "Lueckentext"]:
                 interaction_obj["adaptivity"] = {
-                    "correct": {
-                        "seekTo": None,
-                        "message": "<div>Klasse! Das ist vollkommen richtig! Weiter geht's.</div>",
-                        "label": "Video fortsetzen"
-                    },
                     "wrong": {
                         "seekTo": rewind_sec,
+                        "allowOptOut": True,
                         "message": "<div>Das war leider noch nicht ganz richtig. Schau dir die Erklärung im Video noch einmal genau an!</div>",
-                        "label": "Zurück zur Erklärung"
-                    },
-                    "requireCompletion": True
-                }
-            else:
-                interaction_obj["adaptivity"] = {
-                    "correct": {
-                        "seekTo": None,
-                        "message": "",
-                        "label": "Hefteintrag fertig - Weiter"
-                    },
-                    "wrong": {
-                        "seekTo": None,
-                        "message": "",
-                        "label": "Weiter"
+                        "seekLabel": "Zurück zur Erklärung"
                     },
                     "requireCompletion": True
                 }

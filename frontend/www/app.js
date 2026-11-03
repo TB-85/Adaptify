@@ -1,8 +1,6 @@
-// Classroom Live Session State (attached to window to guarantee zero TDZ ReferenceErrors)
+// Classroom Live Session State (attached strictly to window to guarantee zero TDZ ReferenceErrors)
 window.liveSessionInterval = window.liveSessionInterval || null;
 window.liveSessionPin = window.liveSessionPin || '';
-var liveSessionInterval = window.liveSessionInterval;
-var liveSessionPin = window.liveSessionPin;
 
 // ==================== UTILITY & INTERACTION HELPERS ====================
 function escapeHtml(str) {
@@ -445,9 +443,13 @@ function renderInteractionBodyHtml(item, idx) {
         // Infobox
         const infoText = item.text || item.question || '';
         return `
-            <div class="space-y-1.5">
+            <div class="space-y-2">
                 <label class="block text-[10px] font-bold text-slate-600 uppercase">Inhalt des Merkkastens:</label>
                 <textarea rows="3" class="iv-info-text w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-red-500">${escapeHtml(infoText)}</textarea>
+                <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium flex items-center gap-2">
+                    <span class="text-base shrink-0">✍️</span>
+                    <div><b>Heft-Aufgabe & Fortfahren:</b> Im H5P-Video wird Schülern automatisch angezeigt: <i>„Übertrage diesen Merkkasten jetzt sauber in dein Schulheft!“</i> sowie der Hinweis, zum Weiterspielen oben rechts auf das <b>✕</b> oder auf <b>Play ▶</b> zu klicken.</div>
+                </div>
             </div>
         `;
     }
@@ -596,9 +598,7 @@ let appState = {
     previewDataUrl: null,
 };
 
-// Classroom Live Session State references
-liveSessionInterval = window.liveSessionInterval;
-liveSessionPin = window.liveSessionPin;
+// Classroom Live Session State accessed strictly via window.liveSession*
 
 // DOM Elements
 const screenUpload = document.getElementById('screen-upload');
@@ -1257,8 +1257,8 @@ function updateNavigationState() {
     }
     
     // Show/hide live session indicator
-    const currentInterval = window.liveSessionInterval || (typeof liveSessionInterval !== 'undefined' ? liveSessionInterval : null);
-    const currentPin = window.liveSessionPin || (typeof liveSessionPin !== 'undefined' ? liveSessionPin : '');
+    const currentInterval = window.liveSessionInterval || null;
+    const currentPin = window.liveSessionPin || '';
     if (currentInterval && currentPin) {
         if (liveIndicator) {
             liveIndicator.classList.remove('hidden');
@@ -2465,7 +2465,6 @@ window.copyIframeEmbedCode = async function() {
                     const sessionJson = await sessionRes.json();
                     pin = sessionJson.pin;
                     window.liveSessionPin = pin;
-                    liveSessionPin = pin;
                     updateNavigationState();
                 }
             } catch (e) {
@@ -3828,7 +3827,7 @@ initDB().then(() => {
 // ----------------------------------------------------
 // CLASSROOM LIVE SESSION MANAGEMENT
 // ----------------------------------------------------
-// (liveSessionInterval and liveSessionPin initialized globally at top of app.js)
+// (window.liveSessionInterval and window.liveSessionPin initialized at top of app.js)
 
 window.startLiveSession = async function() {
     const data = getEditedData();
@@ -3857,14 +3856,13 @@ window.startLiveSession = async function() {
         if (!sessionRes.ok) throw new Error("Could not create session");
         const sessionJson = await sessionRes.json();
         window.liveSessionPin = sessionJson.pin;
-        liveSessionPin = sessionJson.pin;
         
         // 2. Build Student link (Cloud/Render vs Localhost)
         let playUrl;
         const isLocalhost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname);
         
         if (!isLocalhost) {
-            playUrl = `${window.location.origin}/play.html?pin=${liveSessionPin}`;
+            playUrl = `${window.location.origin}/play.html?pin=${window.liveSessionPin}`;
             const ipLabel = document.getElementById('live-session-ip-label');
             if (ipLabel) ipLabel.textContent = window.location.hostname;
         } else {
@@ -3873,20 +3871,20 @@ window.startLiveSession = async function() {
                 const ipJson = await ipRes.json();
                 const localIp = ipJson.ip || '127.0.0.1';
                 const port = window.location.port ? `:${window.location.port}` : '';
-                playUrl = `${window.location.protocol}//${localIp}${port}/play.html?pin=${liveSessionPin}`;
+                playUrl = `${window.location.protocol}//${localIp}${port}/play.html?pin=${window.liveSessionPin}`;
                 const ipLabel = document.getElementById('live-session-ip-label');
                 if (ipLabel) ipLabel.textContent = localIp;
             } catch (e) {
-                playUrl = `${window.location.origin}/play.html?pin=${liveSessionPin}`;
+                playUrl = `${window.location.origin}/play.html?pin=${window.liveSessionPin}`;
                 const ipLabel = document.getElementById('live-session-ip-label');
                 if (ipLabel) ipLabel.textContent = window.location.hostname;
             }
         }
         
         // 3. Update UI
-        document.getElementById('live-session-pin').textContent = liveSessionPin;
+        document.getElementById('live-session-pin').textContent = window.liveSessionPin;
         const pinTipEl = document.getElementById('live-session-pin-tip');
-        if (pinTipEl) pinTipEl.textContent = liveSessionPin;
+        if (pinTipEl) pinTipEl.textContent = window.liveSessionPin;
         document.getElementById('live-session-link').href = playUrl;
         document.getElementById('live-session-link').textContent = playUrl;
         
@@ -3898,7 +3896,6 @@ window.startLiveSession = async function() {
         // 5. Start Polling scoreboard
         pollLiveResults();
         window.liveSessionInterval = setInterval(pollLiveResults, 3000);
-        liveSessionInterval = window.liveSessionInterval;
         updateNavigationState();
         
     } catch (err) {
@@ -3914,10 +3911,6 @@ window.stopLiveSession = function() {
     if (window.liveSessionInterval) {
         clearInterval(window.liveSessionInterval);
         window.liveSessionInterval = null;
-    }
-    if (typeof liveSessionInterval !== 'undefined' && liveSessionInterval) {
-        clearInterval(liveSessionInterval);
-        liveSessionInterval = null;
     }
     const liveActive = document.getElementById('live-session-active');
     if (liveActive) liveActive.classList.add('hidden');
@@ -3961,7 +3954,7 @@ window.toggleAnonymizeNames = function() {
 };
 
 async function pollLiveResults() {
-    const pin = window.liveSessionPin || (typeof liveSessionPin !== 'undefined' ? liveSessionPin : '');
+    const pin = window.liveSessionPin || '';
     if (!pin) return;
     try {
         const response = await fetch(`${API_BASE}/api/sessions/${pin}/results`);
@@ -4141,7 +4134,7 @@ window.downloadResultsCSV = function() {
     const encodedUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUrl);
-    const pin = window.liveSessionPin || (typeof liveSessionPin !== 'undefined' ? liveSessionPin : '') || 'Sitzung';
+    const pin = window.liveSessionPin || 'Sitzung';
     link.setAttribute("download", `Adaptify_Ergebnisse_${pin}.csv`);
     document.body.appendChild(link);
     link.click();
@@ -4494,7 +4487,7 @@ window.openProjectorView = function(event) {
     if (!modal) return;
     
     // Set PIN and IP
-    const pin = window.liveSessionPin || (typeof liveSessionPin !== 'undefined' ? liveSessionPin : '') || 'CODE';
+    const pin = window.liveSessionPin || 'CODE';
     document.getElementById('proj-pin').textContent = pin;
     
     const ipLabel = document.getElementById('live-session-ip-label');

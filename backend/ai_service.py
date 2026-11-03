@@ -817,20 +817,25 @@ ABSOLUTE ANFORDERUNGEN AN THEMEN-PASSGENAUIGKEIT, ERKLÄRUNGEN UND STOPP-ZEITPUN
    - Das tatsächliche Schulfach (z. B. 'Informatik', 'Mathematik', 'Physik', 'Biologie', 'Chemie', 'Geschichte', 'Deutsch', 'Wirtschaft' etc.) und der genaue Titel (z. B. 'Informatik: Aufbau von IPv4-Adressen und Subnetzen') MÜSSEN zu 100% aus dem tatsächlichen Inhalt des Videos abgeleitet werden.
    - Bildspur und Tonspur sind die absolute Wahrheitsquelle. Ignoriere irreführende Vorbelegungen oder Standardwerte vollständig.
 
-2. EXAKTER STOPP-ZEITPUNKT (TIMESTAMPS):
-   - Jeder Quiz-Haltepunkt ('time_seconds' und 'time_formatted', z. B. '01:25') MUSS didaktisch exakt an die Stelle platziert werden, an der der abgefragte Sachverhalt im Video gerade vollständig erklärt oder gezeigt wurde!
-   - REGEL ZUM STOPP: Zuerst muss das Video den Begriff, die Formel, das Schema oder den Fakt vollständig genannt oder veranschaulicht haben. Genau 1 bis 3 Sekunden NACH Abschluss dieser Erklärung stoppt das Video für die Frage oder den Merkkasten.
-   - Stoppe NIEMALS bevor die Information im Video genannt wurde (Schüler können es sonst noch nicht wissen).
+2. EXAKTER STOPP-ZEITPUNKT (TIMESTAMPS – NIEMALS MITTEN IM SATZ STOPPEN!):
+   - ABSOLUTE TIMING-PFLICHT: Das Pop-up darf NIEMALS mitten im Satz oder während eines noch unfertigen Gedankens aufpoppen!
+   - Der Sprecher muss den erklärenden Satz VOLLSTÄNDIG beendet haben (achte im Transkript auf Satzzeichen wie . ! ? und in der Audiospur auf die natürliche Sprechpause).
+   - Platziere den Haltepunkt ('time_seconds' und 'time_formatted') GENAU 2 BIS 4 SEKUNDEN NACHDEM der letzte Satz der Erklärung verklungen ist und der Sprecher pausiert oder zum nächsten Gedanken überleitet.
+   - Stoppe NIEMALS bevor die abgefragte Information im Video genannt wurde (Schüler können es sonst noch nicht wissen).
    - Wähle KEINE willkürlichen Intervalle (wie stur alle 30s), sondern ermittle die echten Sinnabschnitte und Kapitel des Videos anhand der Tonspur und Folienwechsel.
    - Haltepunkte müssen chronologisch aufsteigend angeordnet sein (Stopp 1 < Stopp 2 < Stopp 3 ...).
 
-3. FRAGEN UND MERKKÄSTEN (PASSGENAU ZUM VIDEO):
+3. FRAGEN UND MERKKÄSTEN (PASSGENAU ZUM VIDEO MIT KLARER SCHÜLER-ANWEISUNG):
    - Jede Frage muss eine konkrete, im Video genannte Tatsache, Definition, Zahl, Struktur oder Vorgehensweise abfragen. Keine vagen Allgemeinplätze!
    - FRAGETYPEN:
      * 'Multiple Choice': Klare Frage zum soeben erklärten Punkt. Genau 1 richtige Antwort (stimmt exakt mit dem Video überein) und 2-3 plausible falsche Distraktoren.
      * 'Wahr/Falsch': Präzise Aussage zu dem im Video gezeigten Sachverhalt mit 'correct': true oder false.
      * 'Lückentext' (als aktiver Merkkasten): Ein didaktischer Merksatz, bei dem der wichtigste soeben gelernte Fachbegriff in Sternchen steht (z. B. "Eine IPv4-Adresse besteht aus *32* Bit."), den die Schüler eintragen.
-     * 'Infobox' (als didaktischer Merkkasten): Ein hervorgehobener Merksatz ('💡 Merke dir: ...'), der die Kernaussage, Formel oder Regel des soeben gesehenen Abschnitts einprägsam zusammenfasst.
+     * 'Infobox' (als didaktischer Merkkasten): Ein hervorgehobener Merkkasten, der die Kernaussage, Formel oder Regel des soeben gesehenen Abschnitts einprägsam zusammenfasst.
+       WICHTIG: Jeder Merkkasten ('Infobox') MUSS IMMER für die Schüler die unmissverständliche Handlungsanweisung enthalten:
+       "✍️ **Aufgabe für dein Heft:** Übertrage diesen Merkkasten jetzt sauber in dein Schulheft!"
+       sowie die Erklärung zum Fortfahren:
+       "▶️ **So geht's weiter:** Klicke oben rechts auf das ✕ (Schließen) oder unten auf Play ▶, sobald du fertig geschrieben hast!"
    - Mindestens einer der Haltepunkte sollte als didaktischer Merkkasten ('Infobox' oder 'Lückentext') gestaltet sein, um das Gelernte zu festigen.
 
 4. DIDAKTISCHE RÜCKMELDUNG ('explanation'):
@@ -941,7 +946,7 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                     "title": "Zusammenfassung",
                     "format": "Infobox",
                     "question": "Merksatz",
-                    "text": "Merke dir: Datenpakete im Internet finden ihren Weg durch Router anhand von Quell- und Ziel-IP-Adressen.",
+                    "text": "Merke dir: Eine typische IPv4-Adresse besteht aus vier Zahlenblöcken, die durch Punkte getrennt sind (z. B. 192.168.1.45).\n\n✍️ **Aufgabe für dein Heft:** Übertrage diesen Merkkasten jetzt sauber in dein Schulheft!\n▶️ **So geht's weiter:** Klicke oben rechts auf das ✕ (Schließen) oder auf Play ▶, sobald du fertig geschrieben hast.",
                     "explanation": ""
                 },
                 {

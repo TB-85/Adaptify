@@ -1,4 +1,4 @@
-const CACHE_NAME = 'adaptify-cache-v30';
+const CACHE_NAME = 'adaptify-cache-v32';
 
 // Immediately take over active clients without waiting
 self.addEventListener('install', (event) => {
@@ -24,9 +24,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   
-  // Exclude API requests from SW cache
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api/')) return;
+  // Exclude API requests and core dynamic scripts from SW cache to prevent stale JavaScript TDZ errors
+  if (url.pathname.startsWith('/api/') || url.pathname.endsWith('app.js') || url.pathname.endsWith('index.html') || url.pathname === '/') {
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)
