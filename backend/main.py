@@ -125,7 +125,8 @@ async def generate_task(
     api_key: Optional[str] = Form(None),
     promo_code: Optional[str] = Form(None),
     youtube_url: Optional[str] = Form(None),
-    video_mode: Optional[str] = Form("branching")
+    video_mode: Optional[str] = Form("branching"),
+    video_duration: Optional[int] = Form(None)
 ):
     """
     Receives an uploaded book page scan (image or PDF) and generates
@@ -212,7 +213,8 @@ async def generate_task(
                 school_type=school_type,
                 task_count=task_count if task_count >= 1 else 5,
                 api_key=effective_api_key,
-                youtube_url=youtube_url
+                youtube_url=youtube_url,
+                video_duration=video_duration
             )
         else:
             result = await asyncio.to_thread(

@@ -148,6 +148,20 @@ function handleVideoFileSelection(files) {
         const mb = (file.size / (1024 * 1024)).toFixed(1);
         sizeEl.textContent = `${mb} MB (Video bereit zum Einbetten)`;
     }
+    try {
+        const tempVid = document.createElement('video');
+        tempVid.preload = 'metadata';
+        tempVid.onloadedmetadata = () => {
+            window.URL.revokeObjectURL(tempVid.src);
+            if (tempVid.duration && !isNaN(tempVid.duration) && tempVid.duration > 0) {
+                appState.videoDurationSec = Math.round(tempVid.duration);
+                console.log("Probed local video duration:", appState.videoDurationSec, "seconds");
+            }
+        };
+        tempVid.src = URL.createObjectURL(file);
+    } catch (e) {
+        console.debug("Could not probe video duration:", e);
+    }
     if (infoBox) infoBox.classList.remove('hidden');
     if (dropzone) dropzone.classList.add('hidden');
 }
@@ -155,6 +169,7 @@ window.handleVideoFileSelection = handleVideoFileSelection;
 
 function removeSelectedVideoFile() {
     appState.selectedVideoFile = null;
+    appState.videoDurationSec = null;
     const input = document.getElementById('input-video-file');
     if (input) input.value = '';
     const infoBox = document.getElementById('iv-video-selected-info');
@@ -335,6 +350,21 @@ function renderInteractiveVideoCards(interactions) {
         return;
     }
 
+    // Safety guard: Clamp checkpoints within actual video length if known
+    if (appState.videoDurationSec && appState.videoDurationSec > 15) {
+        const maxSec = appState.videoDurationSec - 5;
+        const exceeds = interactions.some(item => (item.time_seconds || 0) > maxSec);
+        if (exceeds) {
+            console.warn(`Haltepunkte lagen über Videoende (${appState.videoDurationSec}s). Automatische proportionale Skalierung...`);
+            const step = (maxSec - 15) / interactions.length;
+            interactions.forEach((item, idx) => {
+                const safeSec = Math.round(15 + (idx + 0.5) * step);
+                item.time_seconds = Math.max(10, Math.min(safeSec, maxSec - (interactions.length - 1 - idx) * 3));
+                item.time_formatted = formatSecondsToMMSS(item.time_seconds);
+            });
+        }
+    }
+
     interactions.forEach((item, idx) => {
         const card = createInteractionCardElement(item, idx);
         list.appendChild(card);
@@ -489,7 +519,11 @@ function handleMMSSChange(input, cardId) {
     const card = document.getElementById(cardId);
     if (!card) return;
     const secInput = card.querySelector('.iv-time-sec');
-    const sec = parseMMSSToSeconds(input.value);
+    let sec = parseMMSSToSeconds(input.value);
+    if (appState.videoDurationSec && appState.videoDurationSec > 15 && sec >= appState.videoDurationSec) {
+        alert(`Achtung: Der Stopp-Zeitpunkt (${formatSecondsToMMSS(sec)}) liegt nach dem Ende des Videos (${formatSecondsToMMSS(appState.videoDurationSec)})! Er wird auf das Videoende angepasst.`);
+        sec = Math.max(15, appState.videoDurationSec - 5);
+    }
     if (secInput) secInput.value = sec;
     input.value = formatSecondsToMMSS(sec);
 }
@@ -1477,6 +1511,21 @@ async function handleFile(file) {
         }
         if (btnEditCurrentImage) btnEditCurrentImage.classList.add('hidden');
         
+        try {
+            const tempVid = document.createElement('video');
+            tempVid.preload = 'metadata';
+            tempVid.onloadedmetadata = () => {
+                window.URL.revokeObjectURL(tempVid.src);
+                if (tempVid.duration && !isNaN(tempVid.duration) && tempVid.duration > 0) {
+                    appState.videoDurationSec = Math.round(tempVid.duration);
+                    console.log("Probed local video duration:", appState.videoDurationSec, "seconds");
+                }
+            };
+            tempVid.src = URL.createObjectURL(file);
+        } catch (e) {
+            console.debug("Could not probe video duration:", e);
+        }
+        
         setVideoMode('interactive_video');
         return;
     }
@@ -1534,6 +1583,7 @@ window.reopenImageEditor = function() {
 function resetFileSelection() {
     appState.selectedFile = null;
     appState.selectedVideoFile = null;
+    appState.videoDurationSec = null;
     appState.selectedFiles = [];
     appState.originalDataUrl = null;
     appState.previewDataUrl = null;
@@ -1968,6 +2018,9 @@ btnSubmit.addEventListener('click', async (e) => {
     }
     formData.append('api_key', apiKeyVal);
     formData.append('promo_code', promoCodeVal);
+    if (appState.videoDurationSec) {
+        formData.append('video_duration', appState.videoDurationSec);
+    }
 
     try {
         let response = null;
@@ -2013,6 +2066,9 @@ btnSubmit.addEventListener('click', async (e) => {
         }
 
         const data = await response.json();
+        if (data.video_duration_seconds) {
+            appState.videoDurationSec = data.video_duration_seconds;
+        }
         if (vidFile && !data.video_filename) {
             data.video_filename = vidFile.name;
         }

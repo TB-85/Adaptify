@@ -151,18 +151,19 @@ class AIService:
                 logger.error(f"Failed to initialize Gemini Client: {e}")
 
 
-    def _prepare_gemini_contents(self, client, files: list, youtube_url: str = None) -> tuple:
+    def _prepare_gemini_contents(self, client, files: list, youtube_url: str = None, video_duration: int = None) -> tuple:
         """
         Processes multi-modal attachments:
         - Videos (.mp4, .mov, etc.) are written to a temp file, uploaded to Gemini Files API, and polled until ACTIVE.
-        - YouTube URLs have their oEmbed metadata and timestamped transcripts fetched via youtube_transcript_api.
+        - YouTube URLs have their oEmbed metadata, exact duration and timestamped transcripts fetched.
         - Word DOCX files have their text extracted.
         - PDFs and images are passed as Part.from_bytes.
-        Returns (contents_list, uploaded_gemini_files, temp_files_to_remove).
+        Returns (contents_list, uploaded_gemini_files, temp_files_to_remove, detected_duration_sec).
         """
         contents = []
         uploaded_gemini_files = []
         temp_files_to_remove = []
+        detected_duration_sec = int(video_duration) if (video_duration and int(video_duration) > 0) else None
 
         # 1. Process YouTube URL if provided
         if youtube_url and youtube_url.strip():
@@ -186,7 +187,24 @@ class AIService:
             except Exception as e:
                 logger.warning(f"Failed to fetch YouTube oEmbed: {e}")
 
-            # B. Fetch transcript via youtube_transcript_api (multi-language & timestamp aware)
+            # B. Extract exact YouTube length in seconds from YouTube watch page
+            if vid_id and not detected_duration_sec:
+                try:
+                    import httpx
+                    yt_watch_resp = httpx.get(
+                        f"https://www.youtube.com/watch?v={vid_id}",
+                        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
+                        timeout=4.0
+                    )
+                    if yt_watch_resp.status_code == 200:
+                        m_len = re.search(r'"lengthSeconds":"(\d+)"', yt_watch_resp.text)
+                        if m_len:
+                            detected_duration_sec = int(m_len.group(1))
+                            logger.info(f"Extracted YouTube exact lengthSeconds: {detected_duration_sec}s")
+                except Exception as yt_err:
+                    logger.warning(f"Could not scrape YouTube duration: {yt_err}")
+
+            # C. Fetch transcript via youtube_transcript_api (multi-language & timestamp aware)
             if vid_id:
                 try:
                     from youtube_transcript_api import YouTubeTranscriptApi
@@ -206,13 +224,18 @@ class AIService:
                         max_timestamp = 0
                         for snippet in transcript_pieces:
                             start_sec = int(snippet.start)
-                            if start_sec > max_timestamp:
-                                max_timestamp = start_sec
+                            dur = getattr(snippet, 'duration', 0) or 0
+                            end_sec = int(snippet.start + dur)
+                            if end_sec > max_timestamp:
+                                max_timestamp = end_sec
                             m, s = divmod(start_sec, 60)
                             lines.append(f"[{m:02d}:{s:02d}] {snippet.text}")
                         transcript_text = "\n".join(lines)
                         if len(transcript_text) > 40000:
                             transcript_text = transcript_text[:40000] + "\n...[Transkript gekürzt]"
+
+                        if not detected_duration_sec and max_timestamp > 0:
+                            detected_duration_sec = max_timestamp
 
                         m_end, s_end = divmod(max_timestamp, 60)
                         contents.append(
@@ -262,22 +285,17 @@ class AIService:
 
                     if gemini_file.state.name == "ACTIVE":
                         logger.info(f"Video file '{fname}' is ACTIVE in Gemini API and ready for multimodal analysis!")
-                        # Probe video duration via ffprobe if available
-                        video_duration_sec = None
-                        try:
-                            import subprocess
-                            ff_res = subprocess.run(
-                                ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', tmp_path],
-                                capture_output=True, text=True, timeout=5
-                            )
-                            if ff_res.returncode == 0 and ff_res.stdout.strip():
-                                video_duration_sec = int(float(ff_res.stdout.strip()))
-                        except Exception as ff_err:
-                            logger.debug(f"Could not probe video duration: {ff_err}")
-
-                        if video_duration_sec:
-                            m_dur, s_dur = divmod(video_duration_sec, 60)
-                            contents.append(f"HINWEIS ZUR VIDEODATEI '{fname}': Die Gesamtlänge des Videos beträgt exakt {m_dur:02d}:{s_dur:02d} ({video_duration_sec} Sekunden). Alle Quiz-Haltepunkte müssen strikt innerhalb dieser Laufzeit liegen!")
+                        if not detected_duration_sec:
+                            try:
+                                import subprocess
+                                ff_res = subprocess.run(
+                                    ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', tmp_path],
+                                    capture_output=True, text=True, timeout=5
+                                )
+                                if ff_res.returncode == 0 and ff_res.stdout.strip():
+                                    detected_duration_sec = int(float(ff_res.stdout.strip()))
+                            except Exception as ff_err:
+                                logger.debug(f"Could not probe video duration: {ff_err}")
 
                         contents.append(gemini_file)
                     else:
@@ -299,7 +317,15 @@ class AIService:
                 if text_str.strip():
                     contents.append(text_str)
 
-        return contents, uploaded_gemini_files, temp_files_to_remove
+        if detected_duration_sec and detected_duration_sec > 0:
+            m_dur, s_dur = divmod(detected_duration_sec, 60)
+            contents.append(
+                f"STRENGSTE REGEL ZUR LAUFZEIT: Die Gesamtlänge dieses Videos beträgt EXAKT {m_dur:02d}:{s_dur:02d} ({detected_duration_sec} Sekunden). "
+                f"Der allerletzte Haltepunkt darf HÖCHSTENS bei Sekunde {max(15, detected_duration_sec - 10)} liegen! Jeder Haltepunkt danach ist ungültig!"
+            )
+            logger.info(f"Target video duration verified: {m_dur:02d}:{s_dur:02d} ({detected_duration_sec}s)")
+
+        return contents, uploaded_gemini_files, temp_files_to_remove, detected_duration_sec
 
     def _cleanup_gemini_files(self, client, uploaded_gemini_files: list, temp_files_to_remove: list):
         if client:
@@ -522,7 +548,7 @@ WICHTIGE ANWEISUNGEN:
         uploaded_gemini_files = []
         temp_files_to_remove = []
         try:
-            contents, uploaded_gemini_files, temp_files_to_remove = self._prepare_gemini_contents(
+            contents, uploaded_gemini_files, temp_files_to_remove, _ = self._prepare_gemini_contents(
                 client=client,
                 files=files
             )
@@ -783,7 +809,8 @@ Generiere genau dieses JSON:
         school_type: str = "Mittelschule",
         task_count: int = 5,
         api_key: str = None,
-        youtube_url: str = None
+        youtube_url: str = None,
+        video_duration: int = None
     ) -> dict:
         """
         Sends the uploaded material / text / video (or YouTube URL) to Gemini.
@@ -861,18 +888,32 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
         uploaded_gemini_files = []
         temp_files_to_remove = []
         try:
-            contents, uploaded_gemini_files, temp_files_to_remove = self._prepare_gemini_contents(
+            contents, uploaded_gemini_files, temp_files_to_remove, detected_duration_sec = self._prepare_gemini_contents(
                 client=client,
                 files=files,
-                youtube_url=youtube_url
+                youtube_url=youtube_url,
+                video_duration=video_duration
             )
-            contents.append(prompt)
+
+            if detected_duration_sec and detected_duration_sec > 15:
+                m_dur, s_dur = divmod(detected_duration_sec, 60)
+                max_stop_sec = max(15, detected_duration_sec - 8)
+                m_max, s_max = divmod(max_stop_sec, 60)
+                duration_header = (
+                    f"ABSOLUTES ZEITLIMIT - STRENGSTE PFLICHT:\n"
+                    f"- Die Gesamtlaufzeit dieses Videos beträgt EXAKT {m_dur:02d}:{s_dur:02d} ({detected_duration_sec} Sekunden)!\n"
+                    f"- STRIKT VERBOTEN: Der allerletzte Haltepunkt darf HÖCHSTENS bei Sekunde {max_stop_sec} ({m_max:02d}:{s_max:02d}) liegen!\n"
+                    f"- Haltepunkte danach zerstören das H5P-Video, weil sie hinter dem Videoende liegen. Verteile alle {task_count} Haltepunkte gleichmäßig zwischen 00:15 und {m_max:02d}:{s_max:02d}!\n\n"
+                )
+                contents.append(duration_header + prompt)
+            else:
+                contents.append(prompt)
 
             candidate_models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
             last_err = None
             for model_name in candidate_models:
                 try:
-                    logger.info(f"Generating interactive video quiz with model '{model_name}'...")
+                    logger.info(f"Generating interactive video quiz with model '{model_name}' (duration constraint: {detected_duration_sec}s)...")
                     response = client.models.generate_content(
                         model=model_name,
                         contents=contents,
@@ -885,28 +926,55 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                     if response and response.text:
                         parsed = json.loads(response.text)
                         parsed["video_mode"] = "interactive_video"
+                        if detected_duration_sec:
+                            parsed["video_duration_seconds"] = detected_duration_sec
 
-                        # Validate, format and sort interactions chronologically
+                        # Validate, format, sort and CLAMP interactions strictly within video duration
                         if "interactions" in parsed and isinstance(parsed["interactions"], list):
-                            for inter in parsed["interactions"]:
-                                ts = int(inter.get("time_seconds", 0))
-                                m, s = divmod(ts, 60)
-                                inter["time_seconds"] = ts
-                                inter["time_formatted"] = f"{m:02d}:{s:02d}"
-                            parsed["interactions"].sort(key=lambda x: x.get("time_seconds", 0))
+                            interactions = parsed["interactions"]
+                            for inter in interactions:
+                                inter["time_seconds"] = int(inter.get("time_seconds", 0))
 
-                        logger.info(f"Successfully generated interactive video quiz for subject='{parsed.get('subject')}', title='{parsed.get('title')}' with {len(parsed.get('interactions', []))} checkpoints")
+                            interactions.sort(key=lambda x: x.get("time_seconds", 0))
+
+                            # Safety clamp: If video length is known, NEVER allow any checkpoint past the end!
+                            if detected_duration_sec and detected_duration_sec > 15:
+                                max_allowed = detected_duration_sec - 8
+                                exceeds = any(inter.get("time_seconds", 0) > max_allowed for inter in interactions)
+                                if exceeds:
+                                    logger.warning(
+                                        f"SAFETY CLAMP: Checkpoints exceeded video duration ({detected_duration_sec}s). "
+                                        f"Rescaling {len(interactions)} checkpoints proportionally within [15, {max_allowed}]s."
+                                    )
+                                    n = len(interactions)
+                                    if n > 0:
+                                        step = (max_allowed - 15) / n
+                                        for idx, inter in enumerate(interactions):
+                                            safe_sec = int(15 + (idx + 0.5) * step)
+                                            safe_sec = max(10, min(safe_sec, max_allowed - (n - 1 - idx) * 3))
+                                            inter["time_seconds"] = safe_sec
+                                            
+                                            rw = inter.get("rewind_seconds")
+                                            if rw is not None:
+                                                inter["rewind_seconds"] = max(0, min(int(rw), max(0, safe_sec - 15)))
+
+                            for inter in interactions:
+                                ts = inter["time_seconds"]
+                                m, s = divmod(ts, 60)
+                                inter["time_formatted"] = f"{m:02d}:{s:02d}"
+
+                        logger.info(f"Successfully generated interactive video quiz for subject='{parsed.get('subject')}', title='{parsed.get('title')}' with {len(parsed.get('interactions', []))} checkpoints (duration: {detected_duration_sec}s)")
                         return parsed
                 except Exception as e:
                     logger.warning(f"Interactive video generation failed with model {model_name}: {e}")
                     last_err = e
 
             logger.error(f"All models failed for interactive video: {last_err}")
-            return self._get_mock_interactive_video(inferred_topic, subject, school_type, task_count, error_message=str(last_err))
+            return self._get_mock_interactive_video(inferred_topic, subject, school_type, task_count, error_message=str(last_err), video_duration=detected_duration_sec)
         finally:
             self._cleanup_gemini_files(client, uploaded_gemini_files, temp_files_to_remove)
 
-    def _get_mock_interactive_video(self, context: str = "", subject: str = "Informatik", school_type: str = "Mittelschule", task_count: int = 5, error_message: str = None) -> dict:
+    def _get_mock_interactive_video(self, context: str = "", subject: str = "Informatik", school_type: str = "Mittelschule", task_count: int = 5, error_message: str = None, video_duration: int = None) -> dict:
         topic = context.strip() if context else ("IP-Adressen und Rechnernetze" if subject == "Informatik" else f"Grundlagen {subject}")
         is_ip_topic = any(k in topic.lower() for k in ['ip', 'netzwerk', 'informatik', 'subnetz', 'router'])
         
@@ -1028,6 +1096,15 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                     "explanation": "Richtig! Übung und Wiederholung festigen das erworbene Wissen."
                 }
             ][:task_count]
+
+        if video_duration and video_duration > 15 and interactions:
+            max_limit = video_duration - 8
+            step = (max_limit - 15) / len(interactions)
+            for idx, inter in enumerate(interactions):
+                safe_sec = int(15 + (idx + 0.5) * step)
+                inter["time_seconds"] = safe_sec
+                m, s = divmod(safe_sec, 60)
+                inter["time_formatted"] = f"{m:02d}:{s:02d}"
 
         return {
             "title": f"Interaktives Video: {topic}",
