@@ -1046,16 +1046,24 @@ const subjectPresets = {
 };
 
 window.adjustTotalTasks = function(delta) {
-    let currentTotal = dynamicTopics.reduce((sum, t) => sum + (t.count || 0), 0);
-    if (currentTotal === 0) currentTotal = 5;
+    const totalDisplay = document.getElementById('display-total-tasks');
+    const hiddenTaskCountInput = document.getElementById('input-task-count');
     
-    let newTotal = Math.min(20, Math.max(1, currentTotal + delta));
+    let currentTotal = parseInt(hiddenTaskCountInput ? hiddenTaskCountInput.value : (totalDisplay ? totalDisplay.textContent : '5')) || 5;
+    let newTotal = Math.min(25, Math.max(1, currentTotal + delta));
     
-    if (dynamicTopics.length > 0) {
-        const diff = newTotal - currentTotal;
-        dynamicTopics[0].count = Math.min(20, Math.max(0, dynamicTopics[0].count + diff));
+    if (totalDisplay) totalDisplay.textContent = newTotal;
+    if (hiddenTaskCountInput) hiddenTaskCountInput.value = newTotal;
+
+    if (Array.isArray(dynamicTopics) && dynamicTopics.length > 0) {
+        dynamicTopics[0].count = newTotal;
     }
-    renderDynamicTopicRows();
+    const container = document.getElementById('topic-rows-list');
+    if (container) {
+        renderDynamicTopicRows();
+    } else {
+        updateTopicSummary();
+    }
 };
 
 window.renderDynamicTopicRows = function() {
@@ -1135,16 +1143,18 @@ window.updateTopicSummary = function() {
     const hiddenTopicInput = document.getElementById('input-focus-topic');
     const hiddenTaskCountInput = document.getElementById('input-task-count');
     
-    const totalTasks = dynamicTopics.reduce((sum, t) => sum + (t.count || 0), 0);
+    let totalTasks = parseInt(hiddenTaskCountInput ? hiddenTaskCountInput.value : (totalDisplay ? totalDisplay.textContent : '5')) || 5;
     if (totalDisplay) totalDisplay.textContent = totalTasks;
     if (hiddenTaskCountInput) hiddenTaskCountInput.value = totalTasks;
     
-    const summaryParts = dynamicTopics
-        .filter(t => t.count > 0 && t.name.trim())
-        .map(t => `${t.count} ${t.name.trim()}`);
-    
-    if (hiddenTopicInput) {
-        hiddenTopicInput.value = summaryParts.join(', ') || '5 Aufgaben';
+    if (Array.isArray(dynamicTopics) && dynamicTopics.length > 0) {
+        dynamicTopics[0].count = totalTasks;
+        const summaryParts = dynamicTopics
+            .filter(t => t.count > 0 && t.name && t.name.trim())
+            .map(t => `${t.count} ${t.name.trim()}`);
+        if (hiddenTopicInput && summaryParts.length > 0) {
+            hiddenTopicInput.value = summaryParts.join(', ');
+        }
     }
 };
 
