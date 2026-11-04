@@ -181,7 +181,7 @@ class H5PGenerator:
                 },
                 "showContentTitle": False,
                 "proceedButtonText": "Weiter",
-                "forceContentFinished": True if "CoursePresentation" in library_str else "useBehavioural",
+                "forceContentFinished": "enabled",
                 "feedback": {"title": "", "subtitle": ""},
                 "contentBehaviour": "useBehavioural"
             }
@@ -236,7 +236,7 @@ class H5PGenerator:
                     "nextSlide": "Nächste Folie", "currentSlide": "Aktuelle Folie", "lastSlide": "Letzte Folie"
                 },
                 "override": {
-                    "activeSurface": False, "hideSummarySlide": False, "showSolutionButton": "", "retryButton": ""
+                    "activeSurface": False, "hideSummarySlide": False, "showSolutionButton": "off", "retryButton": "on"
                 }
             }
             node = make_node("H5P.CoursePresentation 1.25", cp_params, "Course Presentation", title_str, next_content_id)
@@ -313,10 +313,13 @@ class H5PGenerator:
                     "question": f"<p>{task_title}</p>\n",
                     "answers": [{"text": "Option 1", "correct": True, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}}]
                 }
-                if task_exp and first_q.get("answers"):
+                hint_to_use = task_hint if task_hint else "Achte auf die Merkmale im Merkkasten!"
+                if first_q.get("answers"):
                     for ans in first_q["answers"]:
+                        ans.setdefault("tipsAndFeedback", {})
+                        ans["tipsAndFeedback"]["tip"] = hint_to_use
                         if not ans.get("correct"):
-                            ans["tipsAndFeedback"]["chosenFeedback"] = f"💬 {task_exp}"
+                            ans["tipsAndFeedback"]["chosenFeedback"] = f"💡 Tipp: {hint_to_use}"
                 slides_data.append({
                     "title": task_title,
                     "library": "H5P.MultiChoice 1.16",
@@ -324,7 +327,7 @@ class H5PGenerator:
                         "question": first_q.get("question"),
                         "answers": first_q.get("answers"),
                         "overallFeedback": overall_fb,
-                        "behaviour": {"enableRetry": True, "enableSolutionsButton": True, "singleAnswer": True, "singlePoint": True, "randomAnswers": False, "showSolutionsRequiresInput": True, "autoCheck": False, "passPercentage": 80, "type": "auto"},
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "singleAnswer": True, "singlePoint": True, "randomAnswers": False, "showSolutionsRequiresInput": True, "autoCheck": False, "passPercentage": 80, "type": "auto"},
                         "UI": {"checkAnswerButton": "Prüfen", "submitAnswerButton": "Absenden", "tryAgainButton": "Wiederholen", "showSolutionButton": "Lösung anzeigen", "correctText": "Richtig!", "almostText": "Fast!", "wrongText": "Falsch", "feedback": "Du hast @score von @total Punkten erreicht"}
                     }
                 })
@@ -338,7 +341,7 @@ class H5PGenerator:
                         "textField": drag_text_field,
                         "overallFeedback": overall_fb,
                         "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen",
-                        "behaviour": {"enableRetry": True, "enableSolutionsButton": True, "instantFeedback": False, "enableCheckButton": True}
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "instantFeedback": False, "enableCheckButton": True}
                     }
                 })
             elif task_format == "Wahr/Falsch":
@@ -350,9 +353,9 @@ class H5PGenerator:
                     "params": {
                         "question": first_tf.get("question"),
                         "correct": "true" if first_tf.get("correct") else "false",
-                        "feedback": f"💬 {task_exp}" if task_exp else "",
+                        "feedback": f"💡 Tipp: {task_hint}" if task_hint else "Lies dir die Aussage noch einmal aufmerksam durch!",
                         "l10n": {"trueText": "Wahr", "falseText": "Falsch", "score": "Punkte", "checkAnswer": "Prüfen", "showSolutionButton": "Lösung", "tryAgain": "Wiederholen"},
-                        "behaviour": {"enableRetry": True, "enableSolutionsButton": True, "enableCheckButton": True}
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "enableCheckButton": True}
                     }
                 })
             elif task_format == "Vokabelkarten":
@@ -368,15 +371,22 @@ class H5PGenerator:
                         }
                     })
             else: # Lückentext
+                hint_to_use = task_hint if task_hint else "Achte auf die genauen Merksätze im Merkkasten!"
+                def inject_blank_hint(m):
+                    inner = m.group(1)
+                    if ":" in inner:
+                        return f"*{inner}*"
+                    return f"*{inner}:{hint_to_use}*"
+                blanks_with_hints = re.sub(r'\*([^*]+)\*', inject_blank_hint, formatted_blanks_text)
                 slides_data.append({
                     "title": task_title,
                     "library": "H5P.Blanks 1.14",
                     "params": {
-                        "text": "Bitte fülle die Lücken im Text aus.",
-                        "questions": [f"<p>{formatted_blanks_text}</p>"],
+                        "text": "Bitte fülle die Lücken im Text aus. Klicke auf 💡 für einen Tipp.",
+                        "questions": [f"<p>{blanks_with_hints}</p>"],
                         "overallFeedback": overall_fb,
                         "title": task_title,
-                        "behaviour": {"enableRetry": True, "enableSolutionsButton": True, "enableCheckButton": True, "autoCheck": False, "caseSensitive": False, "showSolutionsRequiresInput": True}
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "enableCheckButton": True, "autoCheck": False, "caseSensitive": False, "showSolutionsRequiresInput": True}
                     }
                 })
 
@@ -430,14 +440,14 @@ class H5PGenerator:
                 },
                 "behaviour": {
                     "enableBackwardsNavigation": True,
-                    "forceContentFinished": False,
+                    "forceContentFinished": True,
                     "randomizeBranchingQuestions": False
                 },
                 "l10n": {
                     "startScreenButtonText": "Jetzt Starten",
                     "endScreenButtonText": "Neu starten",
                     "backButtonText": "Zurück",
-                    "disableProceedButtonText": "Nötig, um das aktuelle Modul abzuschließen"
+                    "disableProceedButtonText": "Löse zuerst alle Aufgaben richtig, um fortzufahren"
                 }
             }
         }
@@ -488,7 +498,7 @@ class H5PGenerator:
                 },
                 "showContentTitle": False,
                 "proceedButtonText": "Weiter",
-                "forceContentFinished": True if "CoursePresentation" in library_str else "useBehavioural",
+                "forceContentFinished": "enabled",
                 "feedback": {"title": "", "subtitle": ""},
                 "contentBehaviour": "useBehavioural"
             }
@@ -938,7 +948,7 @@ class H5PGenerator:
                             "answers": first_q.get("answers"),
                             "overallFeedback": overall_fb,
                             "behaviour": {
-                                "enableRetry": True, "enableSolutionsButton": True, "singleAnswer": True, 
+                                "enableRetry": True, "enableSolutionsButton": False, "singleAnswer": True, 
                                 "singlePoint": True, "randomAnswers": False, "showSolutionsRequiresInput": True, 
                                 "confirmCheckDialog": False, "confirmRetryDialog": False, "autoCheck": False, 
                                 "passPercentage": 80, "type": "auto"
@@ -985,7 +995,7 @@ class H5PGenerator:
                             "overallFeedback": overall_fb,
                             "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen", 
                             "score": "Du hast @score von @total Lücken richtig ausgefüllt.", "scoreBarLabel": "Punkte",
-                            "behaviour": {"enableRetry": True, "enableSolutionsButton": True, "instantFeedback": False, "enableCheckButton": True}
+                            "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "instantFeedback": False, "enableCheckButton": True}
                         }
                     })
 
@@ -1000,13 +1010,13 @@ class H5PGenerator:
                         "params": {
                             "question": first_tf.get("question"),
                             "correct": "true" if first_tf.get("correct") else "false",
-                            "feedback": f"💬 {task_exp}" if task_exp else "",
+                            "feedback": f"💡 Tipp: {task_hint}" if task_hint else "Lies dir die Aussage noch einmal aufmerksam durch!",
                             "l10n": {
                                 "trueText": "Wahr", "falseText": "Falsch", "score": "Punkte", "checkAnswer": "Prüfen", 
                                 "showSolutionButton": "Lösung", "tryAgain": "Wiederholen", "wrongAnswer": "Falsche Antwort", 
                                 "correctAnswer": "Richtige Antwort", "feedback": "Du hast @score von @total Punkten erreicht."
                             },
-                            "behaviour": {"enableRetry": True, "enableSolutionsButton": True, "enableCheckButton": True, "confirmCheckDialog": False, "confirmRetryDialog": False, "autoCheck": False},
+                            "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "enableCheckButton": True, "confirmCheckDialog": False, "confirmRetryDialog": False, "autoCheck": False},
                             "confirmCheck": {"header": "Prüfen ?", "body": "Möchtest du prüfen ?", "cancelLabel": "Abbrechen", "confirmLabel": "Prüfen"},
                             "confirmRetry": {"header": "Wiederholen ?", "body": "Möchtest du es noch einmal versuchen ?", "cancelLabel": "Abbrechen", "confirmLabel": "Ja"}
                         }
@@ -1027,7 +1037,7 @@ class H5PGenerator:
                             "scoreBarLabel": "Du hast @score von @total Wörtern richtig markiert.",
                             "behaviour": {
                                 "enableRetry": True,
-                                "enableSolutionsButton": True,
+                                "enableSolutionsButton": False,
                                 "enableCheckButton": True,
                                 "showScorePoints": True
                             }
@@ -1049,7 +1059,7 @@ class H5PGenerator:
                             "answerIsWrong": "\":ans\" ist falsch", "answeredCorrectly": "Richtig beantwortet", 
                             "answeredIncorrectly": "Falsch beantwortet", "solutionLabel": "Richtige Antwort:", 
                             "inputLabel": "Lücke @num von @total", "inputHasTipLabel": "Hinweis verfügbar", "tipLabel": "Hinweis",
-                            "behaviour": {"enableRetry": True, "enableSolutionsButton": True, "enableCheckButton": True, "autoCheck": False, "caseSensitive": False, "showSolutionsRequiresInput": True, "separateLines": False, "confirmCheckDialog": False, "confirmRetryDialog": False},
+                            "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "enableCheckButton": True, "autoCheck": False, "caseSensitive": False, "showSolutionsRequiresInput": True, "separateLines": False, "confirmCheckDialog": False, "confirmRetryDialog": False},
                             "confirmCheck": {"header": "Prüfen ?", "body": "Möchtest du prüfen ?", "cancelLabel": "Abbrechen", "confirmLabel": "Prüfen"},
                             "confirmRetry": {"header": "Wiederholen ?", "body": "Möchtest du es noch einmal versuchen ?", "cancelLabel": "Abbrechen", "confirmLabel": "Ja"}
                         }
@@ -1103,14 +1113,14 @@ class H5PGenerator:
                 },
                 "behaviour": {
                     "enableBackwardsNavigation": False,
-                    "forceContentFinished": False,
+                    "forceContentFinished": True,
                     "randomizeBranchingQuestions": False
                 },
                 "l10n": {
                     "startScreenButtonText": "Jetzt Starten",
                     "endScreenButtonText": "Kurs neu starten",
                     "backButtonText": "Zurück",
-                    "disableProceedButtonText": "Nötig, um das aktuelle Modul abzuschließen",
+                    "disableProceedButtonText": "Löse zuerst alle Aufgaben richtig, um fortzufahren",
                     "replayButtonText": "Video wiederholen",
                     "scoreText": "Deine Punktzahl:",
                     "fullscreenAria": "Vollbild"
@@ -1316,7 +1326,7 @@ class H5PGenerator:
                         "answers": answers,
                         "behaviour": {
                             "enableRetry": True,
-                            "enableSolutionsButton": True,
+                            "enableSolutionsButton": False,
                             "singlePoint": True,
                             "randomAnswers": True,
                             "showSolutionsRequiresInput": True,
@@ -1362,7 +1372,7 @@ class H5PGenerator:
                         },
                         "behaviour": {
                             "enableRetry": True,
-                            "enableSolutionsButton": True,
+                            "enableSolutionsButton": False,
                             "confirmCheckDialog": False,
                             "confirmRetryDialog": False
                         }
@@ -1399,7 +1409,7 @@ class H5PGenerator:
                         "showSolution": "Lösung anzeigen",
                         "behaviour": {
                             "enableRetry": True,
-                            "enableSolutionsButton": True,
+                            "enableSolutionsButton": False,
                             "autoCheck": False,
                             "caseSensitive": False,
                             "showSolutionsRequiresInput": True,

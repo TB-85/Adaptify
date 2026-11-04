@@ -3344,10 +3344,19 @@ function renderSimulator() {
                 </div>
                 
                 <div class="flex-1 flex flex-col justify-center space-y-4 my-auto select-none">
-                    <h5 class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-circle-question ${isLevelA ? 'text-teal-600' : 'text-indigo-600'}"></i>
-                        ${task.title}
-                    </h5>
+                    <div class="flex items-center justify-between">
+                        <h5 class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-question ${isLevelA ? 'text-teal-600' : 'text-indigo-600'}"></i>
+                            ${task.title}
+                        </h5>
+                        <button type="button" onclick="toggleSimTaskHint()" class="text-[11px] font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all shadow-xs cursor-pointer" title="Tipp anzeigen">
+                            <i class="fa-solid fa-lightbulb text-amber-500"></i> Tipp
+                        </button>
+                    </div>
+
+                    <div id="sim-task-hint-box" class="hidden p-3 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium leading-relaxed">
+                        💡 <b>Tipp:</b> <span>${task.hint || 'Lies dir die Aufgabe und die Merkregeln im Merkkasten noch einmal aufmerksam durch!'}</span>
+                    </div>
                     
                     <div class="task-widget bg-slate-50/50 p-4 border border-slate-200 rounded-xl">
                         ${taskWidgetHtml}
@@ -3923,31 +3932,50 @@ window.checkCurrentTask = function() {
     simState.maxScore += taskMax;
     simState.checkedCurrentTask = true;
     
+    const nextBtn = document.getElementById('sim-btn-next');
+    const checkBtn = document.getElementById('sim-btn-check');
+
     if (correct) {
         fbBox.textContent = getRandomSuccessPhrase();
         fbBox.classList.add('bg-emerald-50', 'text-emerald-700');
+        fbBox.classList.remove('bg-rose-50', 'text-rose-700');
         triggerConfetti();
+
+        // Enable Proceed Button
+        nextBtn.disabled = false;
+        nextBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-100', 'text-slate-700');
+        nextBtn.classList.add('bg-brand-600', 'text-white', 'hover:bg-brand-700');
+
+        // Disable Check Button
+        checkBtn.disabled = true;
+        checkBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        checkBtn.innerHTML = 'Überprüft <i class="fa-solid fa-check ml-1"></i>';
     } else {
-        const explanationText = task.explanation ? ` 💬 Erklärung: ${task.explanation}` : "";
-        fbBox.textContent = `${getRandomWrongPhrase()}${explanationText}`;
+        const hintText = task.hint ? `💡 Tipp: ${task.hint}` : "💡 Tipp: Schau noch einmal genau hin und probiere es erneut!";
+        fbBox.textContent = `${getRandomWrongPhrase()} ${hintText}`;
         fbBox.classList.add('bg-rose-50', 'text-rose-700');
+        fbBox.classList.remove('bg-emerald-50', 'text-emerald-700');
+
+        // DO NOT allow skipping on wrong answer!
+        nextBtn.disabled = true;
+        nextBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-100', 'text-slate-700');
+        nextBtn.classList.remove('bg-brand-600', 'text-white', 'hover:bg-brand-700');
+
+        // Keep Check button enabled for retry!
+        checkBtn.disabled = false;
+        checkBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        checkBtn.innerHTML = '<i class="fa-solid fa-rotate-right mr-1"></i> Erneut überprüfen';
+        simState.checkedCurrentTask = false;
     }
     fbBox.classList.remove('hidden');
     
-    // Enable Proceed Button
-    const nextBtn = document.getElementById('sim-btn-next');
-    nextBtn.disabled = false;
-    nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-    nextBtn.classList.add('bg-brand-600', 'text-white', 'hover:bg-brand-700');
-    nextBtn.classList.remove('bg-slate-100', 'text-slate-700');
-    
-    // Disable Check Button
-    const checkBtn = document.getElementById('sim-btn-check');
-    checkBtn.disabled = true;
-    checkBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    
     // Update Indicators
     simScoreIndicator.textContent = `Punkte: ${simState.score}/${simState.maxScore}`;
+};
+
+window.toggleSimTaskHint = function() {
+    const box = document.getElementById('sim-task-hint-box');
+    if (box) box.classList.toggle('hidden');
 };
 
 window.nextTask = function() {
