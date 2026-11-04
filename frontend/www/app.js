@@ -3367,12 +3367,18 @@ function renderSimulator() {
                     <div id="sim-feedback-box" class="hidden p-3 rounded-xl text-xs font-semibold"></div>
                 </div>
                 
-                <div class="flex gap-4 mt-6 border-t pt-4">
+                <div class="flex items-center gap-2 mt-6 border-t pt-4">
+                    <button id="sim-btn-prev" onclick="prevTask()" class="py-2.5 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs shadow-xs" title="Eine Seite zurück">
+                        <i class="fa-solid fa-arrow-left text-[10px]"></i> Zurück
+                    </button>
                     <button id="sim-btn-check" onclick="checkCurrentTask()" class="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md transition-all text-xs">
                         Überprüfen
                     </button>
                     <button id="sim-btn-next" onclick="nextTask()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 opacity-50 cursor-not-allowed text-xs" disabled>
                         Weiter <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </button>
+                    <button id="sim-btn-restart" onclick="restartSimExercise()" class="py-2.5 px-3 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 font-bold rounded-xl transition-all text-xs flex items-center gap-1 shadow-xs" title="Von vorne anfangen">
+                        <i class="fa-solid fa-rotate-left text-[11px]"></i>
                     </button>
                 </div>
             </div>
@@ -3404,9 +3410,14 @@ function renderSimulator() {
                         `).join('')}
                     </div>
                 </div>
-                <button onclick="goToEnd()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm mt-4">
-                    Kurs abschließen <i class="fa-solid fa-check-double"></i>
-                </button>
+                <div class="flex items-center gap-3 mt-4">
+                    <button onclick="prevTask()" class="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all text-xs flex items-center justify-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-arrow-left text-[10px]"></i> Zurück
+                    </button>
+                    <button onclick="goToEnd()" class="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
+                        Kurs abschließen <i class="fa-solid fa-check-double"></i>
+                    </button>
+                </div>
             </div>
         `;
     } else if (step === 'end') {
@@ -3978,6 +3989,38 @@ window.checkCurrentTask = function() {
 window.toggleSimTaskHint = function() {
     const box = document.getElementById('sim-task-hint-box');
     if (box) box.classList.toggle('hidden');
+};
+
+window.prevTask = function() {
+    if (simState.currentStep === 'experts') {
+        simState.currentStep = 'tasks';
+        simState.taskIndex = Math.max(0, simState.tasks.length - 1);
+        simState.checkedCurrentTask = true;
+        renderSimulator();
+        return;
+    }
+    if (simState.taskIndex > 0) {
+        simState.taskIndex--;
+        simState.checkedCurrentTask = true;
+        renderSimulator();
+    } else if (simState.taskIndex === 0) {
+        if (simState.levelRoute !== 'Arbeitsblatt' && currentGeneratedData && currentGeneratedData.diagnostic && currentGeneratedData.diagnostic.questions && currentGeneratedData.diagnostic.questions.length > 0) {
+            simState.currentStep = 'level-intro';
+        } else {
+            simState.currentStep = 'start';
+        }
+        renderSimulator();
+    }
+};
+
+window.restartSimExercise = function() {
+    if (confirm("Möchtest du diese Übung wirklich von vorne anfangen?")) {
+        simState.taskIndex = 0;
+        simState.score = 0;
+        simState.checkedCurrentTask = false;
+        simState.currentStep = 'start';
+        renderSimulator();
+    }
 };
 
 window.nextTask = function() {

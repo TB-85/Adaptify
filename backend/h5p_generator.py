@@ -250,7 +250,7 @@ class H5PGenerator:
             cp_params = {
                 "presentation": {
                     "slides": slides_list,
-                    "keywordListEnabled": True,
+                    "keywordListEnabled": False,
                     "globalBackgroundSelector": {
                         "fillGlobalBackground": ""
                     },
@@ -265,7 +265,7 @@ class H5PGenerator:
                     "nextSlide": "Nächste Folie", "currentSlide": "Aktuelle Folie", "lastSlide": "Letzte Folie"
                 },
                 "override": {
-                    "activeSurface": False, "hideSummarySlide": False, "showSolutionButton": "off", "retryButton": "on"
+                    "activeSurface": False, "hideSummarySlide": True, "showSolutionButton": "off", "retryButton": "on"
                 }
             }
             node = make_node("H5P.CoursePresentation 1.25", cp_params, "Course Presentation", title_str, next_content_id)
@@ -421,13 +421,17 @@ class H5PGenerator:
 
         zusatzaufgaben = data.get("zusatzaufgaben", [])
         has_experts = len(zusatzaufgaben) > 0
-        direct_expert_id = (offset + 1) if has_experts else -1
+        direct_expert_id = (offset + len(slides_data)) if has_experts else -1
 
-        content_nodes.append(wrap_in_cp(
-            slides_data=slides_data,
-            title_str=title,
-            next_content_id=direct_expert_id
-        ))
+        for s_idx, slide in enumerate(slides_data):
+            is_last = (s_idx == len(slides_data) - 1)
+            next_id = direct_expert_id if is_last else (offset + s_idx + 1)
+            slide_title = slide.get("title", f"Aufgabe {s_idx + 1}")
+            content_nodes.append(wrap_in_cp(
+                slides_data=[slide],
+                title_str=slide_title,
+                next_content_id=next_id
+            ))
 
         if has_experts:
             expert_slides = []
@@ -474,9 +478,9 @@ class H5PGenerator:
                 },
                 "l10n": {
                     "startScreenButtonText": "Jetzt Starten",
-                    "endScreenButtonText": "Neu starten",
+                    "endScreenButtonText": "Von vorne anfangen",
                     "backButtonText": "Zurück",
-                    "disableProceedButtonText": "Löse zuerst alle Aufgaben richtig, um fortzufahren"
+                    "disableProceedButtonText": "Löse zuerst diese Aufgabe richtig, um fortzufahren"
                 }
             }
         }
@@ -567,7 +571,7 @@ class H5PGenerator:
             cp_params = {
                 "presentation": {
                     "slides": slides_list,
-                    "keywordListEnabled": True,
+                    "keywordListEnabled": False,
                     "globalBackgroundSelector": {
                         "fillGlobalBackground": ""
                     },
@@ -628,7 +632,7 @@ class H5PGenerator:
                 },
                 "override": {
                     "activeSurface": False,
-                    "hideSummarySlide": False,
+                    "hideSummarySlide": True,
                     "showSolutionButton": "",
                     "retryButton": "",
                     "summarySlideSolutionButton": True,
@@ -1141,15 +1145,15 @@ class H5PGenerator:
                     "startScreenSubtitle": "Beantworte zuerst die Einstiegsfragen."
                 },
                 "behaviour": {
-                    "enableBackwardsNavigation": False,
+                    "enableBackwardsNavigation": True,
                     "forceContentFinished": True,
                     "randomizeBranchingQuestions": False
                 },
                 "l10n": {
                     "startScreenButtonText": "Jetzt Starten",
-                    "endScreenButtonText": "Kurs neu starten",
+                    "endScreenButtonText": "Von vorne anfangen",
                     "backButtonText": "Zurück",
-                    "disableProceedButtonText": "Löse zuerst alle Aufgaben richtig, um fortzufahren",
+                    "disableProceedButtonText": "Löse zuerst diese Aufgabe richtig, um fortzufahren",
                     "replayButtonText": "Video wiederholen",
                     "scoreText": "Deine Punktzahl:",
                     "fullscreenAria": "Vollbild"
