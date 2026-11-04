@@ -366,10 +366,17 @@ class H5PGenerator:
 
             if task_format == "Multiple Choice":
                 mc_questions = H5PGenerator.parse_multiple_choice_text(raw_text, task_title)
-                first_q = mc_questions[0] if mc_questions else {
-                    "question": f"<p>{task_title}</p>\n",
-                    "answers": [{"text": "Option 1", "correct": True, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}}]
-                }
+                if not mc_questions and "*" in raw_text:
+                    # Auto-heal: If raw_text contains blanks with asterisks, treat as Lückentext
+                    task_format = "Lückentext"
+                else:
+                    first_q = mc_questions[0] if mc_questions else {
+                        "question": f"<p>{raw_text.strip() if raw_text.strip() and not raw_text.startswith('[') else task_title}</p>\n",
+                        "answers": [
+                            {"text": "Trifft zu / Richtig", "correct": True, "tipsAndFeedback": {"tip": "", "chosenFeedback": "Sehr gut gelöst!", "notChosenFeedback": ""}},
+                            {"text": "Trifft nicht zu / Falsch", "correct": False, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}}
+                        ]
+                    }
                 hint_to_use = task_hint if task_hint else "Achte auf die Merkmale im Merkkasten!"
                 if first_q.get("answers"):
                     for ans in first_q["answers"]:
@@ -1015,10 +1022,17 @@ class H5PGenerator:
 
                 if task_format == "Multiple Choice":
                     mc_questions = H5PGenerator.parse_multiple_choice_text(raw_text, task_title)
-                    first_q = mc_questions[0] if mc_questions else {
-                        "question": f"<p>{task_title} Frage</p>\n",
-                        "answers": [{"text": "Option 1", "correct": True, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}}]
-                    }
+                    if not mc_questions and "*" in raw_text:
+                        # Auto-heal: If raw_text contains blanks with asterisks, treat as Lückentext
+                        task_format = "Lückentext"
+                    else:
+                        first_q = mc_questions[0] if mc_questions else {
+                            "question": f"<p>{raw_text.strip() if raw_text.strip() and not raw_text.startswith('[') else task_title}</p>\n",
+                            "answers": [
+                                {"text": "Trifft zu / Richtig", "correct": True, "tipsAndFeedback": {"tip": "", "chosenFeedback": "Sehr gut gelöst!", "notChosenFeedback": ""}},
+                                {"text": "Trifft nicht zu / Falsch", "correct": False, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}}
+                            ]
+                        }
                     if task_exp and first_q.get("answers"):
                         for ans in first_q["answers"]:
                             if not ans.get("correct"):

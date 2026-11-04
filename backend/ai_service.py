@@ -500,6 +500,17 @@ Zusätzlicher Kontext (Klasse/Thema/Zeitvorgabe): {context}
 Gewünschtes Standard-Aufgabenformat: {target_format}
 Anzahl der zu generierenden Aufgaben pro Niveau: {task_count}
 
+STRIKTE VORGABE FÜR DEN SCHWERPUNKT 'TEXTVERSTÄNDNIS' / 'LESEVERSTEHEN' / 'READING':
+- Wenn ein Schwerpunkt 'Textverständnis', 'Leseverstehen', 'Reading' oder 'Sachtext' lautet:
+  -> Nimm den extrahierten Text (bzw. Basistext) ganz genau als Grundlage!
+  -> Generiere ECHTE INHALTLICHE VERSTÄNDNISFRAGEN zum Sinn, zu Details, Fakten, Zahlen, Ursachen und Folgen des Textes (z. B. 'Warum...?', 'Welche zwei Ursachen...?', 'Wo...?', 'Welche Folge hat...?').
+  -> Erstelle NIEMALS Grammatik-Aufgaben (wie Simple Past, Wortarten, Verben), wenn Textverständnis / Reading verlangt wird!
+  -> Multiple Choice Fragen MÜSSEN ZWINGEND so aufgebaut sein:
+     Frage: [Konkrete inhaltliche Textfrage mit Fragezeichen]
+     [X] [Die richtige inhaltliche Aussage zum Text]
+     [ ] [Plausibler Distraktor / falsche Aussage zum Text]
+     [ ] [Zweiter plausibler Distraktor]
+
 Generiere genau folgendes JSON-Schema:
 {{
   "title": "Prägnanter Titel der Übung/des Themas für Schüler ZWINGEND OHNE Schulart und OHNE Fach (z. B. '{focus_topic if focus_topic else 'Wortarten und ihre Verwendung'}') - nur das reine Thema!",
@@ -747,6 +758,7 @@ Generiere genau dieses JSON:
         """Returns beautiful default mock data in case API key is missing or fails."""
         topic_str = focus_topic if focus_topic else ("Textverständnis, Fremdwörter, Wortarten" if subject == "Deutsch" else ("Bruchrechnen" if subject == "Mathematik" else "Simple Past"))
         heft_str = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else "Fremdwörter")
+        lower_heft = (heft_str or "").lower()
         
         # Clean topic_str from raw count numbers for a professional document title
         import re
@@ -778,19 +790,143 @@ Generiere genau dieses JSON:
         for i in range(actual_count):
             fmt = formats_pool[i % len(formats_pool)] if target_format == "KI-Mix" else target_format
             t_focus = topics_list[i % len(topics_list)]
+            lower_focus = (t_focus or "").lower()
+            is_reading_focus = any(w in lower_focus for w in [
+                "textverst", "leseverst", "reading", "comprehension", "sachtext",
+                "inhalt", "fragen zum text", "information", "fakten"
+            ])
             
             is_last = (i == task_count - 1)
             b_title = f"Transfer & Anwendung - {t_focus}" if is_last else f"Fordern - {t_focus} (Aufgabe {i+1})"
             
-            tasks_c.append({
-                "title": f"Inklusion/DaZ - {t_focus} (Aufgabe {i+1})",
-                "text": f"Leichte Sprache ({subject}):\nDas Wort *Hund* ist ein *Nomen*.\nDas Wort *läuft* ist ein *Verb*.",
-                "format": "Drag the Words",
-                "hint": "💡 Sprachhilfe: Verben beschreiben Handlungen (Was tut jemand?).",
-                "explanation": "Sehr einfache Sprache unterstützt das Sprachverständnis."
-            })
+            # Level C (Inklusion & DaZ)
+            if is_reading_focus:
+                if subject == "Englisch":
+                    tasks_c.append({
+                        "title": f"Inklusion/DaZ - {t_focus} (Aufgabe {i+1})",
+                        "text": "Easy English:\nThe Great Barrier Reef is in *Australia*.\nMany colorful animals live in the *ocean*.",
+                        "format": "Drag the Words",
+                        "hint": "💡 Language Support: Australia is a country surrounded by water.",
+                        "explanation": "Simple language supports basic reading comprehension."
+                    })
+                else:
+                    tasks_c.append({
+                        "title": f"Inklusion/DaZ - {t_focus} (Aufgabe {i+1})",
+                        "text": f"Leichte Sprache ({subject}):\nDer Text gibt wichtige *Informationen*.\nWir lesen den Text *genau*.",
+                        "format": "Drag the Words",
+                        "hint": "💡 Sprachhilfe: Konzentriere dich auf die Schlüsselbegriffe im Text.",
+                        "explanation": "Sehr einfache Sprache unterstützt das Textverständnis."
+                    })
+            else:
+                tasks_c.append({
+                    "title": f"Inklusion/DaZ - {t_focus} (Aufgabe {i+1})",
+                    "text": f"Leichte Sprache ({subject}):\nDas Wort *Hund* ist ein *Nomen*.\nDas Wort *läuft* ist ein *Verb*.",
+                    "format": "Drag the Words",
+                    "hint": "💡 Sprachhilfe: Verben beschreiben Handlungen (Was tut jemand?).",
+                    "explanation": "Sehr einfache Sprache unterstützt das Sprachverständnis."
+                })
 
-            if subject == "Mathematik":
+            # Reading Comprehension Task Generation for all formats
+            if is_reading_focus:
+                if subject == "Englisch":
+                    is_reef = "reef" in lower_heft or "barrier" in lower_heft or "australi" in lower_heft
+                    if fmt == "Multiple Choice":
+                        a_text = (
+                            "Frage: Where is the Great Barrier Reef located according to the text?\n"
+                            "[X] Off the northeast coast of Australia\n"
+                            "[ ] In the Mediterranean Sea near Europe\n"
+                            "[ ] In the North Sea"
+                            if is_reef else
+                            f"Frage: What is the main subject described in the text?\n"
+                            f"[X] Important factual information and background regarding {clean_title_topic}\n"
+                            f"[ ] An invented fairy tale with mythical creatures\n"
+                            f"[ ] An advertisement for commercial products"
+                        )
+                        b_text = (
+                            "Frage: What serious consequence does coral bleaching have according to the text?\n"
+                            "[X] Corals lose their vital algae and can die, which severely endangers marine life\n"
+                            "[ ] The ocean water immediately turns completely sweet\n"
+                            "[ ] It makes corals grow ten times faster"
+                            if is_reef else
+                            f"Frage: Which deeper connection is highlighted regarding '{t_focus}'?\n"
+                            f"[X] The direct cause-and-effect relationship between factors described in the text\n"
+                            f"[ ] That all mentioned events happened purely by coincidence\n"
+                            f"[ ] That there is no scientific evidence for the facts"
+                        )
+                    elif fmt == "Wahr/Falsch":
+                        a_text = (
+                            "Aussage: According to the text, rising ocean temperatures are a major threat to the corals.\nAntwort: Wahr"
+                            if is_reef else
+                            f"Aussage: The text provides factual evidence regarding '{t_focus}'.\nAntwort: Wahr"
+                        )
+                        b_text = (
+                            "Aussage: Both global climate change and local pollution threaten delicate marine ecosystems.\nAntwort: Wahr"
+                            if is_reef else
+                            f"Aussage: The text emphasizes that identifying causes is crucial for understanding {clean_title_topic}.\nAntwort: Wahr"
+                        )
+                    else: # Lückentext or Drag the Words
+                        a_text = (
+                            "The Great Barrier Reef is located in *Australia*. It is famous for its rich marine *biodiversity*. Scientists warn that warming water *temperatures* harm the fragile *corals*."
+                            if is_reef else
+                            f"When reading an informational text about *{clean_title_topic}*, focusing on *key facts* is essential. The text explains important *causes* and *consequences*."
+                        )
+                        b_text = (
+                            "Due to global *warming*, corals lose their microscopic *algae*. This process is called *bleaching* and threatens ocean *ecosystems* worldwide."
+                            if is_reef else
+                            f"Analyzing *complex* texts requires connecting factual *evidence* with broader *consequences*."
+                        )
+                    
+                    tasks_a.append({
+                        "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
+                        "text": a_text,
+                        "format": fmt,
+                        "hint": "💡 Tipp: Schau noch einmal in den ersten Abschnitt des Textes.",
+                        "explanation": "Diese Kernaussage wird direkt im Basistext beschrieben."
+                    })
+                    tasks_b.append({
+                        "title": b_title,
+                        "text": b_text,
+                        "format": fmt,
+                        "hint": "💡 Tipp: Achte genau auf Ursache und Wirkung im Text.",
+                        "explanation": "Dieser Zusammenhang ist eine zentrale Schlussfolgerung des Textes."
+                    })
+                else:
+                    # Deutsch Reading Comprehension
+                    if fmt == "Multiple Choice":
+                        a_text = (
+                            f"Frage: Worüber informiert der Text zum Thema '{t_focus}' hauptsächlich?\n"
+                            f"[X] Über die wesentlichen Fakten, Ursachen und Zusammenhänge zu {clean_title_topic}\n"
+                            f"[ ] Über ein frei erfundenes Zaubermärchen\n"
+                            f"[ ] Über ein geheimes Kochrezept"
+                        )
+                        b_text = (
+                            f"Frage: Welche Schlussfolgerung lässt sich aus den Ursachen und Folgen im Text ziehen?\n"
+                            f"[X] Die Zusammenhänge erfordern gezielte Maßnahmen und ein genaues Verständnis der Ursachen\n"
+                            f"[ ] Der Text zeigt, dass keinerlei Handlungsbedarf besteht\n"
+                            f"[ ] Der Autor widerspricht allen wissenschaftlichen Erkenntnissen"
+                        )
+                    elif fmt == "Wahr/Falsch":
+                        a_text = f"Aussage: Der Text liefert konkrete Fakten und Hintergründe zum Thema '{t_focus}'.\nAntwort: Wahr"
+                        b_text = f"Aussage: Der Text verdeutlicht, dass Ursachen und Wirkungen eng miteinander verknüpft sind.\nAntwort: Wahr"
+                    else:
+                        a_text = f"Beim genauen Lesen eines Sachtextes sind die *Kernaussagen* und *Fachbegriffe* entscheidend. Der Text informiert über wichtige *Zusammenhänge* zu {clean_title_topic}."
+                        b_text = f"Eine vertiefte Textanalyse verknüpft *Ursachen* und *Wirkungen*. Nur wer Zusammenhänge *hinterfragt*, versteht den vollen *Sinn* des Themas."
+
+                    tasks_a.append({
+                        "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
+                        "text": a_text,
+                        "format": fmt,
+                        "hint": "💡 Tipp: Überfliege den Text und achte auf die Zwischenüberschriften.",
+                        "explanation": "Die Kernaussagen fassen den Informationstext treffend zusammen."
+                    })
+                    tasks_b.append({
+                        "title": b_title,
+                        "text": b_text,
+                        "format": fmt,
+                        "hint": "💡 Tipp: Verknüpfe die im Text genannten Fakten mit den Folgen.",
+                        "explanation": "Diese vertiefte Synthese sichert ein nachhaltiges Textverständnis."
+                    })
+            elif subject == "Mathematik":
                 tasks_a.append({
                     "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
                     "text": "Anna isst 2 von 8 Teilen. Das ist der Bruch *2/8* (zwei Achtel).\nDer verbleibende Rest ist *3/8* (drei Achtel).",
