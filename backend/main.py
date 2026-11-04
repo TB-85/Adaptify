@@ -126,7 +126,8 @@ async def generate_task(
     promo_code: Optional[str] = Form(None),
     youtube_url: Optional[str] = Form(None),
     video_mode: Optional[str] = Form("branching"),
-    video_duration: Optional[int] = Form(None)
+    video_duration: Optional[int] = Form(None),
+    differentiation_mode: Optional[str] = Form("differentiated")
 ):
     """
     Receives an uploaded book page scan (image or PDF) and generates
@@ -227,7 +228,8 @@ async def generate_task(
                 school_type=school_type,
                 focus_topic=focus_topic,
                 hefteintrag_topic=hefteintrag_topic,
-                api_key=effective_api_key
+                api_key=effective_api_key,
+                differentiation_mode=differentiation_mode
             )
         
         if youtube_url and youtube_url.strip():

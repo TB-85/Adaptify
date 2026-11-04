@@ -439,7 +439,13 @@
             
             simState.diagnosticAnswers = [];
             
-            if (forcedRoute) {
+            if (sessionData.is_direct_worksheet || !sessionData.diagnostic || !sessionData.diagnostic.questions || sessionData.diagnostic.questions.length === 0) {
+                simState.levelRoute = 'Arbeitsblatt';
+                simState.tasks = (sessionData.level_a && sessionData.level_a.tasks && sessionData.level_a.tasks.length > 0) 
+                    ? sessionData.level_a.tasks 
+                    : (sessionData.tasks || []);
+                simState.currentStep = 'tasks';
+            } else if (forcedRoute) {
                 simState.levelRoute = forcedRoute;
                 simState.tasks = (forcedRoute === 'B') ? (sessionData.level_b.tasks || []) : (sessionData.level_a.tasks || []);
                 simState.currentStep = 'level-intro'; // Skip diagnostic, show level intro
@@ -602,7 +608,10 @@
                 `;
             } else if (step === 'tasks') {
                 const task = simState.tasks[simState.taskIndex];
+                const isDirect = (simState.levelRoute === 'Arbeitsblatt');
                 const isLevelA = (simState.levelRoute === 'A');
+                const badgeLabel = isDirect ? '📑 Digitales Arbeitsblatt' : (isLevelA ? 'Level A – Grundlagen' : 'Level B – Vertiefung');
+                const badgeColor = isDirect ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' : (isLevelA ? 'text-teal-600 bg-teal-50 border border-teal-200' : 'text-indigo-600 bg-indigo-50 border border-indigo-200');
                 const cleanTaskText = (task.title + '. ' + (task.text || '')).replace(/'/g, "\\'");
                 
                 let taskWidgetHtml = '';
@@ -623,8 +632,8 @@
                 frame.innerHTML = `
                     <div class="flex-1 flex flex-col justify-between p-6 bg-white min-h-[440px]">
                         <div class="flex items-center justify-between border-b pb-3 mb-4">
-                            <span class="text-[10px] font-bold ${isLevelA ? 'text-teal-600 bg-teal-50 border border-teal-200' : 'text-indigo-600 bg-indigo-50 border border-indigo-200'} px-2.5 py-1 rounded-full uppercase tracking-wider">
-                                ${isLevelA ? 'Level A – Grundlagen' : 'Level B – Vertiefung'}
+                            <span class="text-[10px] font-bold ${badgeColor} px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                ${badgeLabel}
                             </span>
                             <div class="flex items-center gap-3">
                                 <button class="text-slate-400 hover:text-brand-600 p-1 flex items-center gap-1 transition-all" onclick="speakText('${cleanTaskText}', this)" title="Aufgabe vorlesen">

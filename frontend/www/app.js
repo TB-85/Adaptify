@@ -665,8 +665,54 @@ let appState = {
     selectedFile: null,
     selectedVideoFile: null,
     branchingSourceMode: 'file', // 'file' or 'prompt'
+    worksheetMode: 'differentiated', // 'differentiated' or 'direct'
     generatedData: null,
     previewDataUrl: null,
+};
+
+window.setWorksheetMode = function(mode) {
+    appState.worksheetMode = mode;
+    const btnDiff = document.getElementById('btn-mode-diff');
+    const btnDirect = document.getElementById('btn-mode-direct');
+    const badge = document.getElementById('worksheet-mode-badge');
+    const desc = document.getElementById('worksheet-mode-desc');
+    const btnGenerate = document.getElementById('btn-generate');
+    
+    if (mode === 'direct') {
+        if (btnDirect) {
+            btnDirect.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all bg-white text-emerald-800 shadow-sm cursor-pointer flex items-center justify-center gap-1";
+        }
+        if (btnDiff) {
+            btnDiff.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1";
+        }
+        if (badge) {
+            badge.textContent = "1:1 Digitalisiert";
+            badge.className = "text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800";
+        }
+        if (desc) {
+            desc.textContent = "Jede Originalaufgabe auf dem Arbeitsblatt wird exakt 1:1 als interaktive H5P-Aufgabe umgesetzt – ohne künstliche Verzweigungen.";
+        }
+        if (btnGenerate) {
+            btnGenerate.innerHTML = `<i class="fa-solid fa-file-circle-check"></i> <span>Arbeitsblatt 1:1 digitalisieren &rarr;</span>`;
+        }
+    } else {
+        if (btnDiff) {
+            btnDiff.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all bg-white text-slate-900 shadow-sm cursor-pointer flex items-center justify-center gap-1";
+        }
+        if (btnDirect) {
+            btnDirect.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1";
+        }
+        if (badge) {
+            badge.textContent = "Binnendifferenziert";
+            badge.className = "text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-brand-100 text-brand-800";
+        }
+        if (desc) {
+            desc.textContent = "Binnendifferenzierung: Fördern (Level A), Fordern (Level B), Inklusion (Level C) mit vorgeschaltetem Diagnose-Quiz.";
+        }
+        if (btnGenerate) {
+            btnGenerate.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> <span>Differenzierte Lernpfade erstellen &rarr;</span>`;
+        }
+    }
 };
 
 function switchBranchingSourceMode(mode) {
@@ -2123,6 +2169,7 @@ btnSubmit.addEventListener('click', async (e) => {
         formData.append('task_count', (typeof inputTaskCount !== 'undefined' && inputTaskCount) ? inputTaskCount.value : 5);
         formData.append('youtube_url', '');
         formData.append('video_mode', 'branching');
+        formData.append('differentiation_mode', appState.worksheetMode || 'differentiated');
     }
     formData.append('api_key', apiKeyVal);
     formData.append('promo_code', promoCodeVal);
@@ -4281,10 +4328,13 @@ function renderScoreboardBody() {
     const isAnonymized = anonymizeCheckbox ? anonymizeCheckbox.checked : false;
     
     tbody.innerHTML = results.map((r, idx) => {
+        const isDirect = (r.level_reached === 'Direct' || r.level_reached === 'Arbeitsblatt' || r.level_reached === '1:1');
         const isB = (r.level_reached === 'B');
-        const pathBadge = isB 
-            ? `<span class="px-1.5 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-full">Level B</span>`
-            : `<span class="px-1.5 py-0.5 bg-teal-50 border border-teal-200 text-teal-700 font-bold rounded-full">Level A</span>`;
+        const pathBadge = isDirect 
+            ? `<span class="px-1.5 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold rounded-full">Arbeitsblatt</span>`
+            : (isB 
+                ? `<span class="px-1.5 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-full">Level B</span>`
+                : `<span class="px-1.5 py-0.5 bg-teal-50 border border-teal-200 text-teal-700 font-bold rounded-full">Level A</span>`);
             
         const displayName = isAnonymized ? getAnonymizedName(r.student_name) : r.student_name;
         

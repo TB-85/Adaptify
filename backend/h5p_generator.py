@@ -124,7 +124,303 @@ class H5PGenerator:
         return re.sub(r"\*([^*]+)\*", repl, text)
 
     @staticmethod
+    def create_direct_worksheet_content_json(data):
+        title = data.get("title", "Digitalisiertes Arbeitsblatt")
+        target_format = data.get("target_format", "Lückentext")
+        level_a = data.get("level_a", {})
+        level_b = data.get("level_b", {})
+        tasks = level_a.get("tasks", []) or level_b.get("tasks", []) or data.get("tasks", [])
+        if not tasks:
+            tasks = [{"title": title, "text": data.get("extracted_text", ""), "format": target_format}]
+
+        content_nodes = []
+        yt_url = data.get('youtube_url')
+        video_filename = data.get('video_filename')
+        offset = 1 if (yt_url or video_filename) else 0
+
+        def make_node(library_str, params_dict, content_type_title, title_str, next_content_id=None):
+            node = {
+                "contentId": len(content_nodes),
+                "type": {
+                    "library": library_str,
+                    "params": params_dict,
+                    "subContentId": str(uuid.uuid4()),
+                    "metadata": {
+                        "contentType": content_type_title,
+                        "license": "U",
+                        "title": title_str
+                    }
+                },
+                "showContentTitle": False,
+                "proceedButtonText": "Weiter",
+                "forceContentFinished": True if "CoursePresentation" in library_str else "useBehavioural",
+                "feedback": {"title": "", "subtitle": ""},
+                "contentBehaviour": "useBehavioural"
+            }
+            if next_content_id is not None:
+                node["nextContentId"] = next_content_id
+            return node
+
+        def wrap_in_cp(slides_data, title_str, next_content_id=None):
+            slides_list = []
+            for slide in slides_data:
+                slides_list.append({
+                    "elements": [
+                        {
+                            "x": 3.125,
+                            "y": 6.172,
+                            "width": 93.75,
+                            "height": 87.65,
+                            "action": {
+                                "library": slide["library"],
+                                "params": slide["params"],
+                                "subContentId": str(uuid.uuid4()),
+                                "metadata": {
+                                    "contentType": "Text",
+                                    "license": "U",
+                                    "title": slide.get("title", "Aufgabe")
+                                }
+                            },
+                            "alwaysDisplayComments": False,
+                            "backgroundOpacity": 0,
+                            "displayAsButton": False,
+                            "invisible": False,
+                            "solution": ""
+                        }
+                    ]
+                })
+            
+            cp_params = {
+                "presentation": {
+                    "slides": slides_list,
+                    "keywordListEnabled": True,
+                    "globalBackgroundSelector": {
+                        "fillGlobalBackground": ""
+                    },
+                    "keywordListAlwaysShow": False,
+                    "keywordListAutoHide": False,
+                    "keywordListOpacity": 90
+                },
+                "l10n": {
+                    "slide": "Folie", "score": "Punktzahl", "yourScore": "Deine Punktzahl",
+                    "maxScore": "Maximale Punktzahl", "total": "Summe", "totalScore": "Gesamtpunktzahl",
+                    "showSolutions": "Lösungen anzeigen", "retry": "Wiederholen", "prevSlide": "Vorherige Folie",
+                    "nextSlide": "Nächste Folie", "currentSlide": "Aktuelle Folie", "lastSlide": "Letzte Folie"
+                },
+                "override": {
+                    "activeSurface": False, "hideSummarySlide": False, "showSolutionButton": "", "retryButton": ""
+                }
+            }
+            node = make_node("H5P.CoursePresentation 1.25", cp_params, "Course Presentation", title_str, next_content_id)
+            node["feedback"] = {"title": "", "subtitle": ""}
+            return node
+
+        # 0. Optional Video Node
+        if yt_url or video_filename:
+            source = {"path": yt_url, "mime": "video/YouTube"} if yt_url else {"path": f"videos/{video_filename}", "mime": "video/mp4"}
+            video_node = make_node(
+                "H5P.CoursePresentation 1.25",
+                {
+                    "presentation": {
+                        "slides": [{
+                            "elements": [{
+                                "x": 10, "y": 10, "width": 80, "height": 80,
+                                "action": {
+                                    "library": "H5P.Video 1.5",
+                                    "params": {
+                                        "sources": [source],
+                                        "visuals": {"fit": False, "controls": True},
+                                        "playback": {"autoplay": False, "loop": False}
+                                    },
+                                    "subContentId": "yt-video",
+                                    "metadata": {"contentType": "Video", "license": "U", "title": "Einstiegsvideo"}
+                                },
+                                "alwaysDisplayComments": False, "backgroundOpacity": 0, "displayAsButton": False, "invisible": False, "solution": ""
+                            }]
+                        }],
+                        "keywordListEnabled": False,
+                        "keywordListAlwaysShow": False,
+                        "keywordListAutoHide": False,
+                        "keywordListOpacity": 90
+                    },
+                    "override": {"activeSurface": False, "hideSummarySlide": True}
+                },
+                "Video", "Einstiegsvideo", 1
+            )
+            content_nodes.append(video_node)
+
+        # Build Task Slides
+        slides_data = []
+        hefteintrag = data.get("hefteintrag", {})
+        notes = hefteintrag.get("summary") or hefteintrag.get("level_a_notes")
+        if notes and notes.strip():
+            formatted_notes = notes.replace("\n", "<br/>")
+            slides_data.append({
+                "library": "H5P.AdvancedText 1.1",
+                "params": {
+                    "text": f"<h3 style='color:#0f766e; margin-top:0;'>📌 Zusammenfassung / Merkkasten</h3><div style='background-color:#fef3c7; border-left:4px solid #f59e0b; padding:12px 14px; border-radius:8px; font-size:14px; line-height:1.6; color:#78350f;'>{formatted_notes}</div>"
+                },
+                "title": "📌 Zusammenfassung / Merkkasten"
+            })
+
+        for task in tasks:
+            task_format = task.get("format", target_format)
+            raw_text = task.get("text", "")
+            task_title = task.get("title", "Aufgabe")
+            task_hint = task.get("hint", "").strip()
+            task_exp = task.get("explanation", "").strip()
+
+            formatted_blanks_text = raw_text
+            if task_hint:
+                formatted_blanks_text = re.sub(r'\*([^\*:]+)\*', r'*\1:' + task_hint.replace(':', ' ') + r'*', raw_text)
+
+            overall_fb = [
+                {"from": 0, "to": 99, "feedback": f"💬 Hinweis / Erklärung: {task_exp}" if task_exp else "Überprüfe deine Antworten noch einmal."},
+                {"from": 100, "to": 100, "feedback": "🎉 Hervorragend! Du hast diese Aufgabe richtig gelöst."}
+            ]
+
+            if task_format == "Multiple Choice":
+                mc_questions = H5PGenerator.parse_multiple_choice_text(raw_text)
+                first_q = mc_questions[0] if mc_questions else {
+                    "question": f"<p>{task_title}</p>\n",
+                    "answers": [{"text": "Option 1", "correct": True, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}}]
+                }
+                if task_exp and first_q.get("answers"):
+                    for ans in first_q["answers"]:
+                        if not ans.get("correct"):
+                            ans["tipsAndFeedback"]["chosenFeedback"] = f"💬 {task_exp}"
+                slides_data.append({
+                    "title": task_title,
+                    "library": "H5P.MultiChoice 1.16",
+                    "params": {
+                        "question": first_q.get("question"),
+                        "answers": first_q.get("answers"),
+                        "overallFeedback": overall_fb,
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": True, "singleAnswer": True, "singlePoint": True, "randomAnswers": False, "showSolutionsRequiresInput": True, "autoCheck": False, "passPercentage": 80, "type": "auto"},
+                        "UI": {"checkAnswerButton": "Prüfen", "submitAnswerButton": "Absenden", "tryAgainButton": "Wiederholen", "showSolutionButton": "Lösung anzeigen", "correctText": "Richtig!", "almostText": "Fast!", "wrongText": "Falsch", "feedback": "Du hast @score von @total Punkten erreicht"}
+                    }
+                })
+            elif task_format == "Drag the Words":
+                drag_text_field = H5PGenerator.clean_slashes_for_drag_text(formatted_blanks_text)
+                slides_data.append({
+                    "title": task_title,
+                    "library": "H5P.DragText 1.10",
+                    "params": {
+                        "taskDescription": "Ziehe die passenden Wörter in die Lücken.",
+                        "textField": drag_text_field,
+                        "overallFeedback": overall_fb,
+                        "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen",
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": True, "instantFeedback": False, "enableCheckButton": True}
+                    }
+                })
+            elif task_format == "Wahr/Falsch":
+                tf_statements = H5PGenerator.parse_true_false_text(raw_text)
+                first_tf = tf_statements[0] if tf_statements else {"question": f"<p>{task_title}</p>\n", "correct": True}
+                slides_data.append({
+                    "title": task_title,
+                    "library": "H5P.TrueFalse 1.8",
+                    "params": {
+                        "question": first_tf.get("question"),
+                        "correct": "true" if first_tf.get("correct") else "false",
+                        "feedback": f"💬 {task_exp}" if task_exp else "",
+                        "l10n": {"trueText": "Wahr", "falseText": "Falsch", "score": "Punkte", "checkAnswer": "Prüfen", "showSolutionButton": "Lösung", "tryAgain": "Wiederholen"},
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": True, "enableCheckButton": True}
+                    }
+                })
+            elif task_format == "Vokabelkarten":
+                cards = H5PGenerator.parse_dialogcards_text(raw_text)
+                if cards:
+                    slides_data.append({
+                        "title": task_title,
+                        "library": "H5P.Dialogcards 1.9",
+                        "params": {
+                            "title": task_title, "description": "Präge dir die Begriffe ein.", "dialogs": cards,
+                            "behaviour": {"enableRetry": True, "randomise": False, "scaleTextNotCard": False},
+                            "progressText": "Karte :num von :total", "next": "Weiter", "prev": "Zurück", "check": "Prüfen", "gotIt": "Gewusst", "incorrect": "Falsch", "showAnswer": "Antwort anzeigen"
+                        }
+                    })
+            else: # Lückentext
+                slides_data.append({
+                    "title": task_title,
+                    "library": "H5P.Blanks 1.14",
+                    "params": {
+                        "text": "Bitte fülle die Lücken im Text aus.",
+                        "questions": [f"<p>{formatted_blanks_text}</p>"],
+                        "overallFeedback": overall_fb,
+                        "title": task_title,
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": True, "enableCheckButton": True, "autoCheck": False, "caseSensitive": False, "showSolutionsRequiresInput": True}
+                    }
+                })
+
+        zusatzaufgaben = data.get("zusatzaufgaben", [])
+        has_experts = len(zusatzaufgaben) > 0
+        direct_expert_id = (offset + 1) if has_experts else -1
+
+        content_nodes.append(wrap_in_cp(
+            slides_data=slides_data,
+            title_str=title,
+            next_content_id=direct_expert_id
+        ))
+
+        if has_experts:
+            expert_slides = []
+            for z_idx, z in enumerate(zusatzaufgaben):
+                z_title = z.get("title", f"Experten-Aufgabe {z_idx+1}")
+                z_task = z.get("task", "")
+                expert_slides.append({
+                    "title": z_title,
+                    "library": "H5P.AdvancedText 1.1",
+                    "params": {
+                        "text": f"<div style='background-color:#eff6ff; border-left:4px solid #3b82f6; padding:15px; border-radius:8px;'><h3 style='color:#1d4ed8; margin-top:0;'>🚀 {z_title}</h3><p style='font-size:16px; color:#1e3a8a; line-height:1.6;'>{z_task}</p></div>"
+                    }
+                })
+            content_nodes.append(wrap_in_cp(
+                slides_data=expert_slides,
+                title_str="🚀 Experten-Zone",
+                next_content_id=-1
+            ))
+
+        return {
+            "branchingScenario": {
+                "title": title,
+                "content": content_nodes,
+                "endScreens": [
+                    {
+                        "endScreenTitle": "Fertig!",
+                        "endScreenSubtitle": "Du hast alle Aufgaben des Arbeitsblatts erfolgreich bearbeitet.",
+                        "contentId": -1,
+                        "endScreenScore": 0
+                    }
+                ],
+                "scoringOptionGroup": {
+                    "scoringOption": "no-score",
+                    "includeInteractionsScores": True
+                },
+                "startScreen": {
+                    "startScreenTitle": title,
+                    "startScreenSubtitle": "Bearbeite die Aufgaben des Arbeitsblatts Schritt für Schritt."
+                },
+                "behaviour": {
+                    "enableBackwardsNavigation": True,
+                    "forceContentFinished": False,
+                    "randomizeBranchingQuestions": False
+                },
+                "l10n": {
+                    "startScreenButtonText": "Arbeitsblatt starten",
+                    "endScreenButtonText": "Neu starten",
+                    "backButtonText": "Zurück",
+                    "disableProceedButtonText": "Nötig, um das aktuelle Modul abzuschließen"
+                }
+            }
+        }
+
+    @staticmethod
     def create_content_json(data):
+        questions = data.get("diagnostic", {}).get("questions", [])
+        is_direct_worksheet = bool(data.get("is_direct_worksheet")) or (len(questions) == 0)
+        if is_direct_worksheet:
+            return H5PGenerator.create_direct_worksheet_content_json(data)
+
         title = data.get("title", "Differenzierte Übung")
         target_format = data.get("target_format", "Lückentext")
         questions = data.get("diagnostic", {}).get("questions", [])

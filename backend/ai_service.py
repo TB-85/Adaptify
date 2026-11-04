@@ -352,18 +352,20 @@ class AIService:
         school_type: str = "Grundschule",
         focus_topic: str = "",
         hefteintrag_topic: str = "",
-        api_key: str = None
+        api_key: str = None,
+        differentiation_mode: str = "differentiated"
     ) -> dict:
         """
         Sends the uploaded image/PDF to Gemini and returns structured JSON
         matching the H5P differentiation template with multiple exercise topics,
         separate Hefteintrag topic, subject-specific adaptations, and Zusatzaufgaben.
+        Supports differentiation_mode == 'direct' for 1:1 worksheet transcription.
         """
         # Check SQLite Generation Cache first
         try:
             from database import compute_cache_hash, get_cached_generation, set_cached_generation
             combined_content = b"".join([f.get('content') or b"" for f in files])
-            cache_hash = compute_cache_hash(combined_content, subject, school_type, focus_topic, task_count, target_format, hefteintrag_topic)
+            cache_hash = compute_cache_hash(combined_content, subject, school_type, focus_topic, task_count, target_format, f"{hefteintrag_topic}|{differentiation_mode}")
             cached_res = get_cached_generation(cache_hash)
             if cached_res:
                 return cached_res
@@ -386,7 +388,7 @@ class AIService:
         if not client:
             logger.warning("Gemini Client not initialized (missing GEMINI_API_KEY). Returning high-quality mock data.")
             self._cleanup_gemini_files(client, uploaded_gemini_files, temp_files_to_remove)
-            return self._get_mock_data(context, target_format, task_count, subject=subject, school_type=school_type, focus_topic=focus_topic, hefteintrag_topic=hefteintrag_topic)
+            return self._get_mock_data(context, target_format, task_count, subject=subject, school_type=school_type, focus_topic=focus_topic, hefteintrag_topic=hefteintrag_topic, differentiation_mode=differentiation_mode)
 
         format_instruction = (
             "4. Formuliere die Aufgaben für Level A und Level B. Wähle für das Feld 'format' jedes Tasks das Format, "
@@ -423,24 +425,39 @@ class AIService:
             for f in (files or [])
         )
 
-        role_description = (
-            f"Du bist eine didaktisch herausragende Lehrkraft an einer {school_type} und ein Experte für differenzierten Unterricht nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau für digitalen Content.\n"
-            f"Deine Aufgabe ist es, das hochgeladene Dokument (Buchseite, Arbeitsblatt, PDF) zu lesen (OCR) und darauf basierend ein qualitätsgeprüftes, differenziertes Lernpaket im JSON-Format für die Schulart '{school_type}' zu generieren."
-        ) if has_media else (
-            f"Du bist eine didaktisch herausragende Lehrkraft an einer {school_type} und ein Experte für kompetenzorientierten Unterricht nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau für digitalen Content.\n"
-            f"Die Lehrkraft plant eine komplette, lebensnahe Unterrichtseinheit (z. B. 2x 45 min) und hat kein Buchseiten-Foto hochgeladen, sondern ein Thema/eine Anforderung vorgegeben: '{focus_topic or context}'.\n"
-            f"Deine didaktische Kernaufgabe ist es, im Feld 'extracted_text' ZWINGEND einen packenden, zusammenhängenden, altersgerechten Basistext (ca. 180 bis 300 Wörter) aus dem Schüleralltag ({school_type}) passend zu Fach '{subject}' und Thema '{focus_topic or context}' zu verfassen. "
-            f"Alle nachfolgenden differenzierten Aufgaben (Diagnose, Level A, Level B, Level C, Zusatzaufgaben und Tafelbild) MÜSSEN sich zwingend auf diesen situativen Basistext beziehen!"
-        )
+        if differentiation_mode == "direct":
+            role_description = (
+                f"Du bist eine didaktisch herausragende Lehrkraft an einer {school_type}.\n"
+                f"Deine Kernaufgabe ist die EXAKTE 1:1 DIGITALISIERUNG des hochgeladenen Arbeitsblatts / Dokuments als interaktives H5P-Übungsset.\n"
+                f"Lies jede einzelne Aufgabe (Aufgabe 1, Aufgabe 2, Aufgabe 3...) exakt so wie sie auf dem Arbeitsblatt steht ab und transformiere sie 1:1 in eine digitale interaktive H5P-Aufgabe. "
+                f"Erstelle KEIN künstliches Vorab-Diagnosequiz (diagnostic.questions bleibt eine leere Liste []) und erfinde KEINE alternativen Fördern/Fordern-Zweige (Level A und Level B erhalten identisch genau diese Aufgaben)."
+            )
+            source_instruction = (
+                "1. ARBEITSBLATT 1:1 DIGITALISIERUNG:\n"
+                "   - Erfasse JEDE Aufgabe des Arbeitsblatts getreu mit ihrer Nummerierung, Arbeitsanweisung und ihrem Text.\n"
+                "   - Konvertiere jede Aufgabe direkt in das dafür am besten geeignete H5P-Format ('Lückentext' mit *Lückenwörtern*, 'Drag the Words' mit *Wörtern*, 'Wahr/Falsch' oder 'Multiple Choice').\n"
+                "   - Gib für jede Aufgabe eine verständliche Erklärung ('explanation') und einen ermutigenden Tipp ('hint') an.\n"
+                "   - Das Feld 'diagnostic.questions' MUSS zwingend eine leere Liste [] sein."
+            )
+        else:
+            role_description = (
+                f"Du bist eine didaktisch herausragende Lehrkraft an einer {school_type} und ein Experte für differenzierten Unterricht nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau für digitalen Content.\n"
+                f"Deine Aufgabe ist es, das hochgeladene Dokument (Buchseite, Arbeitsblatt, PDF) zu lesen (OCR) und darauf basierend ein qualitätsgeprüftes, differenziertes Lernpaket im JSON-Format für die Schulart '{school_type}' zu generieren."
+            ) if has_media else (
+                f"Du bist eine didaktisch herausragende Lehrkraft an einer {school_type} und ein Experte für kompetenzorientierten Unterricht nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau für digitalen Content.\n"
+                f"Die Lehrkraft plant eine komplette, lebensnahe Unterrichtseinheit (z. B. 2x 45 min) und hat kein Buchseiten-Foto hochgeladen, sondern ein Thema/eine Anforderung vorgegeben: '{focus_topic or context}'.\n"
+                f"Deine didaktische Kernaufgabe ist es, im Feld 'extracted_text' ZWINGEND einen packenden, zusammenhängenden, altersgerechten Basistext (ca. 180 bis 300 Wörter) aus dem Schüleralltag ({school_type}) passend zu Fach '{subject}' und Thema '{focus_topic or context}' zu verfassen. "
+                f"Alle nachfolgenden differenzierten Aufgaben (Diagnose, Level A, Level B, Level C, Zusatzaufgaben und Tafelbild) MÜSSEN sich zwingend auf diesen situativen Basistext beziehen!"
+            )
 
-        source_instruction = (
-            "1. BILDVORLAGE & OCR: Extrahiere den Kerninhalt des Textes aus dem Bild/PDF getreu im Feld 'extracted_text'."
-        ) if has_media else (
-            "1. ISB-QUALITÄTSTABLEAU & SITUIERTER BASISTEXT (OHNE BILDVORLAGE):\n"
-            "   - Da kein Buchseiten-Scan hochgeladen wurde, formulierst du im Feld 'extracted_text' ZWINGEND einen packenden, zusammenhängenden und altersgerechten Basistext (180 bis 300 Wörter) aus dem Schüleralltag (z. B. Schulalltag, Pause, Sportfest, Klassenfahrt, Jugendthemen).\n"
-            "   - Dieser Text dient als thematische und sprachliche Grundlage für die gesamte Einheit (situierter Kontext, ISB-Kriterium Lebensweltbezug).\n"
-            "   - Alle nachfolgenden Aufgaben (Diagnose, Level A, Level B, Level C, Zusatzaufgaben) MÜSSEN sich direkt auf die Wörter, Sätze, Daten oder Figuren dieses Textes beziehen!"
-        )
+            source_instruction = (
+                "1. BILDVORLAGE & OCR: Extrahiere den Kerninhalt des Textes aus dem Bild/PDF getreu im Feld 'extracted_text'."
+            ) if has_media else (
+                "1. ISB-QUALITÄTSTABLEAU & SITUIERTER BASISTEXT (OHNE BILDVORLAGE):\n"
+                "   - Da kein Buchseiten-Scan hochgeladen wurde, formulierst du im Feld 'extracted_text' ZWINGEND einen packenden, zusammenhängenden und altersgerechten Basistext (180 bis 300 Wörter) aus dem Schüleralltag (z. B. Schulalltag, Pause, Sportfest, Klassenfahrt, Jugendthemen).\n"
+                "   - Dieser Text dient als thematische und sprachliche Grundlage für die gesamte Einheit (situierter Kontext, ISB-Kriterium Lebensweltbezug).\n"
+                "   - Alle nachfolgenden Aufgaben (Diagnose, Level A, Level B, Level C, Zusatzaufgaben) MÜSSEN sich direkt auf die Wörter, Sätze, Daten oder Figuren dieses Textes beziehen!"
+            )
 
         text_basis_instruction = (
             "4. STRIKTE ANLEHNUNG AN DEN ORIGINALTEXT:\n"
@@ -629,6 +646,14 @@ WICHTIGE ANWEISUNGEN:
                 except Exception as inner_e:
                     logger.error(f"Failed to parse JSON even after escaping backslashes: {inner_e}")
                     raise jde
+            if differentiation_mode == "direct" and isinstance(result_json, dict):
+                result_json["is_direct_worksheet"] = True
+                result_json["differentiation_mode"] = "direct"
+                if "level_a" in result_json:
+                    result_json["level_b"] = result_json["level_a"]
+                if "diagnostic" in result_json:
+                    result_json["diagnostic"]["questions"] = []
+
             if cache_hash and result_json:
                 try:
                     set_cached_generation(cache_hash, result_json)
@@ -640,7 +665,7 @@ WICHTIGE ANWEISUNGEN:
         except Exception as e:
             logger.error(f"Error calling Gemini API: {e}", exc_info=True)
             self._cleanup_gemini_files(client, uploaded_gemini_files, temp_files_to_remove)
-            return self._get_mock_data(context, target_format, task_count, subject=subject, school_type=school_type, focus_topic=focus_topic, hefteintrag_topic=hefteintrag_topic, error_message=str(e))
+            return self._get_mock_data(context, target_format, task_count, subject=subject, school_type=school_type, focus_topic=focus_topic, hefteintrag_topic=hefteintrag_topic, error_message=str(e), differentiation_mode=differentiation_mode)
 
     def refine_single_task(self, task_data: dict, instruction: str, subject: str = "Deutsch", school_type: str = "Grundschule", api_key: str = None) -> dict:
         """Refines a single task based on teacher instructions using Gemini or smart fallback."""
@@ -698,7 +723,7 @@ Generiere genau dieses JSON:
             "explanation": task_data.get("explanation", "")
         }
 
-    def _get_mock_data(self, context: str = "", target_format: str = "KI-Mix", task_count: int = 2, subject: str = "Deutsch", school_type: str = "Grundschule", focus_topic: str = "", hefteintrag_topic: str = "", error_message: str = None) -> dict:
+    def _get_mock_data(self, context: str = "", target_format: str = "KI-Mix", task_count: int = 2, subject: str = "Deutsch", school_type: str = "Grundschule", focus_topic: str = "", hefteintrag_topic: str = "", error_message: str = None, differentiation_mode: str = "differentiated") -> dict:
         """Returns beautiful default mock data in case API key is missing or fails."""
         topic_str = focus_topic if focus_topic else ("Textverständnis, Fremdwörter, Wortarten" if subject == "Deutsch" else ("Bruchrechnen" if subject == "Mathematik" else "Simple Past"))
         heft_str = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else "Fremdwörter")
