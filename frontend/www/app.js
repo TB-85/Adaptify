@@ -21,6 +21,30 @@ if (typeof window !== 'undefined') {
 }
 
 // ==================== UTILITY & INTERACTION HELPERS ====================
+function cleanStudentTitle(title) {
+    if (!title) return "Übung";
+    let t = String(title).trim();
+    const patterns = [
+        /^(?:Mittelschule|Grundschule|Realschule|Gymnasium|F[oö]rderschule|Berufsschule|Hauptschule|Gesamtschule|Sekundarschule|FOS|BOS)\b/i,
+        /^(?:Deutsch|Mathematik|Mathe|Englisch|English|NT|Natur\s+und\s+Technik|GPG|Geschichte(?:\s+und\s+Politik)?|Politik|Geographie|Erdkunde|WiB|Wirtschaft\s+und\s+Beruf|Religion|Ethik|Kunst|Musik|Sport|Biologie|Physik|Chemie|Informatik)\b/i,
+        /^(?:Digitales\s+)?Arbeitsblatt\b/i,
+        /^(?:Interaktives\s+)?Video\b/i,
+        /^(?:Differenzierte\s+)?(?:Interaktive\s+)?(?:Lerneinheit|Lernpfad|Übung|Uebung)\b/i,
+        /^[–—:\-\|\,\s]+/
+    ];
+    let prev = null;
+    for (let i = 0; i < 6; i++) {
+        if (prev === t) break;
+        prev = t;
+        for (const p of patterns) {
+            t = t.replace(p, '').trim();
+            t = t.replace(/^[–—:\-\|\,\s]+/, '').trim();
+        }
+    }
+    return t || String(title).trim();
+}
+window.cleanStudentTitle = cleanStudentTitle;
+
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
     return String(str)
@@ -2366,7 +2390,7 @@ window.refineTaskWithAI = async function(prefix, index) {
 };
 
 function populateEditor(data) {
-    editorTitle.value = data.title || "Differenzierte Übung";
+    editorTitle.value = cleanStudentTitle(data.title) || "Übung";
     const branchingSections = document.getElementById('editor-branching-sections');
     const interactiveContainer = document.getElementById('editor-interactive-video-container');
     const bannerTitle = document.getElementById('editor-mode-title');
@@ -3221,19 +3245,26 @@ function renderSimulator() {
 
     // Render Steps
     if (step === 'start') {
+        const isDirect = (data.is_direct_worksheet || !data.diagnostic || !data.diagnostic.questions || data.diagnostic.questions.length === 0);
+        const cleanTitle = cleanStudentTitle(data.title);
+        const subtitleText = isDirect 
+            ? "Bearbeite die Aufgaben Schritt für Schritt." 
+            : "Beantworte zuerst ein paar kurze Fragen, um deinen aktuellen Wissensstand zu prüfen. Danach geht es automatisch auf dem passenden Niveau weiter!";
+        const buttonText = isDirect ? "Jetzt Starten" : "Kurs starten";
+
         frame.innerHTML = `
             <div class="flex-1 flex flex-col justify-between p-8 text-center bg-gradient-to-b from-brand-50/50 to-white min-h-[480px]">
                 <div class="space-y-4 my-auto">
                     <div class="h-16 w-16 bg-brand-600 text-white rounded-2xl flex items-center justify-center text-2xl mx-auto shadow-md">
                         <i class="fa-solid fa-graduation-cap"></i>
                     </div>
-                    <h4 class="text-xl font-black text-slate-800">${data.title}</h4>
+                    <h4 class="text-xl font-black text-slate-800">${cleanTitle}</h4>
                     <p class="text-xs text-slate-500 max-w-md mx-auto">
-                        Beantworte zuerst ein paar kurze Fragen, um deinen aktuellen Wissensstand zu prüfen. Danach geht es automatisch auf dem passenden Niveau weiter!
+                        ${subtitleText}
                     </p>
                 </div>
                 <button onclick="startQuiz()" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
-                    Kurs starten <i class="fa-solid fa-arrow-right"></i>
+                    ${buttonText} <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </div>
         `;

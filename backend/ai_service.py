@@ -491,7 +491,7 @@ Anzahl der zu generierenden Aufgaben pro Niveau: {task_count}
 
 Generiere genau folgendes JSON-Schema:
 {{
-  "title": "Titel der Übung (z.B. {school_type} - {subject}: {focus_topic if focus_topic else 'Unterrichtspaket'})",
+  "title": "Prägnanter Titel der Übung/des Themas für Schüler ZWINGEND OHNE Schulart und OHNE Fach (z. B. '{focus_topic if focus_topic else 'Wortarten und ihre Verwendung'}') - nur das reine Thema!",
   "lehrplan_code": "Offizieller LehrplanPlus Bayern Code (z.B. 'M6 EG 2', 'D5 L1' oder 'E6 G1')",
   "lehrplan_competency": "Kurzbezeichnung der Kompetenz im Lehrplan (z. B. 'Anteile und Brüche im Alltag darstellen')",
   "extracted_text": "{'Der erkannte Text des Originaldokumentes sowie detaillierte Bildbeschreibungen von eventuell vorhandenen Illustrationen/Grafiken/Bildern zur Vorschau für die Lehrkraft' if has_media else 'Der vollständige, packende und lebensnahe Basistext (180-300 Wörter) aus dem Schüleralltag, der als Arbeits- und Lesegrundlage für alle Aufgaben dient'}",
@@ -646,6 +646,10 @@ WICHTIGE ANWEISUNGEN:
                 except Exception as inner_e:
                     logger.error(f"Failed to parse JSON even after escaping backslashes: {inner_e}")
                     raise jde
+            if isinstance(result_json, dict) and "title" in result_json:
+                from .h5p_generator import clean_student_title
+                result_json["title"] = clean_student_title(result_json["title"])
+
             if differentiation_mode == "direct" and isinstance(result_json, dict):
                 result_json["is_direct_worksheet"] = True
                 result_json["differentiation_mode"] = "direct"
@@ -1029,6 +1033,10 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                                 m, s = divmod(ts, 60)
                                 inter["time_formatted"] = f"{m:02d}:{s:02d}"
 
+                        if "title" in parsed and parsed["title"]:
+                            from .h5p_generator import clean_student_title
+                            parsed["title"] = clean_student_title(parsed["title"])
+
                         logger.info(f"Successfully generated interactive video quiz for subject='{parsed.get('subject')}', title='{parsed.get('title')}' with {len(parsed.get('interactions', []))} checkpoints (duration: {detected_duration_sec}s)")
                         return parsed
                 except Exception as e:
@@ -1173,7 +1181,7 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                 inter["time_formatted"] = f"{m:02d}:{s:02d}"
 
         return {
-            "title": f"Interaktives Video: {topic}",
+            "title": topic,
             "video_mode": "interactive_video",
             "subject": subject,
             "school_type": school_type,

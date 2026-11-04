@@ -275,6 +275,30 @@
             return active;
         }
 
+        function cleanStudentTitle(title) {
+    if (!title) return "Übung";
+    let t = String(title).trim();
+    const patterns = [
+        /^(?:Mittelschule|Grundschule|Realschule|Gymnasium|F[oö]rderschule|Berufsschule|Hauptschule|Gesamtschule|Sekundarschule|FOS|BOS)\b/i,
+        /^(?:Deutsch|Mathematik|Mathe|Englisch|English|NT|Natur\s+und\s+Technik|GPG|Geschichte(?:\s+und\s+Politik)?|Politik|Geographie|Erdkunde|WiB|Wirtschaft\s+und\s+Beruf|Religion|Ethik|Kunst|Musik|Sport|Biologie|Physik|Chemie|Informatik)\b/i,
+        /^(?:Digitales\s+)?Arbeitsblatt\b/i,
+        /^(?:Interaktives\s+)?Video\b/i,
+        /^(?:Differenzierte\s+)?(?:Interaktive\s+)?(?:Lerneinheit|Lernpfad|Übung|Uebung)\b/i,
+        /^[–—:\-\|\,\s]+/
+    ];
+    let prev = null;
+    for (let i = 0; i < 6; i++) {
+        if (prev === t) break;
+        prev = t;
+        for (const p of patterns) {
+            t = t.replace(p, '').trim();
+            t = t.replace(/^[–—:\-\|\,\s]+/, '').trim();
+        }
+    }
+    return t || String(title).trim();
+}
+window.cleanStudentTitle = cleanStudentTitle;
+
         function loadLocalDiary() {
             const data = localStorage.getItem('adaptify_student_diary');
             if (data) {
@@ -383,7 +407,7 @@
                 if (!response.ok) throw new Error("PIN ungültig.");
                 sessionData = await response.json();
                 
-                document.getElementById('name-package-title').textContent = sessionData.title || "Übung geladen";
+                document.getElementById('name-package-title').textContent = cleanStudentTitle(sessionData.title) || "Übung geladen";
                 
                 // Populate branding if present
                 const brandPanel = document.getElementById('player-school-brand');
@@ -610,7 +634,7 @@
                 const task = simState.tasks[simState.taskIndex];
                 const isDirect = (simState.levelRoute === 'Arbeitsblatt');
                 const isLevelA = (simState.levelRoute === 'A');
-                const badgeLabel = isDirect ? '📑 Digitales Arbeitsblatt' : (isLevelA ? 'Level A – Grundlagen' : 'Level B – Vertiefung');
+                const badgeLabel = isDirect ? '📑 Schritt für Schritt' : (isLevelA ? 'Level A – Grundlagen' : 'Level B – Vertiefung');
                 const badgeColor = isDirect ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' : (isLevelA ? 'text-teal-600 bg-teal-50 border border-teal-200' : 'text-indigo-600 bg-indigo-50 border border-indigo-200');
                 const cleanTaskText = (task.title + '. ' + (task.text || '')).replace(/'/g, "\\'");
                 

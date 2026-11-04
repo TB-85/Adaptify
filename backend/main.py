@@ -423,7 +423,7 @@ def create_session(data: dict):
         pin = "".join(random.choices(chars, k=4))
         if pin not in active_sessions:
             active_sessions[pin] = {
-                "title": data.get("title", "Direktspiel"),
+                "title": H5PGenerator.clean_student_title(data.get("title", "Direktspiel")),
                 "data": data,
                 "results": []
             }

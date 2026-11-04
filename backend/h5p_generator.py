@@ -7,6 +7,34 @@ import uuid
 
 class H5PGenerator:
     @staticmethod
+    def clean_student_title(title: str) -> str:
+        """
+        Strips school types, school subjects, and generic prefixes from titles so students see
+        only the clean, pure topic name (e.g. 'Wortarten und ihre Verwendung' instead of
+        'Mittelschule - Deutsch: Wortarten und ihre Verwendung').
+        """
+        if not title:
+            return "Übung"
+        t = str(title).strip()
+        patterns = [
+            r'^(?:Mittelschule|Grundschule|Realschule|Gymnasium|F[oö]rderschule|Berufsschule|Hauptschule|Gesamtschule|Sekundarschule|FOS|BOS)\b',
+            r'^(?:Deutsch|Mathematik|Mathe|Englisch|English|NT|Natur\s+und\s+Technik|GPG|Geschichte(?:\s+und\s+Politik)?|Politik|Geographie|Erdkunde|WiB|Wirtschaft\s+und\s+Beruf|Religion|Ethik|Kunst|Musik|Sport|Biologie|Physik|Chemie|Informatik)\b',
+            r'^(?:Digitales\s+)?Arbeitsblatt\b',
+            r'^(?:Interaktives\s+)?Video\b',
+            r'^(?:Differenzierte\s+)?(?:Interaktive\s+)?(?:Lerneinheit|Lernpfad|Übung|Uebung)\b',
+            r'^[–—:\-\|\,\s]+'
+        ]
+        prev = None
+        for _ in range(6):
+            if prev == t:
+                break
+            prev = t
+            for pattern in patterns:
+                t = re.sub(pattern, '', t, flags=re.IGNORECASE).strip()
+                t = re.sub(r'^[–—:\-\|\,\s]+', '', t).strip()
+        return t if t else str(title).strip()
+
+    @staticmethod
     def parse_multiple_choice_text(text):
         """
         Parses text in format:
@@ -125,7 +153,7 @@ class H5PGenerator:
 
     @staticmethod
     def create_direct_worksheet_content_json(data):
-        title = data.get("title", "Digitalisiertes Arbeitsblatt")
+        title = H5PGenerator.clean_student_title(data.get("title", "Digitalisiertes Arbeitsblatt"))
         target_format = data.get("target_format", "Lückentext")
         level_a = data.get("level_a", {})
         level_b = data.get("level_b", {})
@@ -387,7 +415,7 @@ class H5PGenerator:
                 "endScreens": [
                     {
                         "endScreenTitle": "Fertig!",
-                        "endScreenSubtitle": "Du hast alle Aufgaben des Arbeitsblatts erfolgreich bearbeitet.",
+                        "endScreenSubtitle": "Du hast alle Aufgaben erfolgreich bearbeitet.",
                         "contentId": -1,
                         "endScreenScore": 0
                     }
@@ -398,7 +426,7 @@ class H5PGenerator:
                 },
                 "startScreen": {
                     "startScreenTitle": title,
-                    "startScreenSubtitle": "Bearbeite die Aufgaben des Arbeitsblatts Schritt für Schritt."
+                    "startScreenSubtitle": "Bearbeite die Aufgaben Schritt für Schritt."
                 },
                 "behaviour": {
                     "enableBackwardsNavigation": True,
@@ -406,7 +434,7 @@ class H5PGenerator:
                     "randomizeBranchingQuestions": False
                 },
                 "l10n": {
-                    "startScreenButtonText": "Arbeitsblatt starten",
+                    "startScreenButtonText": "Jetzt Starten",
                     "endScreenButtonText": "Neu starten",
                     "backButtonText": "Zurück",
                     "disableProceedButtonText": "Nötig, um das aktuelle Modul abzuschließen"
@@ -421,7 +449,7 @@ class H5PGenerator:
         if is_direct_worksheet:
             return H5PGenerator.create_direct_worksheet_content_json(data)
 
-        title = data.get("title", "Differenzierte Übung")
+        title = H5PGenerator.clean_student_title(data.get("title", "Differenzierte Übung"))
         target_format = data.get("target_format", "Lückentext")
         questions = data.get("diagnostic", {}).get("questions", [])
         level_a = data.get("level_a", {})
@@ -1079,7 +1107,7 @@ class H5PGenerator:
                     "randomizeBranchingQuestions": False
                 },
                 "l10n": {
-                    "startScreenButtonText": "Kurs starten",
+                    "startScreenButtonText": "Jetzt Starten",
                     "endScreenButtonText": "Kurs neu starten",
                     "backButtonText": "Zurück",
                     "disableProceedButtonText": "Nötig, um das aktuelle Modul abzuschließen",
@@ -1195,7 +1223,7 @@ class H5PGenerator:
 
     @staticmethod
     def create_interactive_video_h5p_zip(data):
-        title = data.get("title", "Interaktives Video")
+        title = H5PGenerator.clean_student_title(data.get("title", "Interaktives Video"))
         video_filename = data.get("video_filename")
         youtube_url = data.get("youtube_url")
 
@@ -1576,7 +1604,7 @@ class H5PGenerator:
         if data.get("video_mode") == "interactive_video" or data.get("is_interactive_video"):
             return H5PGenerator.create_interactive_video_h5p_zip(data)
 
-        title = data.get("title", "Differenzierte Übung")
+        title = H5PGenerator.clean_student_title(data.get("title", "Differenzierte Übung"))
         target_format = data.get("target_format", "Lückentext")
         
         # 1. Generate content/content.json
@@ -1649,3 +1677,6 @@ class H5PGenerator:
             
         zip_buffer.seek(0)
         return zip_buffer.getvalue()
+
+
+clean_student_title = H5PGenerator.clean_student_title
