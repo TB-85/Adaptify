@@ -2872,37 +2872,13 @@ if (btnRestart) {
 
 // PARSER HELPERS FOR SIMULATOR
 const SimParsers = {
-    parseMultipleChoiceText(text) {
+    parseMultipleChoiceText(text, taskTitle = '') {
         const questions = [];
-        const blocks = text.split(/Frage:\s*/i);
+        const blocks = text.split(/(?:^|\n)Frage:\s*/i);
         blocks.forEach(block => {
             if (!block.trim()) return;
             const lines = block.trim().split("\n");
-            const q_text = lines[0].trim();
-            const answers = [];
-            lines.slice(1).forEach(line => {
-                const trimmed = line.trim();
-                if (trimmed.startsWith("[ ]") || trimmed.startsWith("[X]") || trimmed.startsWith("[x]")) {
-                    const is_correct = trimmed.startsWith("[X]") || trimmed.startsWith("[x]");
-                    const ans_text = trimmed.substring(3).trim();
-                    answers.push({
-                        text: ans_text,
-                        correct: is_correct
-                    });
-                }
-            });
-            if (q_text && answers.length > 0) {
-                questions.push({
-                    question: `<p>${q_text}</p>\n`,
-                    answers: answers
-                });
-            }
-        });
-        
-        // Fallback if formatting doesn't use "Frage:"
-        if (questions.length === 0) {
-            const lines = text.trim().split("\n");
-            let q_text = "";
+            const q_lines = [];
             const answers = [];
             lines.forEach(line => {
                 const trimmed = line.trim();
@@ -2910,15 +2886,41 @@ const SimParsers = {
                     const is_correct = trimmed.startsWith("[X]") || trimmed.startsWith("[x]");
                     const ans_text = trimmed.substring(3).trim();
                     answers.push({ text: ans_text, correct: is_correct });
-                } else if (trimmed) {
-                    if (q_text) q_text += " " + trimmed;
-                    else q_text = trimmed;
+                } else if (answers.length === 0 && trimmed) {
+                    q_lines.push(trimmed);
                 }
             });
+            let q_text = q_lines.join("<br/>");
+            
+            const needsExample = /(unterstrichen|markiert|hervorgehoben|folgend|dieses Wort)/i.test(q_text);
+            const hasExample = (q_lines.length > 1) || /(<u>|<mark>|\*|"|„|«|\')/i.test(q_text);
+            
+            if (needsExample && !hasExample) {
+                const titleHasExample = /(<u>|<mark>|\*|"|„|«|\')/.test(taskTitle) && taskTitle.length > 8;
+                if (taskTitle && titleHasExample && !q_text.includes(taskTitle)) {
+                    q_text = `<strong>${taskTitle}</strong><br/>${q_text}`;
+                } else {
+                    const correctAns = answers.find(a => a.correct);
+                    const ansWord = correctAns ? correctAns.text.toLowerCase() : '';
+                    let exampleSentence = '';
+                    if (ansWord.includes('verb')) exampleSentence = 'Beispielsatz: Die Kinder <u>spielen</u> im Garten.';
+                    else if (ansWord.includes('nomen')) exampleSentence = 'Beispielsatz: Der <u>Hund</u> bellt laut.';
+                    else if (ansWord.includes('adjektiv')) exampleSentence = 'Beispielsatz: Das Wetter ist heute <u>schön</u>.';
+                    else if (ansWord.includes('pronomen')) exampleSentence = 'Beispielsatz: <u>Sie</u> liest ein spannendes Buch.';
+                    else if (ansWord.includes('präposition')) exampleSentence = 'Beispielsatz: Der Ball liegt <u>unter</u> dem Tisch.';
+                    else if (ansWord.includes('konjunktion')) exampleSentence = 'Beispielsatz: Wir freuen uns, <u>weil</u> heute die Sonne scheint.';
+                    else if (ansWord.includes('adverb')) exampleSentence = 'Beispielsatz: Wir treffen uns <u>heute</u> nach der Schule.';
+                    if (exampleSentence) {
+                        q_text += `<br/><div class="mt-2 bg-blue-50 border border-blue-200 text-blue-900 px-3 py-1.5 rounded-lg font-bold">${exampleSentence}</div>`;
+                    }
+                }
+            }
+            q_text = q_text.replace(/\*([^*]+)\*/g, '<u><strong>$1</strong></u>');
+
             if (q_text && answers.length > 0) {
                 questions.push({ question: `<p>${q_text}</p>\n`, answers: answers });
             }
-        }
+        });
         return questions;
     },
 
@@ -3504,7 +3506,7 @@ window.toggleSimMCCheckbox = function(event, labelEl) {
 };
 
 function renderSimMultipleChoice(task) {
-    const mc_questions = SimParsers.parseMultipleChoiceText(task.text);
+    const mc_questions = SimParsers.parseMultipleChoiceText(task.text, task.title);
     const q = mc_questions[0] || { 
         question: task.title || "Optionen auswählen", 
         answers: [
@@ -3515,7 +3517,7 @@ function renderSimMultipleChoice(task) {
     
     return `
         <div class="space-y-3">
-            <p class="text-xs font-semibold text-slate-700">${q.question.replace(/<[^>]+>/g, '')}</p>
+            <div class="text-xs font-semibold text-slate-700 leading-relaxed">${q.question}</div>
             <div class="space-y-2" id="sim-mc-options">
                 ${q.answers.map((ans, i) => `
                     <label onclick="toggleSimMCCheckbox(event, this)" class="flex items-center gap-3 p-2.5 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all select-none text-xs">
@@ -3537,7 +3539,7 @@ function renderSimTrueFalse(task) {
     
     return `
         <div class="space-y-3 text-center">
-            <p class="text-xs font-semibold text-slate-700">${q.question.replace(/<[^>]+>/g, '')}</p>
+            <div class="text-xs font-semibold text-slate-700 leading-relaxed">${q.question}</div>
             <div class="flex gap-4 justify-center" id="sim-tf-options">
                 <button onclick="selectSimTF(true)" id="sim-tf-true" class="py-2 px-5 border border-slate-200 bg-white hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 transition-all">Wahr</button>
                 <button onclick="selectSimTF(false)" id="sim-tf-false" class="py-2 px-5 border border-slate-200 bg-white hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-700 transition-all">Falsch</button>
@@ -3793,7 +3795,7 @@ window.checkCurrentTask = function() {
     fbBox.classList.remove('hidden', 'bg-rose-50', 'text-rose-700', 'bg-emerald-50', 'text-emerald-700');
     
     if (task.format === 'Multiple Choice') {
-        const mc_questions = SimParsers.parseMultipleChoiceText(task.text);
+        const mc_questions = SimParsers.parseMultipleChoiceText(task.text, task.title);
         const q = mc_questions[0];
         const checkedOptions = Array.from(document.querySelectorAll('#sim-mc-options input[type="checkbox"]:checked')).map(el => parseInt(el.value));
         

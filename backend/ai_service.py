@@ -434,7 +434,7 @@ class AIService:
             )
             source_instruction = (
                 "1. ARBEITSBLATT 1:1 DIGITALISIERUNG:\n"
-                "   - Erfasse JEDE Aufgabe des Arbeitsblatts getreu mit ihrer Nummerierung, Arbeitsanweisung und ihrem Text.\n"
+                "   - Erfasse JEDE Aufgabe des Arbeitsblatts getreu mit ihrer Nummerierung, Arbeitsanweisung und ihrem Text.\n   - WICHTIG: Bei Aufgaben, die sich auf einen Text, Satz oder unterstrichene Wörter beziehen (z. B. 'Bestimme die Wortart des unterstrichenen Wortes'): Übernimm ZWINGEND den vollständigen Satz und markiere das Wort (z. B. mit <u>Wort</u>), damit die Angabe für den Schüler vollständig und lösbar ist!\n"
                 "   - Konvertiere jede Aufgabe direkt in das dafür am besten geeignete H5P-Format ('Lückentext' mit *Lückenwörtern*, 'Drag the Words' mit *Wörtern*, 'Wahr/Falsch' oder 'Multiple Choice').\n"
                 "   - Gib für jede Aufgabe eine verständliche Erklärung ('explanation') und einen ermutigenden Tipp ('hint') an.\n"
                 "   - Das Feld 'diagnostic.questions' MUSS zwingend eine leere Liste [] sein."
@@ -574,12 +574,14 @@ WICHTIGE ANWEISUNGEN:
 {text_basis_instruction}
 {isb_rubric_instruction}
 5. STRIKTE AUFGABEN-FORMATIERUNGSREGELN FÜR DEN FELDINHALT 'text':
-   - MULTIPLE CHOICE: Der Feldinhalt 'text' MUSS zwingend im folgenden Format sein:
-     [Hier steht die Frage]
+   - MULTIPLE CHOICE: Jede Aufgabe MUSS zwingend die vollständige Aufgabenstellung UND den konkreten Beispielsatz / die Angabe enthalten!
+     Format des Feldes 'text':
+     [Aufgabenstellung / Frage]
+     Beispielsatz: "[Vollständiger Satz mit dem gesuchten Wort, z. B. 'Die Kinder <u>laufen</u> schnell nach Hause.']"
      [ ] [Eine falsche Option]
      [X] [Die richtige Option]
      [ ] [Eine andere falsche Option]
-     (Generiere immer 3-4 Optionen, davon mindestens eine richtige mit [X] markiert).
+     WICHTIG: Wenn die Aufgabe nach 'dem unterstrichenen Wort' oder 'im folgenden Satz' fragt, MUSS der vollständige Beispielsatz zwingend direkt im Text angegeben werden! Niemals die Frage isoliert ohne den Beispielsatz generieren!
    - WAHR/FALSCH: Der Feldinhalt 'text' MUSS zwingend im folgenden Format sein:
      Aussage: [Hier steht die Behauptung]
      Antwort: [Wahr oder Falsch]

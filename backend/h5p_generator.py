@@ -35,24 +35,24 @@ class H5PGenerator:
         return t if t else str(title).strip()
 
     @staticmethod
-    def parse_multiple_choice_text(text):
+    def parse_multiple_choice_text(text, task_title=""):
         """
         Parses text in format:
         Frage: Was ist ...?
+        Beispielsatz: Der Hund <u>bellt</u> laut.
         [ ] Option A
         [X] Option B (Richtig)
         [ ] Option C
         """
         questions = []
-        blocks = re.split(r"Frage:\s*", text)
+        blocks = re.split(r"(?:^|\n)Frage:\s*", text, flags=re.IGNORECASE)
         for block in blocks:
             if not block.strip():
                 continue
-            lines = block.strip().split("\n")
-            q_text = lines[0].strip()
+            lines = [l.strip() for l in block.strip().split("\n") if l.strip()]
+            q_lines = []
             answers = []
-            for line in lines[1:]:
-                line = line.strip()
+            for line in lines:
                 if line.startswith("[ ]") or line.startswith("[X]") or line.startswith("[x]"):
                     is_correct = line.startswith("[X]") or line.startswith("[x]")
                     ans_text = line[3:].strip()
@@ -65,6 +65,35 @@ class H5PGenerator:
                             "notChosenFeedback": ""
                         }
                     })
+                elif not answers:
+                    q_lines.append(line)
+            
+            q_text = "<br/>".join(q_lines) if q_lines else ""
+            
+            # Check if an example or sentence is needed
+            needs_example = bool(re.search(r'(unterstrichen|markiert|hervorgehoben|folgend|dieses Wort)', q_text, re.IGNORECASE))
+            has_example = (len(q_lines) > 1) or bool(re.search(r'(<u>|<mark>|\*|"|„|«|\')', q_text))
+            
+            if needs_example and not has_example:
+                title_has_example = bool(re.search(r'(<u>|<mark>|\*|"|„|«|\')', task_title)) and len(task_title) > 8
+                if task_title and title_has_example and task_title not in q_text:
+                    q_text = f"<strong>{task_title}</strong><br/>{q_text}"
+                else:
+                    correct_ans = next((a["text"].lower() for a in answers if a["correct"]), "")
+                    example_sentence = ""
+                    if "verb" in correct_ans: example_sentence = "Beispielsatz: Die Kinder <u>spielen</u> im Garten."
+                    elif "nomen" in correct_ans: example_sentence = "Beispielsatz: Der <u>Hund</u> bellt laut."
+                    elif "adjektiv" in correct_ans: example_sentence = "Beispielsatz: Das Wetter ist heute <u>schön</u>."
+                    elif "pronomen" in correct_ans: example_sentence = "Beispielsatz: <u>Sie</u> liest ein spannendes Buch."
+                    elif "präposition" in correct_ans: example_sentence = "Beispielsatz: Der Ball liegt <u>unter</u> dem Tisch."
+                    elif "konjunktion" in correct_ans: example_sentence = "Beispielsatz: Wir freuen uns, <u>weil</u> heute die Sonne scheint."
+                    elif "adverb" in correct_ans: example_sentence = "Beispielsatz: Wir treffen uns <u>heute</u> nach der Schule."
+                    if example_sentence:
+                        q_text += f"<br/><div style='background:#eff6ff; border:1px solid #bfdbfe; padding:6px 10px; border-radius:6px; font-weight:700; color:#1e40af; margin-top:6px;'>{example_sentence}</div>"
+
+            # Convert *word* to <u><strong>word</strong></u>
+            q_text = re.sub(r'\*([^*]+)\*', r'<u><strong>\1</strong></u>', q_text)
+
             if q_text and answers:
                 questions.append({
                     "question": f"<p>{q_text}</p>\n",
@@ -308,7 +337,7 @@ class H5PGenerator:
             ]
 
             if task_format == "Multiple Choice":
-                mc_questions = H5PGenerator.parse_multiple_choice_text(raw_text)
+                mc_questions = H5PGenerator.parse_multiple_choice_text(raw_text, task_title)
                 first_q = mc_questions[0] if mc_questions else {
                     "question": f"<p>{task_title}</p>\n",
                     "answers": [{"text": "Option 1", "correct": True, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}}]
@@ -890,7 +919,7 @@ class H5PGenerator:
             (level_b_id, level_b, "Level B - Vertiefung"),
             (level_a_id, level_a, "Level A - Grundlagen")
         ]:
-            tasks = level_data.get("tasks", [])
+            tasks = level_data.get("tasks", []) or data.get("tasks", [])
             if not tasks:
                 # Fallback if no tasks list is found
                 tasks = [{"title": level_data.get("title", node_title), "text": level_data.get("text", ""), "format": target_format}]
@@ -930,7 +959,7 @@ class H5PGenerator:
                 ]
 
                 if task_format == "Multiple Choice":
-                    mc_questions = H5PGenerator.parse_multiple_choice_text(raw_text)
+                    mc_questions = H5PGenerator.parse_multiple_choice_text(raw_text, task_title)
                     first_q = mc_questions[0] if mc_questions else {
                         "question": f"<p>{task_title} Frage</p>\n",
                         "answers": [{"text": "Option 1", "correct": True, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}}]
