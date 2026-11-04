@@ -417,7 +417,16 @@ class AIService:
             subject_instruction = f"Schulfach: {subject}"
 
         focus_instruction = f"Übungsschwerpunkte: {focus_topic} (Erstelle gezielt Aufgaben für JEDEN dieser Schwerpunkte!)." if focus_topic else "Übungsschwerpunkte: Automatisch aus dem Dokument ermitteln."
-        hefteintrag_instruction = f"Thema für den Hefteintrag / Merkkasten: {hefteintrag_topic}." if hefteintrag_topic else (f"Thema für den Hefteintrag: {focus_topic}" if focus_topic else "Thema für den Hefteintrag: Hauptthema des Dokuments.")
+        hefteintrag_raw = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else "Hauptthema des Dokuments")
+        hefteintrag_instruction = (
+            f"Thema für den Hefteintrag / Merkkasten: {hefteintrag_raw}.\n"
+            f"STRIKTE DIDAKTISCHE UNTERSCHEIDUNG FÜR DEN HEFTEINTRAG (SACHINHALT VS. METHODE):\n"
+            f"- Wenn der Fokus/Text ein SACHTEXT oder ein inhaltliches Thema ist (z. B. 'Information about the Great Barrier Reef', Sachtext, Natur, Erdkunde, Geschichte, Landeskunde, Müll im Ozean):\n"
+            f"  -> Der Hefteintrag MUSS zwingend die REINEN FACHINHALTE, FAKTEN und KERNAUSSAGEN des Textes festhalten (z. B. Steckbrief, Merkmale, wichtige Zahlen/Daten, Ursachen und Folgen)! Erfinde NIEMALS eine meta-didaktische Regelschablone ('Wie wende ich die Regeln zu ... an? Schritt 2: Formel anwenden') für einen Sachtext!\n"
+            f"  -> Titel: z. B. '{hefteintrag_raw} – Wichtige Fakten im Überblick' (oder auf Englisch '{hefteintrag_raw} – Key Facts') bzw. eine themenbezogene Leitfrage.\n"
+            f"- NUR wenn der Fokus explizit eine METHODE oder REGEL ist (z. B. 'Wie entnehme ich Informationen aus einem Sachtext?', 'Lesestrategien', 'Bruchrechnen', 'Grammatikregel: Pronomen'):\n"
+            f"  -> DANN und nur dann beschreibt der Hefteintrag eine Vorgehensweise / Regel in nummerierten Schritten mit Musterbeispiel."
+        )
 
         # Check if media (image/pdf) was uploaded, or if this is a topic/prompt-driven unit (ISB quality rubric)
         has_media = any(
@@ -512,8 +521,8 @@ Generiere genau folgendes JSON-Schema:
     ]
   }},
   "hefteintrag": {{
-    "title": "ÜBERSCHRIFT ZWINGEND ALS W-FRAGE (z. B. 'Wie werte ich eine Grafik aus?' oder 'Wie berechne ich den Umfang?')",
-    "summary": "Einheitlicher Klassen-Hefteintrag im HTML-Format (WICHTIG!). Aufbau zwingend so:\n<p><strong>1. Merke:</strong> [Hier der allgemeine Merksatz]</p>\n<p><strong>2. [Passende Frage zum Thema, z.B. Wie entstehen nun Erdöl, Erdgas oder Kohle?]:</strong> [Erklärung, wobei neue Gedanken, neue Punkte und neue Handlungen zwingend durch <br> getrennt in eine neue Zeile kommen, damit es übersichtlicher ist]</p>\n<p><strong>3. Beispiel:</strong> [Das Beispiel]</p>\nWichtige Begriffe im Text müssen zwingend mit <strong>fett</strong> markiert werden.",
+    "title": "Prägnante Überschrift (bei Methoden als W-Frage z.B. 'Wie berechne ich...', bei Sachtexten das Fachthema wie 'The Great Barrier Reef – Key Facts' oder 'Das Great Barrier Reef – Kernaussagen')",
+    "summary": "Einheitlicher Klassen-Hefteintrag im sauberen HTML-Format (WICHTIG!). Bei Sachtexten: Gliedere in 1. Kernaussage / Überblick, 2. Wichtige Fakten & Zusammenhänge (neue Punkte zwingend mit <br> trennen), 3. Zusammenfassender Merksatz. Bei Methoden/Regeln: 1. Merke, 2. Schritte/Erklärung, 3. Beispiel. Wichtige Fachbegriffe mit <strong>fett</strong> hervorheben.",
     "level_a_notes": "",
     "level_b_notes": ""
   }},
@@ -827,6 +836,76 @@ Generiere genau dieses JSON:
                     "explanation": "Use Past Perfect ('had found') for the action completed prior to leaving."
                 })
 
+        # Determine whether Hefteintrag is content/fact-focused vs. method/rule-focused
+        lower_heft = (heft_str or "").lower()
+        factual_indicators = [
+            "sachtext", "information", "info", "fakten", "reef", "barrier", "ozean", "klima", "umwelt",
+            "geschichte", "erdkunde", "geografie", "biologie", "gpg", "pcb", "landeskunde",
+            "tier", "pflanz", "kontinent", "australi", "deutschland", "europa", "stadt", "land"
+        ]
+        method_indicators = ["wie ", "methode", "regel", "strategie", "formel", "rechen", "grammatik", "entnehme ich", "schritte", "anleitung"]
+        is_factual = any(w in lower_heft for w in factual_indicators) or (subject in ["Englisch", "GPG", "PCB", "Biologie", "Geografie", "Geschichte"] and not any(w in lower_heft for w in method_indicators))
+        is_english = (subject == "Englisch") or any(w in lower_heft for w in ["reef", "barrier", "great barrier", "information about", "past", "present", "english"])
+
+        if is_factual:
+            if is_english:
+                mock_heft_title = f"{heft_str} – Key Facts & Summary"
+                if "reef" in lower_heft or "barrier" in lower_heft:
+                    mock_heft_summary = (
+                        f"📌 THE GREAT BARRIER REEF – KEY FACTS\n\n"
+                        f"1. OVERVIEW & LOCATION:\n"
+                        f"• The Great Barrier Reef is the world's largest coral reef system, located off the coast of Australia.\n\n"
+                        f"2. BIODIVERSITY & IMPORTANCE:\n"
+                        f"• Unique habitat for thousands of marine species (corals, turtles, fish, sharks).\n"
+                        f"• Vital for ocean ecology and recognized as a UNESCO World Heritage site.\n\n"
+                        f"3. THREATS & CONSERVATION:\n"
+                        f"• Main threat: Rising sea temperatures cause coral bleaching.\n"
+                        f"• Protection: Strictly regulated marine reserve to preserve biodiversity."
+                    )
+                else:
+                    mock_heft_summary = (
+                        f"📌 {heft_str.upper()} – KEY FACTS\n\n"
+                        f"1. CORE INFORMATION:\n"
+                        f"• Essential facts and definitions regarding '{heft_str}'.\n\n"
+                        f"2. KEY POINTS & DETAILS:\n"
+                        f"• Main characteristic: Central factual findings from the text.\n"
+                        f"• Supporting detail: Important data, causes, and consequences.\n\n"
+                        f"3. SUMMARY:\n"
+                        f"• Essential takeaway sentence to remember for tests and class discussions."
+                    )
+            else:
+                mock_heft_title = f"{heft_str} – Wichtige Fakten im Überblick"
+                mock_heft_summary = (
+                    f"📌 {heft_str.upper()} – WICHTIGE FAKTEN\n\n"
+                    f"1. KERNAUSSAGE / ÜBERBLICK:\n"
+                    f"• Die wesentlichen Sachinformationen zu '{heft_str}' kurz und präzise zusammengefasst.\n\n"
+                    f"2. WICHTIGE FAKTEN & ZUSAMMENHÄNGE:\n"
+                    f"• Hauptmerkmal: Zentrale Erkenntnis und wichtige Fachbegriffe aus dem Text.\n"
+                    f"• Details & Hintergründe: Ursachen, Wirkungen und konkrete Zahlen/Daten.\n\n"
+                    f"3. MERKSATZ FÜRS HEFT:\n"
+                    f"• Der wichtigste Gedanke als Merksatz zum dauerhaften Behalten."
+                )
+        else:
+            mock_heft_title = heft_str if lower_heft.startswith("wie ") else f"Wie wende ich die Regeln zu '{heft_str}' richtig an?"
+            mock_heft_summary = (
+                f"📌 {mock_heft_title.upper()}\n\n"
+                f"1. MERKREGEL:\n"
+                f"Wichtigste Grundregel zum Thema '{heft_str}' kurz und prägnant erklärt.\n\n"
+                f"2. SCHRITTE ZUR ANWENDUNG:\n"
+                f"• Schritt 1: Gegebenes genau analysieren & Signalwörter markieren.\n"
+                f"• Schritt 2: Passende Regel oder Formel anwenden.\n"
+                f"• Schritt 3: Ergebnis auf Richtigkeit und Plausibilität überprüfen.\n\n"
+                f"3. MUSTERBEISPIEL / MERKSATZ:\n"
+                f"Anschauliches Beispiel für den 1:1 Übertrag in das Merkheft."
+            )
+
+        mock_hefteintrag = {
+            "title": mock_heft_title,
+            "summary": mock_heft_summary,
+            "level_a_notes": "",
+            "level_b_notes": ""
+        }
+
         return {
             "title": title,
             "lehrplan_code": f"{'M6 EG 2' if subject == 'Mathematik' else ('D5 L1' if subject == 'Deutsch' else 'E6 G1')}",
@@ -846,12 +925,7 @@ Generiere genau dieses JSON:
                     }
                 ]
             },
-            "hefteintrag": {
-                "title": f"Wie wende ich die Regeln zu '{heft_str}' richtig an?",
-                "summary": f"📌 WIE WENDE ICH DIE REGELN ZU {heft_str.upper()} RICHTIG AN?\n\n1. MERKREGEL:\nWichtigste Grundregel zum Thema '{heft_str}' kurz und prägnant erklärt.\n\n2. SCHRITTE ZUR ANWENDUNG:\n• Schritt 1: Gegebenes genau lesen & Signalwörter markieren.\n• Schritt 2: Passende Regel oder Formel anwenden.\n• Schritt 3: Ergebnis auf Plausibilität überprüfen.\n\n3. MUSTERBEISPIEL / MERKSATZ:\nAnschauliches Beispiel für den 1:1 Übertrag in das Merkheft.",
-                "level_a_notes": "",
-                "level_b_notes": ""
-            },
+            "hefteintrag": mock_hefteintrag,
             "zusatzaufgaben": [
                 {
                     "title": "⭐ Experten-Aufgabe 1 (Transfer)",
