@@ -437,6 +437,7 @@ class AIService:
                 "   - Erfasse JEDE Aufgabe des Arbeitsblatts getreu mit ihrer Nummerierung, Arbeitsanweisung und ihrem Text.\n   - WICHTIG: Bei Aufgaben, die sich auf einen Text, Satz oder unterstrichene Wörter beziehen (z. B. 'Bestimme die Wortart des unterstrichenen Wortes'): Übernimm ZWINGEND den vollständigen Satz und markiere das Wort (z. B. mit <u>Wort</u>), damit die Angabe für den Schüler vollständig und lösbar ist!\n"
                 "   - Konvertiere jede Aufgabe direkt in das dafür am besten geeignete H5P-Format ('Lückentext' mit *Lückenwörtern*, 'Drag the Words' mit *Wörtern*, 'Wahr/Falsch' oder 'Multiple Choice').\n"
                 "   - WICHTIG BEI DRAG THE WORDS / WÖRTSPEICHER: Falls das Arbeitsblatt im Wortspeicher zusätzliche Wörter (Distraktoren) enthält, die in keine Lücke gehören, erfasse diese ZWINGEND im Aufgaben-Feld 'distractors' (z. B. 'distractors': ['Wort1', 'Wort2']), damit sie dem Schüler im H5P-Wortspeicher zur Auswahl stehen!\n"
+                "   - WICHTIG BEI ERSETZUNGS-AUFGABEN (z. B. 'Ersetze die in Klammern angegebenen Wörter durch passende Pronomen'): Übernimm die originale Arbeitsanweisung exakt als erste Zeile und behalte die Wörter in Klammern ZWINGEND direkt neben der Lücke bei (z. B. 'Wie *sie* (die Regeln) gestaltet werden, hängt von den Eltern ab. Wenn *sie* (die Eltern) eher großzügig sind...')! Lösche NIEMALS die Klammern, da der Schüler sonst die Bezugswörter nicht kennt! Wähle hierfür bevorzugt 'Lückentext'.\n"
                 "   - Gib für jede Aufgabe eine verständliche Erklärung ('explanation') und einen ermutigenden Tipp ('hint') an.\n"
                 "   - Das Feld 'diagnostic.questions' MUSS zwingend eine leere Liste [] sein."
             )
@@ -572,6 +573,7 @@ WICHTIGE ANWEISUNGEN:
    - SYNONYME: Um Frust bei Schülern zu vermeiden, MÜSSEN inhaltlich oder mathematisch mehrdeutige Lücken alle gängigen Synonyme und Schreibweisen enthalten, getrennt durch einen Schrägstrich `/` (z.B. `*teilen/dividieren*`, `*3,14/3.14*`, `*verdoppeln/mal zwei nehmen/multiplizieren*`, `*Zahl/Konstante/Kreiszahl*`).
    - MAL-ZEICHEN: Verwende in mathematischen Formeln und Texten NIEMALS das Sternchen '*' als Multiplikationszeichen (Malzeichen), da dies Lücken-Parser irritiert. Benutze stattdessen ZWINGEND das offizielle Multiplikationszeichen '·' (Mittelpunkt / Malpunkt).
    - FACHLICHE RICHTIGKEIT: Alle mathematischen Formeln, Berechnungen und logischen Aussagen MÜSSEN zu 100% fachlich korrekt und präzise sein. Prüfe deine Aufgaben vor der Ausgabe kritisch auf inhaltliche Fehler!
+   - ERSETZUNGS-AUFGABEN (z. B. 'Ersetze die Wörter in Klammern durch passende Pronomen'): Das zu ersetzende Ausgangswort MUSS ZWINGEND in Klammern direkt neben der Lücke stehen bleiben (z. B. 'Wie *sie* (die Regeln) gestaltet werden...'). Niemals die Klammern löschen!
 {text_basis_instruction}
 {isb_rubric_instruction}
 5. STRIKTE AUFGABEN-FORMATIERUNGSREGELN FÜR DEN FELDINHALT 'text':

@@ -389,9 +389,19 @@ class H5PGenerator:
                     }
                 })
             elif task_format == "Drag the Words":
-                drag_text_field, distractors_str = H5PGenerator.extract_drag_text_and_distractors(formatted_blanks_text, task.get("distractors"))
+                instruction_text = task.get("instruction") or ""
+                text_to_process = formatted_blanks_text
+                if not instruction_text and "\n" in text_to_process:
+                    lines = [l.strip() for l in text_to_process.split("\n") if l.strip()]
+                    if len(lines) > 1 and not any(m in lines[0] for m in ["*", "[ ]", "[X]"]) and len(lines[0]) > 8:
+                        instruction_text = lines[0].rstrip(":")
+                        text_to_process = "\n".join(lines[1:])
+                if not instruction_text:
+                    instruction_text = task_title if (task_title and len(task_title) > 8 and not re.match(r"^Aufgabe\s*\d*$", task_title.strip(), re.IGNORECASE)) else "Ziehe die passenden Wörter in die Lücken."
+
+                drag_text_field, distractors_str = H5PGenerator.extract_drag_text_and_distractors(text_to_process, task.get("distractors"))
                 drag_params = {
-                    "taskDescription": "Ziehe die passenden Wörter in die Lücken.",
+                    "taskDescription": instruction_text,
                     "textField": drag_text_field,
                     "overallFeedback": overall_fb,
                     "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen",
@@ -431,18 +441,28 @@ class H5PGenerator:
                         }
                     })
             else: # Lückentext
+                instruction_text = task.get("instruction") or ""
+                text_to_process = formatted_blanks_text
+                if not instruction_text and "\n" in text_to_process:
+                    lines = [l.strip() for l in text_to_process.split("\n") if l.strip()]
+                    if len(lines) > 1 and not any(m in lines[0] for m in ["*", "[ ]", "[X]"]) and len(lines[0]) > 8:
+                        instruction_text = lines[0].rstrip(":")
+                        text_to_process = "\n".join(lines[1:])
+                if not instruction_text:
+                    instruction_text = task_title if (task_title and len(task_title) > 8 and not re.match(r"^Aufgabe\s*\d*$", task_title.strip(), re.IGNORECASE)) else "Bitte fülle die Lücken im Text aus."
+
                 hint_to_use = task_hint if task_hint else "Achte auf die genauen Merksätze im Merkkasten!"
                 def inject_blank_hint(m):
                     inner = m.group(1)
                     if ":" in inner:
                         return f"*{inner}*"
                     return f"*{inner}:{hint_to_use}*"
-                blanks_with_hints = re.sub(r'\*([^*]+)\*', inject_blank_hint, formatted_blanks_text)
+                blanks_with_hints = re.sub(r'\*([^*]+)\*', inject_blank_hint, text_to_process)
                 slides_data.append({
                     "title": task_title,
                     "library": "H5P.Blanks 1.14",
                     "params": {
-                        "text": "Bitte fülle die Lücken im Text aus. Klicke auf 💡 für einen Tipp.",
+                        "text": f"<p><strong>{instruction_text}</strong> (Klicke auf 💡 für einen Tipp)</p>",
                         "questions": [f"<p>{blanks_with_hints}</p>"],
                         "overallFeedback": overall_fb,
                         "title": task_title,
@@ -1049,9 +1069,19 @@ class H5PGenerator:
                         })
                     
                 elif task_format == "Drag the Words":
-                    drag_text_field, distractors_str = H5PGenerator.extract_drag_text_and_distractors(formatted_blanks_text, task.get("distractors"))
+                    instruction_text = task.get("instruction") or ""
+                    text_to_process = formatted_blanks_text
+                    if not instruction_text and "\n" in text_to_process:
+                        lines = [l.strip() for l in text_to_process.split("\n") if l.strip()]
+                        if len(lines) > 1 and not any(m in lines[0] for m in ["*", "[ ]", "[X]"]) and len(lines[0]) > 8:
+                            instruction_text = lines[0].rstrip(":")
+                            text_to_process = "\n".join(lines[1:])
+                    if not instruction_text:
+                        instruction_text = task_title if (task_title and len(task_title) > 8 and not re.match(r"^Aufgabe\s*\d*$", task_title.strip(), re.IGNORECASE)) else "Ziehe die passenden Wörter in die Lücken."
+
+                    drag_text_field, distractors_str = H5PGenerator.extract_drag_text_and_distractors(text_to_process, task.get("distractors"))
                     drag_params = {
-                        "taskDescription": "Ziehe die passenden Wörter in die Lücken.",
+                        "taskDescription": instruction_text,
                         "textField": drag_text_field,
                         "overallFeedback": overall_fb,
                         "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen", 
@@ -1112,12 +1142,22 @@ class H5PGenerator:
                     })
 
                 else: # Default: Lückentext (H5P.Blanks)
+                    instruction_text = task.get("instruction") or ""
+                    text_to_process = formatted_blanks_text
+                    if not instruction_text and "\n" in text_to_process:
+                        lines = [l.strip() for l in text_to_process.split("\n") if l.strip()]
+                        if len(lines) > 1 and not any(m in lines[0] for m in ["*", "[ ]", "[X]"]) and len(lines[0]) > 8:
+                            instruction_text = lines[0].rstrip(":")
+                            text_to_process = "\n".join(lines[1:])
+                    if not instruction_text:
+                        instruction_text = task_title if (task_title and len(task_title) > 8 and not re.match(r"^Aufgabe\s*\d*$", task_title.strip(), re.IGNORECASE)) else "Bitte fülle die Lücken im Text aus."
+
                     slides_data.append({
                         "title": task_title,
                         "library": "H5P.Blanks 1.14",
                         "params": {
-                            "text": "Bitte fülle die Lücken im Text aus.",
-                            "questions": [f"<p>{formatted_blanks_text}</p>"],
+                            "text": f"<p><strong>{instruction_text}</strong></p>",
+                            "questions": [f"<p>{text_to_process}</p>"],
                             "overallFeedback": overall_fb,
                             "title": task_title,
                             "score": "Du hast @score von @total Lücken richtig ausgefüllt.",
