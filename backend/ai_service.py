@@ -509,13 +509,13 @@ Generiere genau folgendes JSON-Schema:
   "diagnostic": {{
     "questions": [
       {{
-        "question": "Einstiegsfrage 1 zur Diagnose des aktuellen Niveaus",
-        "options": ["Richtige Antwortoption", "Falsche Antwortoption"],
+        "question": "Einstiegsfrage 1 zur Diagnose (WICHTIG: Bei Sachtexten/Inhalten ZWINGEND eine glasklare Textverständnisfrage zum Thema/Inhalt wie 'Wo befindet sich das Great Barrier Reef?'. Niemals Grammatik oder Meta-Fragen bei einem Sachtext!)",
+        "options": ["Konkrete, inhaltlich richtige Antwort", "Plausible Falschantwort"],
         "correct": 0
       }},
       {{
-        "question": "Einstiegsfrage 2 zur Diagnose",
-        "options": ["Falsche Option", "Richtige Option"],
+        "question": "Einstiegsfrage 2 zur Diagnose (konkrete, themenbezogene Inhaltsfrage zum Text)",
+        "options": ["Plausible Falschantwort", "Konkrete richtige Textantwort"],
         "correct": 1
       }}
     ]
@@ -906,25 +906,79 @@ Generiere genau dieses JSON:
             "level_b_notes": ""
         }
 
+        # Build appropriate diagnostic questions based on differentiation mode and topic
+        if differentiation_mode == "direct":
+            mock_diagnostic = {"questions": []}
+        else:
+            if is_factual:
+                if is_english:
+                    if "reef" in lower_heft or "barrier" in lower_heft:
+                        mock_diagnostic = {
+                            "questions": [
+                                {
+                                    "question": "Where is the Great Barrier Reef located?",
+                                    "options": ["Off the northeast coast of Australia", "In the Atlantic Ocean"],
+                                    "correct": 0
+                                },
+                                {
+                                    "question": "What is currently the greatest threat to coral reefs?",
+                                    "options": ["Too many fish species", "Rising sea temperatures and coral bleaching"],
+                                    "correct": 1
+                                }
+                            ]
+                        }
+                    else:
+                        mock_diagnostic = {
+                            "questions": [
+                                {
+                                    "question": f"What is the central topic of the text about '{clean_title_topic}'?",
+                                    "options": [f"Key factual information and background on {clean_title_topic}", "A fictional fairy tale"],
+                                    "correct": 0
+                                },
+                                {
+                                    "question": f"Which fact is highlighted regarding '{clean_title_topic}'?",
+                                    "options": ["An unimportant side note", f"The specific causes, data, and consequences described in the text"],
+                                    "correct": 1
+                                }
+                            ]
+                        }
+                else:
+                    mock_diagnostic = {
+                        "questions": [
+                            {
+                                "question": f"Worum geht es im vorliegenden Sachtext zu '{clean_title_topic}' hauptsächlich?",
+                                "options": [f"Um die wesentlichen Sachinformationen und Fakten zu {clean_title_topic}", "Um eine frei erfundene Geschichte"],
+                                "correct": 0
+                            },
+                            {
+                                "question": f"Welche Information ist für das Thema '{clean_title_topic}' besonders wichtig?",
+                                "options": ["Eine zufällige Randbemerkung", "Die im Text genannten Ursachen, Wirkungen und Fachbegriffe"],
+                                "correct": 1
+                            }
+                        ]
+                    }
+            else:
+                mock_diagnostic = {
+                    "questions": [
+                        {
+                            "question": f"Welches Grundprinzip gilt beim Thema '{clean_title_topic}'?",
+                            "options": [f"Die grundlegende Regel zu {clean_title_topic} schrittweise anwenden", "Regeln und Rechenschritte beliebig vertauschen"],
+                            "correct": 0
+                        },
+                        {
+                            "question": f"Wie gehst du bei einer kniffligeren Aufgabe zu '{clean_title_topic}' vor?",
+                            "options": ["Sofort aufgeben", "Die Aufgabenstellung genau analysieren und den passenden Lösungsweg wählen"],
+                            "correct": 1
+                        }
+                    ]
+                }
+
         return {
             "title": title,
             "lehrplan_code": f"{'M6 EG 2' if subject == 'Mathematik' else ('D5 L1' if subject == 'Deutsch' else 'E6 G1')}",
             "lehrplan_competency": f"LehrplanPlus Bayern ({subject}): Kompetenzen im Bereich '{topic_str}' anwenden und reflektieren",
             "extracted_text": extracted,
-            "diagnostic": {
-                "questions": [
-                    {
-                        "question": f"Einstiegsdiagnose zu '{topics_list[0]}'",
-                        "options": ["Richtige Antwort / Grundprinzip", "Falsche Antwort"],
-                        "correct": 0
-                    },
-                    {
-                        "question": f"Zweite Kontrollfrage zu '{topics_list[-1]}'",
-                        "options": ["Ablenkende Antwort", "Exakte Lösung"],
-                        "correct": 1
-                    }
-                ]
-            },
+            "diagnostic": mock_diagnostic,
             "hefteintrag": mock_hefteintrag,
             "zusatzaufgaben": [
                 {
