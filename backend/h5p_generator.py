@@ -1,3 +1,4 @@
+from urllib.parse import quote
 import json
 import zipfile
 import io
@@ -570,6 +571,37 @@ class H5PGenerator:
                         }
                     }
                 })
+            elif task_format in ["Freies Schreiben", "Essay", "Kreatives Schreiben", "Schreibaufgabe", "Textproduktion"]:
+                instruction_text = task.get("instruction") or raw_text
+                clean_instruction = instruction_text.replace("\n", "<br/>")
+                encoded_title = quote(task_title)
+                encoded_instruction = quote(instruction_text)
+                web_link = f"play.html?mode=essay&title={encoded_title}&instruction={encoded_instruction}"
+                
+                essay_card_html = (
+                    f"<div style='background:linear-gradient(135deg, #f8fafc 0%, #ede9fe 100%); border:2px solid #8b5cf6; border-radius:14px; padding:18px; box-shadow:0 4px 12px rgba(139,92,246,0.12); font-family:sans-serif; text-align:left;'>"
+                    f"<div style='display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #ddd6fe; padding-bottom:8px;'>"
+                    f"  <span style='background-color:#7c3aed; color:#ffffff; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; padding:4px 10px; border-radius:20px;'>✍️ KI-Schreibcoach (Web-Modul)</span>"
+                    f"  <span style='color:#6d28d9; font-size:11px; font-weight:700;'>BayernCloud Schule & mebis integriert</span>"
+                    f"</div>"
+                    f"<h3 style='color:#4c1d95; margin:0 0 8px 0; font-size:17px; font-weight:800;'>{task_title}</h3>"
+                    f"<div style='background-color:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:13.5px; line-height:1.6; color:#334155;'>{clean_instruction}</div>"
+                    f"<div style='background-color:#f5f3ff; border-left:4px solid #8b5cf6; padding:10px 12px; border-radius:6px; margin-bottom:14px; font-size:12px; color:#5b21b6; line-height:1.5;'>"
+                    f"💡 <strong>Pädagogische KI-Korrektur:</strong> Schreibe deinen Text im interaktiven Schreibcoach. Die KI prüft deine Vorgaben (Wortarten, Kriterien, Aufbau) semantisch und gibt dir sofort individuelles Feedback!"
+                    f"</div>"
+                    f"<div style='text-align:center; margin-top:14px;'>"
+                    f"  <a href='{web_link}' target='_blank' style='display:inline-block; background:linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color:#ffffff; font-weight:800; font-size:13.5px; padding:11px 22px; border-radius:12px; text-decoration:none; box-shadow:0 3px 8px rgba(109,40,217,0.3);'>🚀 Text jetzt schreiben & KI-Feedback erhalten</a>"
+                    f"</div>"
+                    f"</div>"
+                )
+                slides_data.append({
+                    "title": task_title,
+                    "library": "H5P.AdvancedText 1.1",
+                    "params": {
+                        "text": essay_card_html
+                    }
+                })
+
             elif task_format in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"]:
                 table_html = H5PGenerator.format_table_drag_text(formatted_blanks_text)
                 instruction_text = task.get("instruction") or ""
@@ -646,11 +678,19 @@ class H5PGenerator:
             for z_idx, z in enumerate(zusatzaufgaben):
                 z_title = z.get("title", f"Experten-Aufgabe {z_idx+1}")
                 z_task = z.get("task", "")
+                z_is_writing = any(kw in (z_title + " " + z_task).lower() for kw in ["schreib", "essay", "text"])
+                z_coach_btn = ""
+                if z_is_writing:
+                    z_enc_title = quote(z_title)
+                    z_enc_inst = quote(z_task)
+                    z_link = f"play.html?mode=essay&title={z_enc_title}&instruction={z_enc_inst}"
+                    z_coach_btn = f"<div style='margin-top:14px; text-align:center;'><a href='{z_link}' target='_blank' style='display:inline-block; background:linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color:#ffffff; font-weight:800; font-size:13px; padding:10px 20px; border-radius:10px; text-decoration:none; box-shadow:0 3px 8px rgba(37,99,235,0.3);'>✍️ Im KI-Schreibcoach schreiben & prüfen</a></div>"
+                
                 expert_slides.append({
                     "title": z_title,
                     "library": "H5P.AdvancedText 1.1",
                     "params": {
-                        "text": f"<div style='background-color:#eff6ff; border-left:4px solid #3b82f6; padding:15px; border-radius:8px;'><h3 style='color:#1d4ed8; margin-top:0;'>🚀 {z_title}</h3><p style='font-size:16px; color:#1e3a8a; line-height:1.6;'>{z_task}</p></div>"
+                        "text": f"<div style='background-color:#eff6ff; border-left:4px solid #3b82f6; padding:15px; border-radius:8px;'><h3 style='color:#1d4ed8; margin-top:0;'>🚀 {z_title}</h3><p style='font-size:16px; color:#1e3a8a; line-height:1.6;'>{z_task}</p>{z_coach_btn}</div>"
                     }
                 })
             content_nodes.append(wrap_in_cp(
@@ -1316,6 +1356,37 @@ class H5PGenerator:
                         }
                     })
 
+                elif task_format in ["Freies Schreiben", "Essay", "Kreatives Schreiben", "Schreibaufgabe", "Textproduktion"]:
+                    instruction_text = task.get("instruction") or raw_text
+                    clean_instruction = instruction_text.replace("\n", "<br/>")
+                    encoded_title = quote(task_title)
+                    encoded_instruction = quote(instruction_text)
+                    web_link = f"play.html?mode=essay&title={encoded_title}&instruction={encoded_instruction}"
+                    
+                    essay_card_html = (
+                        f"<div style='background:linear-gradient(135deg, #f8fafc 0%, #ede9fe 100%); border:2px solid #8b5cf6; border-radius:14px; padding:18px; box-shadow:0 4px 12px rgba(139,92,246,0.12); font-family:sans-serif; text-align:left;'>"
+                        f"<div style='display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #ddd6fe; padding-bottom:8px;'>"
+                        f"  <span style='background-color:#7c3aed; color:#ffffff; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; padding:4px 10px; border-radius:20px;'>✍️ KI-Schreibcoach (Web-Modul)</span>"
+                        f"  <span style='color:#6d28d9; font-size:11px; font-weight:700;'>BayernCloud Schule & mebis integriert</span>"
+                        f"</div>"
+                        f"<h3 style='color:#4c1d95; margin:0 0 8px 0; font-size:17px; font-weight:800;'>{task_title}</h3>"
+                        f"<div style='background-color:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:13.5px; line-height:1.6; color:#334155;'>{clean_instruction}</div>"
+                        f"<div style='background-color:#f5f3ff; border-left:4px solid #8b5cf6; padding:10px 12px; border-radius:6px; margin-bottom:14px; font-size:12px; color:#5b21b6; line-height:1.5;'>"
+                        f"💡 <strong>Pädagogische KI-Korrektur:</strong> Schreibe deinen Text im interaktiven Schreibcoach. Die KI prüft deine Vorgaben (Wortarten, Kriterien, Aufbau) semantisch und gibt dir sofort individuelles Feedback!"
+                        f"</div>"
+                        f"<div style='text-align:center; margin-top:14px;'>"
+                        f"  <a href='{web_link}' target='_blank' style='display:inline-block; background:linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color:#ffffff; font-weight:800; font-size:13.5px; padding:11px 22px; border-radius:12px; text-decoration:none; box-shadow:0 3px 8px rgba(109,40,217,0.3);'>🚀 Text jetzt schreiben & KI-Feedback erhalten</a>"
+                        f"</div>"
+                        f"</div>"
+                    )
+                    slides_data.append({
+                        "title": task_title,
+                        "library": "H5P.AdvancedText 1.1",
+                        "params": {
+                            "text": essay_card_html
+                        }
+                    })
+
                 elif task_format in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"]:
                     table_html = H5PGenerator.format_table_drag_text(formatted_blanks_text)
                     instruction_text = task.get("instruction") or ""
@@ -1389,11 +1460,19 @@ class H5PGenerator:
             for z_idx, z in enumerate(zusatzaufgaben):
                 z_title = z.get("title", f"Experten-Aufgabe {z_idx+1}")
                 z_task = z.get("task", "")
+                z_is_writing = any(kw in (z_title + " " + z_task).lower() for kw in ["schreib", "essay", "text"])
+                z_coach_btn = ""
+                if z_is_writing:
+                    z_enc_title = quote(z_title)
+                    z_enc_inst = quote(z_task)
+                    z_link = f"play.html?mode=essay&title={z_enc_title}&instruction={z_enc_inst}"
+                    z_coach_btn = f"<div style='margin-top:14px; text-align:center;'><a href='{z_link}' target='_blank' style='display:inline-block; background:linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color:#ffffff; font-weight:800; font-size:13px; padding:10px 20px; border-radius:10px; text-decoration:none; box-shadow:0 3px 8px rgba(37,99,235,0.3);'>✍️ Im KI-Schreibcoach schreiben & prüfen</a></div>"
+                
                 expert_slides.append({
                     "title": z_title,
                     "library": "H5P.AdvancedText 1.1",
                     "params": {
-                        "text": f"<div style='background-color:#eff6ff; border-left:4px solid #3b82f6; padding:15px; border-radius:8px;'><h3 style='color:#1d4ed8; margin-top:0;'>🚀 {z_title}</h3><p style='font-size:16px; color:#1e3a8a; line-height:1.6;'>{z_task}</p></div>"
+                        "text": f"<div style='background-color:#eff6ff; border-left:4px solid #3b82f6; padding:15px; border-radius:8px;'><h3 style='color:#1d4ed8; margin-top:0;'>🚀 {z_title}</h3><p style='font-size:16px; color:#1e3a8a; line-height:1.6;'>{z_task}</p>{z_coach_btn}</div>"
                     }
                 })
             content_nodes.append(wrap_in_course_presentation(
@@ -1961,6 +2040,9 @@ class H5PGenerator:
             "Kategorie-Zuordnung": {"machineName": "H5P.DragText", "majorVersion": 1, "minorVersion": 10},
             "Wahr/Falsch": {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 8},
             "Wörter markieren": {"machineName": "H5P.MarkTheWords", "majorVersion": 1, "minorVersion": 11},
+            "Freies Schreiben": {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1},
+            "Essay": {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1},
+            "Kreatives Schreiben": {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1},
             "Lückentext": {"machineName": "H5P.Blanks", "majorVersion": 1, "minorVersion": 14}
         }
         

@@ -114,6 +114,15 @@ class ExportData(BaseModel):
     video_mode: Optional[str] = None
     interactions: Optional[List[dict]] = None
 
+class EssayEvaluationRequest(BaseModel):
+    task_title: str
+    task_instruction: str
+    student_text: str
+    school_type: Optional[str] = "Mittelschule"
+    subject: Optional[str] = "Deutsch"
+    criteria: Optional[List[str]] = []
+    api_key: Optional[str] = None
+
 @app.post("/api/generate")
 async def generate_task(
     files: List[UploadFile] = File(default=[]),
@@ -367,6 +376,31 @@ async def export_scorm(data: ExportData):
     except Exception as e:
         logger.error(f"Error generating SCORM: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"SCORM-Generierung fehlgeschlagen: {str(e)}")
+
+@app.post("/api/evaluate-essay")
+async def evaluate_essay_endpoint(req: EssayEvaluationRequest):
+    """
+    Evaluates a student written essay or text semantically using AI,
+    returning detailed criteria fulfillment, pedagogical praise, and revision tips.
+    """
+    try:
+        if not req.student_text or not req.student_text.strip():
+            raise HTTPException(status_code=400, detail="Bitte gib einen Text ein.")
+        result = ai_service.evaluate_essay(
+            task_title=req.task_title,
+            task_instruction=req.task_instruction,
+            student_text=req.student_text,
+            school_type=req.school_type or "Mittelschule",
+            subject=req.subject or "Deutsch",
+            criteria=req.criteria or [],
+            api_key=req.api_key
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in evaluate_essay: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 import socket
 import random

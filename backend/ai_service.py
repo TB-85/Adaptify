@@ -392,7 +392,7 @@ class AIService:
 
         format_instruction = (
             "4. Formuliere die Aufgaben für Level A und Level B. Wähle für das Feld 'format' jedes Tasks das Format, "
-            "das am besten zum jeweiligen Inhalt passt ('Lückentext', 'Drag the Words', 'Tabellen-Zuordnung', 'Wörter markieren', 'Wahr/Falsch', 'Multiple Choice' oder 'Vokabelkarten'). "
+            "das am besten zum jeweiligen Inhalt passt ('Lückentext', 'Drag the Words', 'Tabellen-Zuordnung', 'Wörter markieren', 'Freies Schreiben', 'Wahr/Falsch', 'Multiple Choice' oder 'Vokabelkarten'). "
             "Pädagogische Vorgabe für KI-Mix: Wähle für das niedrigere Niveau (Level A) einfachere Aufgaben-Formate, z. B. 'Drag the Words' anstelle eines 'Lückentextes', da vorgegebene Wörter leichter zuzuordnen sind. "
             "Für das höhere Niveau (Level B) verwende anspruchsvollere Formate, bei denen die Schüler selbst die Antworten tippen müssen (z. B. 'Lückentext'), oder nutze bei 'Multiple Choice' deutlich anspruchsvollere und mehrere Distraktoren. "
             "Variiere die Formate ganz gezielt, um die Übungen abwechslungsreich zu gestalten."
@@ -515,6 +515,12 @@ VORGABEN FÜR SPEZIELLE AUFGABENFORMATE:
      | *Verb* | *Konjunktion* |
      | *Adjektiv* | *Adverb* |
      Distraktoren: Banane, Baumhaus
+
+- 'Freies Schreiben' / 'Essay' (KI-Schreibcoach mit semantischer Textkorrektur):
+  -> Für freie Textproduktion, kreatives Schreiben, Argumentationen, Zusammenfassungen oder Beschreibungen.
+  -> In 'text' formulierst du die Schreibaufgabe mit klaren, überprüfbaren Kriterien (z. B. Umfang in Sätzen/Wörtern, zu verwendende sprachliche Elemente wie Wortarten, Satzanfänge, Argumente).
+  -> In 'hint' gibst du hilfreiche Formulierungshilfen oder Wortschatz-Impulse.
+  -> In 'explanation' gibst du ein inspirierendes Musterbeispiel.
 
 STRIKTE VORGABE FÜR DEN SCHWERPUNKT 'TEXTVERSTÄNDNIS' / 'LESEVERSTEHEN' / 'READING':
 - Wenn ein Schwerpunkt 'Textverständnis', 'Leseverstehen', 'Reading' oder 'Sachtext' lautet:
@@ -964,6 +970,35 @@ Generiere genau dieses JSON:
                     "format": fmt,
                     "hint": m_hint,
                     "explanation": m_exp
+                })
+            elif fmt in ["Freies Schreiben", "Essay", "Kreatives Schreiben", "Schreibaufgabe"]:
+                a_text = (
+                    f"Schreibe einen kurzen Text (ca. 4-5 Sätze) zum Thema '{clean_title_topic}'.\n"
+                    f"Kriterien:\n"
+                    f"- Verwende mindestens zwei Präpositionen (z. B. in, auf, mit, bei).\n"
+                    f"- Verwende mindestens zwei Konjunktionen (z. B. weil, dass, und, obwohl).\n"
+                    f"- Verwende mindestens zwei Adverbien (z. B. heute, oft, gerne, besonders)."
+                )
+                b_text = (
+                    f"Verfasse eine begründete Stellungnahme (ca. 6-8 Sätze) zum Thema '{clean_title_topic}'.\n"
+                    f"Kriterien:\n"
+                    f"- Formuliere eine klare eigene Meinung mit zwei aussagekräftigen Argumenten.\n"
+                    f"- Verwende mindestens drei verschiedene Konjunktionen (z. B. da, weil, sodass, obwohl).\n"
+                    f"- Achte auf abwechslungsreiche Satzanfänge und treffende Fachbegriffe."
+                )
+                tasks_a.append({
+                    "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
+                    "text": a_text,
+                    "format": "Freies Schreiben",
+                    "hint": "💡 Tipp: Überlege dir vor dem Schreiben Stichpunkte und achte auf die Wortarten.",
+                    "explanation": f"Musteranfang: Zum Thema '{clean_title_topic}' gibt es heute viele spannende Aspekte..."
+                })
+                tasks_b.append({
+                    "title": b_title,
+                    "text": b_text,
+                    "format": "Freies Schreiben",
+                    "hint": "💡 Tipp: Verwende Signalwörter wie 'einerseits ... andererseits' für deine Argumentation.",
+                    "explanation": f"Musterbeispiel: Meiner Ansicht nach ist '{clean_title_topic}' von großer Bedeutung, weil..."
                 })
             elif fmt in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"]:
                 if subject == "Englisch":
@@ -1544,4 +1579,252 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
             "school_type": school_type,
             "interactions": interactions,
             "error": error_message
+        }
+
+
+    def evaluate_essay(
+        self,
+        task_title: str,
+        task_instruction: str,
+        student_text: str,
+        school_type: str = "Mittelschule",
+        subject: str = "Deutsch",
+        criteria: list = None,
+        api_key: str = None
+    ) -> dict:
+        """
+        Semantically evaluates a student essay / written text according to Bavarian LehrplanPLUS & ISB standards.
+        Uses Gemini LLM for deep semantic reasoning, falling back to a pedagogical heuristic if offline.
+        """
+        student_text = (student_text or "").strip()
+        if not student_text:
+            return {
+                "score": 0,
+                "rating": "Noch kein Text",
+                "praise": "Bitte tippe deinen Text ein, damit die KI ihn prüfen kann.",
+                "tips": "Fange mit dem ersten Satz an!",
+                "criteria_met": [],
+                "corrections": [],
+                "stats": {"word_count": 0, "sentence_count": 0},
+                "revised_example": ""
+            }
+
+        client = None
+        if api_key and api_key.strip():
+            try:
+                client = genai.Client(api_key=api_key.strip())
+            except Exception as e:
+                logger.error(f"Failed to initialize client with dynamic key: {e}")
+        if not client:
+            client = self.client
+
+        if client:
+            prompt = f"""Du bist ein einfühlsamer, hochkompetenter pädagogischer KI-Schreibcoach an bayerischen Schulen (LehrplanPLUS und ISB-Qualitätstableau).
+Deine Aufgabe: Analysiere den Text eines Schülers der Schulart '{school_type}' im Fach '{subject}' semantisch, wertschätzend und konstruktiv.
+
+AUFGABENSTELLUNG / THEMA:
+Titel: {task_title}
+Anweisung & Kriterien: {task_instruction}
+
+TEXT DES SCHÜLERS:
+<<<
+{student_text}
+>>>
+
+DIDAKTISCHER AUFTRAG NACH DEM SCHREIBPROZESS-MODELL:
+1. KRITERIEN-CHECK:
+   - Wurde das Thema verstanden und die Anweisung beachtet?
+   - Wurden geforderte sprachliche Vorgaben (z. B. Wortarten wie Präpositionen, Konjunktionen, Adverbien, Satzanzahl, Argumente) erfüllt?
+   - Extrahiere die konkreten Nachweise (gefundene Wörter/Sätze) aus dem Schülertext für jedes Kriterium.
+2. PÄDAGOGISCHES FEEDBACK (Wohlwollend & motivierend):
+   - 'praise': Hebe ehrlich und ermutigend hervor, was dem Schüler inhaltlich, sprachlich oder kreativ schon sehr gut gelungen ist.
+   - 'tips': Gib 1-2 konkrete, umsetzbare Tipps zur Überarbeitung (z. B. Satzverknüpfungen, treffende Verben/Adjektive, Satzanfänge).
+3. MECHANIK & SPRACHRICHTIGKEIT:
+   - 'corrections': Finde Rechtschreib- oder Grammatikfehler im Text und erkläre sie freundlich (Original, Korrektur, Erklärung).
+4. GESAMTBEWERTUNG:
+   - 'score': 0 bis 100 Punkte (Prozentsatz der Kriterienerfüllung & Textqualität).
+   - 'rating': Z. B. 'Hervorragend! 🌟', 'Tolle Leistung! 🚀', 'Auf gutem Weg! 💡' oder 'Guter Anfang! 💪'.
+   - 'stats': Anzahl Wörter ('word_count') und Sätze ('sentence_count').
+   - 'revised_example': 1 beispielhaft veredelter Satz als Inspiration.
+
+Antworte ausschließlich in folgendem validen JSON:
+{{
+  "score": 85,
+  "rating": "Tolle Leistung! 🌟",
+  "praise": "Dein Text beschreibt ... besonders anschaulich.",
+  "tips": "Versuche beim nächsten Entwurf noch ...",
+  "criteria_met": [
+    {{"name": "Thema getroffen", "fulfilled": true, "details": "Thema gut erfasst"}},
+    {{"name": "Mindestens 2 Präpositionen", "fulfilled": true, "details": "Gefunden: in, auf"}}
+  ],
+  "corrections": [
+    {{"original": "werckstatt", "suggestion": "Werkstatt", "explanation": "'Werkstatt' schreibt man ohne c."}}
+  ],
+  "stats": {{
+    "word_count": 42,
+    "sentence_count": 5
+  }},
+  "revised_example": "Hier ist eine Inspiration für einen eleganten Satz..."
+}}
+"""
+            candidate_models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
+            for model_name in candidate_models:
+                try:
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            temperature=0.3
+                        )
+                    )
+                    if response and response.text:
+                        parsed = json.loads(response.text)
+                        if isinstance(parsed, dict) and "score" in parsed:
+                            logger.info(f"Successfully evaluated essay with Gemini model {model_name}")
+                            return parsed
+                except Exception as eval_err:
+                    logger.warning(f"Gemini essay eval with {model_name} failed: {eval_err}")
+
+        # Fallback to intelligent pedagogical heuristic
+        return self._evaluate_essay_heuristic(task_title, task_instruction, student_text, school_type, subject)
+
+    def _evaluate_essay_heuristic(
+        self,
+        task_title: str,
+        task_instruction: str,
+        student_text: str,
+        school_type: str = "Mittelschule",
+        subject: str = "Deutsch"
+    ) -> dict:
+        """
+        High-fidelity heuristic pedagogical evaluation for offline usage or fallback.
+        Analyzes sentence structure, word counts, grammatical keywords (prepositions, conjunctions, adverbs)
+        and formats encouraging ISB-compliant feedback.
+        """
+        clean_text = student_text.strip()
+        sentences = [s.strip() for s in re.split(r'[.!?]+', clean_text) if s.strip()]
+        words = re.findall(r'\b[\wÄÖÜäöüß-]+\b', clean_text)
+        word_count = len(words)
+        sentence_count = len(sentences)
+
+        lower_words = [w.lower() for w in words]
+        
+        # Word lists
+        prepositions = {"in", "an", "auf", "unter", "über", "vor", "hinter", "neben", "zwischen", "mit", "nach", "von", "zu", "aus", "bei", "seit", "durch", "für", "gegen", "ohne", "um", "trotz", "während", "wegen", "ab", "bis", "entlang"}
+        conjunctions = {"weil", "da", "dass", "daß", "sodass", "obwohl", "wenn", "falls", "als", "während", "bevor", "nachdem", "und", "oder", "aber", "denn", "sondern", "doch", "jedoch", "damit"}
+        adverbs = {"heute", "gestern", "morgen", "oft", "selten", "immer", "nie", "manchmal", "hier", "da", "dort", "überall", "sehr", "besonders", "vielleicht", "gerne", "leider", "deshalb", "darum", "zuerst", "dann", "schließlich", "bald", "bereits", "noch", "fast", "kaum", "wirklich"}
+
+        found_prep = list(dict.fromkeys([w for w in lower_words if w in prepositions]))
+        found_conj = list(dict.fromkeys([w for w in lower_words if w in conjunctions]))
+        found_adv = list(dict.fromkeys([w for w in lower_words if w in adverbs]))
+
+        criteria_met = []
+        inst_lower = (task_instruction + " " + task_title).lower()
+
+        # Criterion 1: General content & length
+        has_min_words = word_count >= 12
+        criteria_met.append({
+            "name": "Themenbezug & Mindestlänge",
+            "fulfilled": has_min_words,
+            "details": f"{word_count} Wörter verfasst (mind. 12 empfohlen)" if has_min_words else f"Bisher erst {word_count} Wörter – schreibe noch etwas mehr!"
+        })
+
+        # Criterion 2: Sentence count if mentioned
+        if "satz" in inst_lower or "sätze" in inst_lower:
+            m_sc = re.search(r'(\d+)\s*sätze', inst_lower)
+            target_sc = int(m_sc.group(1)) if m_sc else 4
+            sc_met = sentence_count >= max(2, target_sc - 1)
+            criteria_met.append({
+                "name": f"Satzanzahl (Ziel: ca. {target_sc} Sätze)",
+                "fulfilled": sc_met,
+                "details": f"{sentence_count} vollständige Sätze erkannt" if sc_met else f"Bisher {sentence_count} Sätze – formuliere noch {target_sc - sentence_count} weitere Sätze."
+            })
+
+        # Criterion 3: Prepositions
+        if "präposition" in inst_lower:
+            prep_met = len(found_prep) >= 2
+            criteria_met.append({
+                "name": "Mindestens 2 Präpositionen",
+                "fulfilled": prep_met,
+                "details": f"Gefunden: {', '.join(found_prep[:4])}" if prep_met else (f"Bisher nur '{found_prep[0]}'" if found_prep else "Keine Präpositionen (z. B. in, auf, mit, bei) gefunden")
+            })
+
+        # Criterion 4: Conjunctions
+        if "konjunktion" in inst_lower or "bindewort" in inst_lower:
+            conj_met = len(found_conj) >= 2
+            criteria_met.append({
+                "name": "Mindestens 2 Konjunktionen (Bindewörter)",
+                "fulfilled": conj_met,
+                "details": f"Gefunden: {', '.join(found_conj[:4])}" if conj_met else (f"Bisher nur '{found_conj[0]}'" if found_conj else "Baue Bindewörter wie 'weil', 'dass' oder 'obwohl' ein")
+            })
+
+        # Criterion 5: Adverbs
+        if "adverb" in inst_lower or "umstandswort" in inst_lower:
+            adv_met = len(found_adv) >= 2
+            criteria_met.append({
+                "name": "Mindestens 2 Adverbien",
+                "fulfilled": adv_met,
+                "details": f"Gefunden: {', '.join(found_adv[:4])}" if adv_met else (f"Bisher nur '{found_adv[0]}'" if found_adv else "Verwende Umstandswörter wie 'oft', 'gerne', 'heute' oder 'besonders'")
+            })
+
+        # Score calculation
+        met_count = sum(1 for c in criteria_met if c["fulfilled"])
+        total_criteria = len(criteria_met) or 1
+        score = int(round((met_count / total_criteria) * 100))
+        if word_count < 10:
+            score = min(score, 40)
+
+        # Rating label
+        if score >= 90:
+            rating = "Hervorragend gelöst! 🌟"
+            praise = f"Klasse Leistung! Du hast die Kriterien für '{task_title}' vorbildlich umgesetzt und deinen Text flüssig formuliert."
+            tips = "Achte beim nächsten Mal auf noch abwechslungsreichere Satzanfänge, um deinen Text noch lebendiger zu machen."
+        elif score >= 70:
+            rating = "Tolle Leistung! 🚀"
+            praise = f"Sehr gut! Dein Text zum Thema '{task_title}' ist verständlich geschrieben und greift wichtige Vorgaben auf."
+            tips = "Schau dir die Kriterien-Checkliste an: Wenn du noch fehlende Elemente ergänzt, wird dein Text perfekt!"
+        elif score >= 50:
+            rating = "Auf gutem Weg! 💡"
+            praise = "Du hast schon einen guten Anfang gefunden und deine Gedanken aufgeschrieben."
+            tips = "Lies dir die Aufgabenstellung noch einmal genau durch und baue die noch fehlenden Wortarten oder Sätze ein."
+        else:
+            rating = "Guter Ansatz – erweitere deinen Text! 💪"
+            praise = "Schön, dass du angefangen hast zu schreiben."
+            tips = "Schreibe noch ein paar Sätze dazu und achte auf die Kriterien aus der Aufgabenstellung."
+
+        # Detect common typos for corrections list
+        corrections = []
+        typo_patterns = [
+            (r'\b(dass|daß)\b', "dass", "Konjunktion 'dass' mit Doppel-s."),
+            (r'\bwerckstatt\b', "Werkstatt", "'Werkstatt' wird ohne c geschrieben."),
+            (r'\bmaschine\b', "Maschine", "Nomen werden großgeschrieben."),
+            (r'\bviel leicht\b', "vielleicht", "'vielleicht' wird zusammen geschrieben.")
+        ]
+        for pat, fix, rule in typo_patterns:
+            m = re.search(pat, clean_text, re.IGNORECASE)
+            if m and m.group(0) != fix:
+                corrections.append({
+                    "original": m.group(0),
+                    "suggestion": fix,
+                    "explanation": rule
+                })
+
+        revised = (
+            f"Beispiel zur Inspiration: 'Wenn ich an {task_title} denke, "
+            f"möchte ich besonders gerne mit Menschen arbeiten, weil mir das große Freude macht.'"
+        )
+
+        return {
+            "score": score,
+            "rating": rating,
+            "praise": praise,
+            "tips": tips,
+            "criteria_met": criteria_met,
+            "corrections": corrections,
+            "stats": {
+                "word_count": word_count,
+                "sentence_count": sentence_count
+            },
+            "revised_example": revised
         }

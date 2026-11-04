@@ -2492,6 +2492,7 @@ function populateEditor(data) {
                         <option value="Vokabelkarten" ${t.format === 'Vokabelkarten' ? 'selected' : ''}>Vokabelkarten</option>
                         <option value="Wörter markieren" ${t.format === 'Wörter markieren' ? 'selected' : ''}>Wörter markieren</option>
                         <option value="Tabellen-Zuordnung" ${t.format === 'Tabellen-Zuordnung' ? 'selected' : ''}>Tabellen-Zuordnung</option>
+                        <option value="Freies Schreiben" ${t.format === 'Freies Schreiben' ? 'selected' : ''}>Freies Schreiben (KI-Feedback)</option>
                     </select>
                     <div class="flex items-center gap-1">
                         <button type="button" onclick="moveTask('${prefix}', ${i}, -1)" class="p-1 text-slate-400 hover:text-slate-800 text-xs font-bold" title="Nach oben">▲</button>
@@ -2786,7 +2787,22 @@ window.copyIframeEmbedCode = async function() {
     }
     
     pin = window.liveSessionPin || pin || 'LIVE';
-    const embedUrl = `${window.location.origin}/play.html?pin=${pin}`;
+    const embedUrl = `${window.location.origin}/play.html?pin=${pin}&embed=true`;
+    const iframeCode = `<iframe src="${embedUrl}" width="100%" height="700" frameborder="0" style="border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 14px rgba(0,0,0,0.06); width:100%; min-height:650px;" allow="clipboard-write; fullscreen"></iframe>`;
+    
+    const msg = `📋 BayernCloud Schule & mebis iFrame-Einbettungscode (PIN: ${pin}) kopiert!\n\nSo bindest du ihn in mebis ein:\n1. In deinem mebis-Kurs 'Bearbeiten einschalten'\n2. 'Aktivität anlegen' ➔ 'Text- und Medienbereich' wählen\n3. Im Editor auf HTML (< >) klicken und diesen Code einfügen. Fertig!\n\nDeine Schüler schreiben und üben direkt in mebis und erhalten semantisches Echtzeit-Feedback.`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(iframeCode).then(() => {
+            alert(msg);
+        }).catch(() => {
+            prompt("Kopiere diesen iFrame-Code für mebis / ByCS:", iframeCode);
+        });
+    } else {
+        prompt("Kopiere diesen iFrame-Code für mebis / ByCS:", iframeCode);
+    }
+    return;
+    
     const iframeCode = `<iframe src="${embedUrl}" width="100%" height="650" style="border:0; border-radius:16px; overflow:hidden;" allow="camera; microphone; autoplay; fullscreen"></iframe>`;
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -3417,6 +3433,8 @@ function renderSimulator() {
             taskWidgetHtml = renderSimDragText(task);
         } else if (task.format === 'Wörter markieren') {
             taskWidgetHtml = renderSimMarkTheWords(task);
+        } else if (task.format === 'Freies Schreiben' || task.format === 'Essay' || task.format === 'Kreatives Schreiben' || task.format === 'Schreibaufgabe' || task.format === 'Textproduktion') {
+            taskWidgetHtml = renderSimEssay(task);
         } else { // Lückentext
             taskWidgetHtml = renderSimBlanks(task);
         }
@@ -3763,6 +3781,270 @@ window.toggleSimMarkWord = function(el) {
     el.classList.toggle('selected');
 };
 
+
+    function renderSimEssay(task) {
+        const title = task.title || 'Freies Schreiben';
+        const instruction = task.text || task.instruction || '';
+        
+        const lines = instruction.split('\n').map(l => l.trim()).filter(Boolean);
+        const introLines = [];
+        const criteriaList = [];
+        lines.forEach(l => {
+            if (l.startsWith('-') || l.startsWith('*') || l.startsWith('•') || /^\d+\./.test(l)) {
+                criteriaList.push(l.replace(/^[-*•\d.]+\s*/, ''));
+            } else {
+                introLines.push(l);
+            }
+        });
+
+        const cleanIntro = introLines.join('<br>') || instruction;
+        const prevText = simState.userAnswers['essay_text'] || '';
+
+        return `
+            <div class="space-y-4 text-left">
+                <div class="p-4 bg-gradient-to-r from-brand-50 to-indigo-50 border border-brand-200/80 rounded-2xl">
+                    <div class="flex items-center gap-2 text-brand-800 text-xs font-bold mb-1.5">
+                        <i class="fa-solid fa-wand-magic-sparkles text-brand-600"></i>
+                        <span>Aufgabenstellung &amp; Kriterien:</span>
+                    </div>
+                    <div class="text-xs text-slate-700 leading-relaxed font-medium">
+                        ${cleanIntro}
+                    </div>
+                    ${criteriaList.length > 0 ? `
+                        <div class="mt-3 pt-2.5 border-t border-brand-200/60 flex flex-wrap gap-1.5">
+                            ${criteriaList.map(c => `
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-brand-200 rounded-lg text-[11px] font-semibold text-brand-800 shadow-xs">
+                                    <i class="fa-solid fa-check text-brand-500 text-[10px]"></i> ${c}
+                                </span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- Writing Workspace -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-[11px] text-slate-500 font-semibold px-1">
+                        <span class="flex items-center gap-1.5 font-bold text-slate-700">
+                            <i class="fa-solid fa-pen-nib text-brand-600"></i> Text-Eingabe (Schüleransicht):
+                        </span>
+                        <div class="flex items-center gap-2 font-mono text-[10px]">
+                            <span id="essay-word-count" class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-bold">0 Wörter</span>
+                            <span id="essay-sentence-count" class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-bold">0 Sätze</span>
+                        </div>
+                    </div>
+                    <textarea id="sim-essay-input" rows="6" 
+                        oninput="handleEssayInput(this)" 
+                        placeholder="Hier tippt der Schüler den eigenen Text ein... Anschließend analysiert die KI den Text semantisch auf alle Vorgaben."
+                        class="w-full p-3.5 bg-white border-2 border-slate-200 rounded-2xl text-xs text-slate-800 leading-relaxed placeholder:text-slate-400 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-100 transition-all font-sans">${prevText}</textarea>
+                </div>
+
+                <!-- Submit Button for Essay -->
+                <div class="pt-1">
+                    <button id="btn-essay-submit" onclick="submitEssayForEvaluation()" 
+                        class="w-full py-3 bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 hover:from-brand-700 hover:to-indigo-700 text-white font-extrabold rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-xs cursor-pointer">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Text mit KI semantisch prüfen &amp; Feedback anfordern</span>
+                    </button>
+                </div>
+
+                <!-- Loading Spinner Container -->
+                <div id="essay-loading" class="hidden p-5 bg-brand-50/60 border border-brand-200 rounded-2xl text-center space-y-2">
+                    <div class="inline-block h-7 w-7 border-3 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+                    <div class="text-xs font-bold text-brand-900">Die KI analysiert den Text semantisch...</div>
+                    <div class="text-[10px] text-brand-700">Prüft Kriterien, Wortarten und formuliert didaktisches Feedback</div>
+                </div>
+
+                <!-- Feedback Container -->
+                <div id="essay-feedback-container" class="hidden space-y-3 pt-1"></div>
+            </div>
+        `;
+    }
+
+    function handleEssayInput(textarea) {
+        const text = textarea.value.trim();
+        simState.userAnswers['essay_text'] = textarea.value;
+        const words = text ? (text.match(/\b[\wÄÖÜäöüß-]+\b/g) || []).length : 0;
+        const sentences = text ? text.split(/[.!?]+/).map(s => s.trim()).filter(Boolean).length : 0;
+        
+        const wEl = document.getElementById('essay-word-count');
+        const sEl = document.getElementById('essay-sentence-count');
+        if (wEl) wEl.textContent = `${words} Wörter`;
+        if (sEl) sEl.textContent = `${sentences} Sätze`;
+    }
+
+    async function submitEssayForEvaluation() {
+        const input = document.getElementById('sim-essay-input');
+        const text = input ? input.value.trim() : '';
+        if (!text) {
+            alert("Bitte tippe zuerst einen kurzen Text in das Schreibfeld ein.");
+            return;
+        }
+        
+        const task = simState.tasks[simState.taskIndex];
+        simState.userAnswers['essay_text'] = text;
+
+        const btn = document.getElementById('btn-essay-submit');
+        const loading = document.getElementById('essay-loading');
+        const fbContainer = document.getElementById('essay-feedback-container');
+
+        if (btn) btn.disabled = true;
+        if (loading) loading.classList.remove('hidden');
+        if (fbContainer) fbContainer.classList.add('hidden');
+
+        try {
+            const payload = {
+                task_title: task.title || 'Freies Schreiben',
+                task_instruction: task.text || task.instruction || '',
+                student_text: text,
+                school_type: document.getElementById('input-school-type')?.value || 'Mittelschule',
+                subject: Array.from(document.querySelectorAll('.subject-chip.selected')).map(c => c.getAttribute('data-subject')).join(', ') || 'Deutsch'
+            };
+
+            const res = await fetch(`${API_BASE}/api/evaluate-essay`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error("Auswertung konnte nicht abgeschlossen werden.");
+            const evalData = await res.json();
+            
+            simState.lastEssayScore = evalData.score || 0;
+            displayEssayFeedback(evalData);
+            
+            simState.checkedCurrentTask = true;
+            
+            const btnNext = document.getElementById('sim-btn-next');
+            if (btnNext) {
+                btnNext.disabled = false;
+                btnNext.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnNext.classList.add('bg-brand-600', 'hover:bg-brand-700', 'text-white', 'shadow-md');
+                btnNext.classList.remove('bg-slate-100', 'hover:bg-slate-200', 'text-slate-700');
+            }
+
+            if (evalData.score >= 70 && typeof confetti === 'function') {
+                confetti({ particleCount: 35, spread: 60, origin: { y: 0.7 } });
+            }
+
+        } catch (err) {
+            console.error("Essay eval error:", err);
+            alert("Konnte KI-Feedback nicht abrufen: " + err.message);
+        } finally {
+            if (btn) btn.disabled = false;
+            if (loading) loading.classList.add('hidden');
+        }
+    }
+
+    function displayEssayFeedback(data) {
+        const fbContainer = document.getElementById('essay-feedback-container');
+        if (!fbContainer) return;
+        fbContainer.classList.remove('hidden');
+
+        const score = data.score ?? 85;
+        const rating = data.rating || 'Gute Arbeit! 🌟';
+        const praise = data.praise || '';
+        const tips = data.tips || '';
+        const criteria = data.criteria_met || [];
+        const corrections = data.corrections || [];
+
+        let scoreColor = 'from-emerald-500 to-teal-600';
+        if (score < 50) scoreColor = 'from-amber-500 to-rose-500';
+        else if (score < 75) scoreColor = 'from-brand-500 to-indigo-600';
+
+        let html = `
+            <div class="space-y-3 border-t border-slate-200/80 pt-3">
+                <div class="flex items-center justify-between p-3 bg-gradient-to-r ${scoreColor} text-white rounded-2xl shadow-sm">
+                    <div class="flex items-center gap-2.5">
+                        <div class="h-9 w-9 bg-white/20 rounded-xl flex items-center justify-center text-lg font-black">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-black tracking-wide">${rating}</div>
+                            <div class="text-[10px] text-white/80 font-medium">${data.stats?.word_count || 0} Wörter &bull; ${data.stats?.sentence_count || 0} Sätze geprüft</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xl font-black font-mono">${score}%</span>
+                        <span class="block text-[9px] uppercase tracking-wider text-white/80 font-bold">Kriterien</span>
+                    </div>
+                </div>
+
+                ${praise ? `
+                    <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs space-y-1">
+                        <div class="flex items-center gap-1.5 font-bold text-emerald-900">
+                            <i class="fa-solid fa-star text-amber-500"></i> Das ist dir super gelungen:
+                        </div>
+                        <div class="text-[11px] leading-relaxed text-emerald-950 font-medium">${praise}</div>
+                    </div>
+                ` : ''}
+
+                ${criteria.length > 0 ? `
+                    <div class="p-3 bg-white border border-slate-200 rounded-2xl space-y-2 shadow-xs">
+                        <div class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-list-check text-brand-600"></i>
+                            <span>Kriterien-Check:</span>
+                        </div>
+                        <div class="space-y-1.5">
+                            ${criteria.map(c => `
+                                <div class="flex items-start gap-2 p-2 rounded-xl text-xs ${c.fulfilled ? 'bg-emerald-50/70 border border-emerald-100 text-emerald-950' : 'bg-amber-50/70 border border-amber-100 text-amber-950'}">
+                                    <i class="fa-solid ${c.fulfilled ? 'fa-circle-check text-emerald-600' : 'fa-circle-info text-amber-600'} text-sm mt-0.5"></i>
+                                    <div class="flex-1">
+                                        <span class="font-bold text-[11px] block">${c.name}</span>
+                                        <span class="text-[10.5px] ${c.fulfilled ? 'text-emerald-700' : 'text-amber-800'} font-medium">${c.details || (c.fulfilled ? 'Erfüllt' : 'Noch ausstehend')}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${tips ? `
+                    <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-2xl text-xs space-y-1">
+                        <div class="flex items-center gap-1.5 font-bold text-indigo-900">
+                            <i class="fa-solid fa-lightbulb text-amber-500"></i> Tipp für deinen nächsten Entwurf:
+                        </div>
+                        <div class="text-[11px] leading-relaxed text-indigo-950 font-medium">${tips}</div>
+                    </div>
+                ` : ''}
+
+                ${corrections.length > 0 ? `
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5">
+                        <div class="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-spell-check text-brand-600"></i>
+                            <span>Sprachliche Hinweise:</span>
+                        </div>
+                        <div class="space-y-1">
+                            ${corrections.map(cor => `
+                                <div class="text-[10.5px] bg-white p-2 rounded-xl border border-slate-100">
+                                    <span class="line-through text-rose-500 font-bold mr-1.5">${cor.original}</span>
+                                    <span class="text-emerald-700 font-extrabold">➔ ${cor.suggestion}</span>
+                                    <span class="block text-[9.5px] text-slate-500 mt-0.5">${cor.explanation}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div class="text-center pt-1">
+                    <button type="button" onclick="focusEssayToRevise()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-xs cursor-pointer">
+                        <i class="fa-solid fa-arrows-rotate text-brand-600"></i>
+                        <span>Tipps anwenden &amp; Text überarbeiten</span>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        fbContainer.innerHTML = html;
+    }
+
+    function focusEssayToRevise() {
+        const input = document.getElementById('sim-essay-input');
+        if (input) {
+            input.focus();
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
 function renderSimDragText(task) {
     let cleanText = SimParsers.formatTableDragText(task.text || '');
     const distractors = [];
@@ -3955,6 +4237,22 @@ window.checkCurrentTask = function() {
         document.getElementById('sim-tf-true').classList.add(q.correct ? 'border-emerald-500' : 'border-rose-300');
         document.getElementById('sim-tf-false').classList.add(!q.correct ? 'border-emerald-500' : 'border-rose-300');
         
+    } else if (task.format === 'Freies Schreiben' || task.format === 'Essay' || task.format === 'Kreatives Schreiben' || task.format === 'Schreibaufgabe' || task.format === 'Textproduktion') {
+        const essayInput = document.getElementById('sim-essay-input');
+        const text = essayInput ? essayInput.value.trim() : '';
+        if (!text) {
+            fbBox.classList.remove('hidden');
+            fbBox.classList.add('bg-rose-50', 'text-rose-700');
+            fbBox.textContent = "Bitte schreibe zuerst deinen Text in das Feld und klicke auf 'Text mit KI prüfen'.";
+            return;
+        }
+        if (!simState.checkedCurrentTask) {
+            submitEssayForEvaluation();
+            return;
+        }
+        earnedPoints = (simState.lastEssayScore && simState.lastEssayScore >= 50) ? 1 : 0;
+        taskMax = 1;
+        correct = (earnedPoints === 1);
     } else if (task.format === 'Vokabelkarten') {
         const userChoice = simState.userAnswers['card'];
         correct = (userChoice === true);
