@@ -3679,7 +3679,33 @@ window.toggleSimMarkWord = function(el) {
 };
 
 function renderSimDragText(task) {
-    const dragTextField = SimParsers.cleanSlashesForDragText(task.text);
+    let cleanText = task.text || '';
+    const distractors = [];
+    
+    if (Array.isArray(task.distractors)) {
+        task.distractors.forEach(d => {
+            const w = String(d).replace(/\*/g, '').trim();
+            if (w && !distractors.includes(w)) distractors.push(w);
+        });
+    } else if (typeof task.distractors === 'string' && task.distractors.trim()) {
+        const matches = task.distractors.match(/\*([^*]+)\*/g) || task.distractors.split(/[,;\s]+/);
+        matches.forEach(d => {
+            const w = d.replace(/[*\s,;]/g, '').trim();
+            if (w && !distractors.includes(w)) distractors.push(w);
+        });
+    }
+    
+    const disMatch = cleanText.match(/(?:Distraktoren|Zusatzwörter|Falsche Optionen|Wortspeicher-Zusatz):\s*(.*)/i);
+    if (disMatch) {
+        cleanText = cleanText.substring(0, disMatch.index).trim();
+        const extracted = disMatch[1].match(/\*([^*]+)\*/g) || disMatch[1].split(/[,;\s]+/);
+        extracted.forEach(d => {
+            const w = d.replace(/[*\s,;]/g, '').trim();
+            if (w && !distractors.includes(w)) distractors.push(w);
+        });
+    }
+
+    const dragTextField = SimParsers.cleanSlashesForDragText(cleanText);
     let gapIndex = 0;
     const words = [];
     
@@ -3695,6 +3721,10 @@ function renderSimDragText(task) {
         const dropHtml = `<div data-gap="${gapIndex}" onclick="handleDropzoneClick(this)" class="sim-dropzone inline-block w-24 h-6 border border-dashed border-slate-300 rounded bg-slate-100/50 align-middle text-center text-xs font-bold text-slate-800 cursor-pointer" ondragover="allowSimDrop(event)" ondrop="simDrop(event)"></div>`;
         gapIndex++;
         return dropHtml;
+    });
+    
+    distractors.forEach(d => {
+        if (!words.includes(d)) words.push(d);
     });
     
     const shuffledWords = [...words].sort(() => Math.random() - 0.5);

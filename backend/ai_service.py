@@ -436,6 +436,7 @@ class AIService:
                 "1. ARBEITSBLATT 1:1 DIGITALISIERUNG:\n"
                 "   - Erfasse JEDE Aufgabe des Arbeitsblatts getreu mit ihrer Nummerierung, Arbeitsanweisung und ihrem Text.\n   - WICHTIG: Bei Aufgaben, die sich auf einen Text, Satz oder unterstrichene Wörter beziehen (z. B. 'Bestimme die Wortart des unterstrichenen Wortes'): Übernimm ZWINGEND den vollständigen Satz und markiere das Wort (z. B. mit <u>Wort</u>), damit die Angabe für den Schüler vollständig und lösbar ist!\n"
                 "   - Konvertiere jede Aufgabe direkt in das dafür am besten geeignete H5P-Format ('Lückentext' mit *Lückenwörtern*, 'Drag the Words' mit *Wörtern*, 'Wahr/Falsch' oder 'Multiple Choice').\n"
+                "   - WICHTIG BEI DRAG THE WORDS / WÖRTSPEICHER: Falls das Arbeitsblatt im Wortspeicher zusätzliche Wörter (Distraktoren) enthält, die in keine Lücke gehören, erfasse diese ZWINGEND im Aufgaben-Feld 'distractors' (z. B. 'distractors': ['Wort1', 'Wort2']), damit sie dem Schüler im H5P-Wortspeicher zur Auswahl stehen!\n"
                 "   - Gib für jede Aufgabe eine verständliche Erklärung ('explanation') und einen ermutigenden Tipp ('hint') an.\n"
                 "   - Das Feld 'diagnostic.questions' MUSS zwingend eine leere Liste [] sein."
             )
@@ -574,6 +575,8 @@ WICHTIGE ANWEISUNGEN:
 {text_basis_instruction}
 {isb_rubric_instruction}
 5. STRIKTE AUFGABEN-FORMATIERUNGSREGELN FÜR DEN FELDINHALT 'text':
+   - DRAG THE WORDS: Markiere alle Lückenwörter im Fließtext mit *Sternchen*.
+     WICHTIG FÜR WÖRTSPEICHER & DISTRAKTOREN: Wenn das Arbeitsblatt im Wortspeicher zusätzliche falsche Wörter enthält oder zur Erhöhung des Anspruchs Distraktoren nötig sind, gib diese im Aufgaben-Feld 'distractors' an (z. B. "distractors": ["falschesWort1", "falschesWort2"]).
    - MULTIPLE CHOICE: Jede Aufgabe MUSS zwingend die vollständige Aufgabenstellung UND den konkreten Beispielsatz / die Angabe enthalten!
      Format des Feldes 'text':
      [Aufgabenstellung / Frage]

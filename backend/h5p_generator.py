@@ -181,6 +181,34 @@ class H5PGenerator:
         return re.sub(r"\*([^*]+)\*", repl, text)
 
     @staticmethod
+    def extract_drag_text_and_distractors(text, task_distractors=None):
+        clean_text = text or ""
+        distractors_list = []
+
+        if isinstance(task_distractors, list):
+            distractors_list.extend([str(d).strip('* ') for d in task_distractors if str(d).strip('* ')])
+        elif isinstance(task_distractors, str) and task_distractors.strip():
+            found = re.findall(r'\*([^\*]+)\*|([^\s,;]+)', task_distractors.strip())
+            for m in found:
+                w = (m[0] or m[1]).strip('* ,;')
+                if w and w not in distractors_list:
+                    distractors_list.append(w)
+
+        match_dis = re.search(r'(?:Distraktoren|Zusatzwörter|Falsche Optionen|Wortspeicher-Zusatz):\s*(.*)', clean_text, re.IGNORECASE)
+        if match_dis:
+            dis_line = match_dis.group(1).strip()
+            clean_text = clean_text[:match_dis.start()].strip()
+            found = re.findall(r'\*([^\*]+)\*|([^\s,;]+)', dis_line)
+            for m in found:
+                w = (m[0] or m[1]).strip('* ,;')
+                if w and w not in distractors_list:
+                    distractors_list.append(w)
+
+        drag_text_field = H5PGenerator.clean_slashes_for_drag_text(clean_text)
+        distractors_str = " ".join([f"*{d}*" for d in distractors_list]) if distractors_list else ""
+        return drag_text_field, distractors_str
+
+    @staticmethod
     def create_direct_worksheet_content_json(data):
         title = H5PGenerator.clean_student_title(data.get("title", "Digitalisiertes Arbeitsblatt"))
         target_format = data.get("target_format", "Lückentext")
@@ -361,17 +389,20 @@ class H5PGenerator:
                     }
                 })
             elif task_format == "Drag the Words":
-                drag_text_field = H5PGenerator.clean_slashes_for_drag_text(formatted_blanks_text)
+                drag_text_field, distractors_str = H5PGenerator.extract_drag_text_and_distractors(formatted_blanks_text, task.get("distractors"))
+                drag_params = {
+                    "taskDescription": "Ziehe die passenden Wörter in die Lücken.",
+                    "textField": drag_text_field,
+                    "overallFeedback": overall_fb,
+                    "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen",
+                    "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "instantFeedback": False, "enableCheckButton": True}
+                }
+                if distractors_str:
+                    drag_params["distractors"] = distractors_str
                 slides_data.append({
                     "title": task_title,
                     "library": "H5P.DragText 1.10",
-                    "params": {
-                        "taskDescription": "Ziehe die passenden Wörter in die Lücken.",
-                        "textField": drag_text_field,
-                        "overallFeedback": overall_fb,
-                        "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen",
-                        "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "instantFeedback": False, "enableCheckButton": True}
-                    }
+                    "params": drag_params
                 })
             elif task_format == "Wahr/Falsch":
                 tf_statements = H5PGenerator.parse_true_false_text(raw_text)
@@ -1018,18 +1049,21 @@ class H5PGenerator:
                         })
                     
                 elif task_format == "Drag the Words":
-                    drag_text_field = H5PGenerator.clean_slashes_for_drag_text(formatted_blanks_text)
+                    drag_text_field, distractors_str = H5PGenerator.extract_drag_text_and_distractors(formatted_blanks_text, task.get("distractors"))
+                    drag_params = {
+                        "taskDescription": "Ziehe die passenden Wörter in die Lücken.",
+                        "textField": drag_text_field,
+                        "overallFeedback": overall_fb,
+                        "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen", 
+                        "score": "Du hast @score von @total Lücken richtig ausgefüllt.", "scoreBarLabel": "Punkte",
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "instantFeedback": False, "enableCheckButton": True}
+                    }
+                    if distractors_str:
+                        drag_params["distractors"] = distractors_str
                     slides_data.append({
                         "title": task_title,
                         "library": "H5P.DragText 1.10",
-                        "params": {
-                            "taskDescription": "Ziehe die passenden Wörter in die Lücken.",
-                            "textField": drag_text_field,
-                            "overallFeedback": overall_fb,
-                            "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen", 
-                            "score": "Du hast @score von @total Lücken richtig ausgefüllt.", "scoreBarLabel": "Punkte",
-                            "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "instantFeedback": False, "enableCheckButton": True}
-                        }
+                        "params": drag_params
                     })
 
                 elif task_format == "Wahr/Falsch":
