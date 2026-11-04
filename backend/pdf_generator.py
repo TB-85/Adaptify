@@ -382,6 +382,7 @@ class PDFGenerator:
         # Hefteintrag Section (Board Entry / Merkkasten)
         hefteintrag = data.get("hefteintrag")
         if hefteintrag and (hefteintrag.get("level_a_notes") or hefteintrag.get("level_b_notes") or hefteintrag.get("summary")):
+            story.append(Paragraph("✍️ <b>Aufgabe für dein Heft:</b> Übertrage diesen Merkkasten sauber in dein Schulheft!", hint_style))
             story.append(Paragraph("📌 Merkkasten / Hefteintrag", section_style))
             notes_text = hefteintrag.get("level_a_notes") or hefteintrag.get("summary") or ""
             notes_text = notes_text.replace("\n", "<br/>")
@@ -673,7 +674,7 @@ class PDFGenerator:
             leading=14,
             textColor=colors.HexColor("#0f172a")
         )
-        small_hint_style = ParagraphStyle(
+        hint_style = ParagraphStyle(
             'HefteintragHint',
             parent=styles['Normal'],
             fontName='Helvetica-Oblique',
@@ -699,7 +700,7 @@ class PDFGenerator:
             ],
             [
                 Paragraph("<b>Name:</b> ________________________________________________", body_style),
-                Paragraph(f"<font color='#64748b'>{teacher_name}</font>", ParagraphStyle('RightTeacher', parent=small_hint_style, alignment=2))
+                Paragraph(f"<font color='#64748b'>{teacher_name}</font>", ParagraphStyle('RightTeacher', parent=hint_style, alignment=2))
             ]
         ]
         header_table = Table(header_cells, colWidths=[inch*4.5, inch*2.0])
@@ -726,7 +727,7 @@ class PDFGenerator:
         # 2. Main Title & Instruction
         story.append(Paragraph(f"📖 <b>Hefteintrag &amp; Begleitblatt:</b> {title}", title_style))
         story.append(Spacer(1, 4))
-        story.append(Paragraph("✍️ <b>Aufgabe:</b> Schau dir das Lernvideo aufmerksam an. Übertrage das Tafelbild sauber in dein Schulheft (oder klebe dieses Blatt ein) und beantworte die Kontrollfragen zur Selbstüberprüfung.", small_hint_style))
+        story.append(Paragraph("✍️ <b>Aufgabe:</b> Schau dir das Lernvideo aufmerksam an. Übertrage das Tafelbild sauber in dein Schulheft (oder klebe dieses Blatt ein) und beantworte die Kontrollfragen zur Selbstüberprüfung.", hint_style))
         story.append(Spacer(1, 8))
 
         # 3. Tafelbild / Hefteintrag Box
@@ -763,7 +764,7 @@ class PDFGenerator:
         interactions = data.get("interactions", [])
         if interactions:
             story.append(Paragraph("🎯 <b>Video-Haltepunkte &amp; Selbstkontrolle:</b>", section_style))
-            story.append(Paragraph("Beantworte diese Kontrollfragen, wenn das Video stoppt:", small_hint_style))
+            story.append(Paragraph("Beantworte diese Kontrollfragen, wenn das Video stoppt:", hint_style))
             story.append(Spacer(1, 4))
 
             for idx, inter in enumerate(interactions, 1):
@@ -785,14 +786,14 @@ class PDFGenerator:
                 elif fmt == "Infobox":
                     info_t = inter.get("text", "")
                     if info_t:
-                        story.append(Paragraph(f"<i>💡 {info_t}</i>", small_hint_style))
+                        story.append(Paragraph(f"<i>💡 {info_t}</i>", hint_style))
                 
                 story.append(Spacer(1, 4))
 
         # 5. Eigene Notizen Line Box
         story.append(Spacer(1, 6))
         notes_box = Table([[
-            Paragraph("<b>✍️ Eigene Notizen, Skizzen &amp; Beispiele:</b><br/><br/>____________________________________________________________________________________________<br/><br/>____________________________________________________________________________________________", small_hint_style)
+            Paragraph("<b>✍️ Eigene Notizen, Skizzen &amp; Beispiele:</b><br/><br/>____________________________________________________________________________________________<br/><br/>____________________________________________________________________________________________", hint_style)
         ]], colWidths=[inch*6.5])
         notes_box.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#fafafa")),

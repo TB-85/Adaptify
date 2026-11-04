@@ -286,7 +286,7 @@ class H5PGenerator:
             slides_data.append({
                 "library": "H5P.AdvancedText 1.1",
                 "params": {
-                    "text": f"<h3 style='color:#0f766e; margin-top:0;'>📌 Zusammenfassung / Merkkasten</h3><div style='background-color:#fef3c7; border-left:4px solid #f59e0b; padding:12px 14px; border-radius:8px; font-size:14px; line-height:1.6; color:#78350f;'>{formatted_notes}</div>"
+                    "text": f"<div style='background-color:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid #2563eb; padding:9px 13px; border-radius:8px; margin-bottom:12px; font-size:13.5px; font-weight:700; color:#1e40af;'>✍️ <strong>Aufgabe für dein Heft:</strong> Übertrage diesen Merkkasten jetzt sauber in dein Schulheft!</div><h3 style='color:#0f766e; margin-top:0;'>📌 Zusammenfassung / Merkkasten</h3><div style='background-color:#fef3c7; border-left:4px solid #f59e0b; padding:12px 14px; border-radius:8px; font-size:14px; line-height:1.6; color:#78350f;'>{formatted_notes}</div>"
                 },
                 "title": "📌 Zusammenfassung / Merkkasten"
             })
@@ -895,7 +895,7 @@ class H5PGenerator:
                 slides_data.append({
                     "library": "H5P.AdvancedText 1.1",
                     "params": {
-                        "text": f"<h3 style='color:#0f766e; margin-top:0;'>📌 Merkkasten / Hefteintrag</h3><div style='background-color:#fef3c7; border-left:4px solid #f59e0b; padding:12px 14px; border-radius:8px; font-size:14px; line-height:1.6; color:#78350f;'>{formatted_notes}</div>"
+                        "text": f"<div style='background-color:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid #2563eb; padding:9px 13px; border-radius:8px; margin-bottom:12px; font-size:13.5px; font-weight:700; color:#1e40af;'>✍️ <strong>Aufgabe für dein Heft:</strong> Übertrage diesen Merkkasten jetzt sauber in dein Schulheft!</div><h3 style='color:#0f766e; margin-top:0;'>📌 Merkkasten / Hefteintrag</h3><div style='background-color:#fef3c7; border-left:4px solid #f59e0b; padding:12px 14px; border-radius:8px; font-size:14px; line-height:1.6; color:#78350f;'>{formatted_notes}</div>"
                     },
                     "title": "📌 Merkkasten / Hefteintrag"
                 })
