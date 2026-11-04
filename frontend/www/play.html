@@ -240,6 +240,90 @@
                 return cards;
             },
 
+            formatTableDragText(text) {
+                if (!text || text.includes('<table')) return text;
+                const catRegex = /(?:^|\n)(?:Kategorie|Gruppe|Spalte|Category):\s*([^\n]+)/gi;
+                let match;
+                const catMatches = [];
+                while ((match = catRegex.exec(text)) !== null) {
+                    catMatches.push({ name: match[1].trim(), index: match.index, end: catRegex.lastIndex });
+                }
+                if (catMatches.length >= 2) {
+                    const categories = [];
+                    for (let i = 0; i < catMatches.length; i++) {
+                        const start = catMatches[i].end;
+                        const end = (i + 1 < catMatches.length) ? catMatches[i + 1].index : text.length;
+                        let chunk = text.substring(start, end);
+                        const disMatch = chunk.match(/(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)/i);
+                        if (disMatch) chunk = chunk.substring(0, disMatch.index);
+                        const items = [];
+                        chunk.split('\n').forEach(l => {
+                            let clean = l.trim().replace(/^[-*•]\s*/, '').trim();
+                            if (clean) {
+                                if (!clean.startsWith('*') || !clean.endsWith('*')) clean = `*${clean}*`;
+                                items.push(clean);
+                            }
+                        });
+                        categories.push({ name: catMatches[i].name, items });
+                    }
+                    const maxItems = Math.max(...categories.map(c => c.items.length), 0);
+                    if (maxItems > 0) {
+                        let html = '<table class="w-full border-collapse my-3 text-xs bg-white rounded-xl overflow-hidden border border-slate-200 shadow-xs"><thead><tr class="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">';
+                        categories.forEach(c => {
+                            html += `<th class="p-2.5 text-center border-r last:border-r-0 border-slate-200">${c.name}</th>`;
+                        });
+                        html += '</tr></thead><tbody>';
+                        for (let r = 0; r < maxItems; r++) {
+                            html += `<tr class="${r % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} border-b last:border-b-0 border-slate-200">`;
+                            categories.forEach(c => {
+                                const item = c.items[r] || '';
+                                html += `<td class="p-3 text-center border-r last:border-r-0 border-slate-200">${item}</td>`;
+                            });
+                            html += '</tr>';
+                        }
+                        html += '</tbody></table>';
+                        const intro = text.substring(0, catMatches[0].index).trim();
+                        const disMatchAll = text.match(/(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)/i);
+                        const disStr = disMatchAll ? `\n\n${disMatchAll[0]}` : '';
+                        return `${intro}\n\n${html}${disStr}`.trim();
+                    }
+                }
+                const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+                const tableLines = lines.filter(l => l.startsWith('|') && l.endsWith('|'));
+                if (tableLines.length >= 2) {
+                    const nonTableBefore = [];
+                    const nonTableAfter = [];
+                    let isTable = false;
+                    lines.forEach(l => {
+                        if (l.startsWith('|') && l.endsWith('|')) isTable = true;
+                        else if (!isTable) nonTableBefore.push(l);
+                        else nonTableAfter.push(l);
+                    });
+                    const headers = tableLines[0].replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+                    const dataStart = (tableLines.length > 1 && /^\|[\s\-:|]+\|$/.test(tableLines[1])) ? 2 : 1;
+                    let html = '<table class="w-full border-collapse my-3 text-xs bg-white rounded-xl overflow-hidden border border-slate-200 shadow-xs"><thead><tr class="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">';
+                    headers.forEach(h => {
+                        html += `<th class="p-2.5 text-center border-r last:border-r-0 border-slate-200">${h}</th>`;
+                    });
+                    html += '</tr></thead><tbody>';
+                    tableLines.slice(dataStart).forEach((rowLine, rIdx) => {
+                        const cells = rowLine.replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+                        html += `<tr class="${rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} border-b last:border-b-0 border-slate-200">`;
+                        cells.forEach(c => {
+                            html += `<td class="p-3 text-center border-r last:border-r-0 border-slate-200">${c}</td>`;
+                        });
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table>';
+                    const parts = [];
+                    if (nonTableBefore.length) parts.push(nonTableBefore.join('\n'));
+                    parts.push(html);
+                    if (nonTableAfter.length) parts.push(nonTableAfter.join('\n'));
+                    return parts.join('\n\n');
+                }
+                return text;
+            },
+
             cleanSlashesForDragText(text) {
                 function repl(match) {
                     let word = match.substring(1, match.length - 1);
@@ -654,7 +738,7 @@ window.cleanStudentTitle = cleanStudentTitle;
                     taskWidgetHtml = renderSimTrueFalse(task);
                 } else if (task.format === 'Vokabelkarten') {
                     taskWidgetHtml = renderSimDialogCards(task);
-                } else if (task.format === 'Drag the Words') {
+                } else if (task.format === 'Drag the Words' || task.format === 'Tabellen-Zuordnung' || task.format === 'Kategorie-Zuordnung') {
                     taskWidgetHtml = renderSimDragText(task);
                 } else if (task.format === 'Wörter markieren') {
                     taskWidgetHtml = renderSimMarkTheWords(task);
@@ -1032,7 +1116,7 @@ window.cleanStudentTitle = cleanStudentTitle;
         };
 
         function renderSimDragText(task) {
-            let cleanText = task.text || '';
+            let cleanText = SimParsers.formatTableDragText(task.text || '');
             const distractors = [];
             
             if (Array.isArray(task.distractors)) {
@@ -1149,8 +1233,8 @@ window.cleanStudentTitle = cleanStudentTitle;
                 earnedPoints = correct ? 1 : 0;
                 taskMax = 1;
                 
-            } else if (task.format === 'Drag the Words') {
-                const dragTextField = SimParsers.cleanSlashesForDragText(task.text);
+            } else if (task.format === 'Drag the Words' || task.format === 'Tabellen-Zuordnung' || task.format === 'Kategorie-Zuordnung') {
+                const dragTextField = SimParsers.cleanSlashesForDragText(SimParsers.formatTableDragText(task.text));
                 const words = [];
                 dragTextField.replace(/\*([^*]+)\*/g, (match, content) => {
                     let word = content;

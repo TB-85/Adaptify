@@ -161,6 +161,97 @@ class H5PGenerator:
         return statements
 
     @staticmethod
+    def format_table_drag_text(text):
+        if not text:
+            return ""
+        if "<table" in text.lower():
+            return text
+
+        # Check for Category format
+        cat_matches = list(re.finditer(r'(?:^|\n)(?:Kategorie|Gruppe|Spalte|Category):\s*([^\n]+)', text, re.IGNORECASE))
+        if len(cat_matches) >= 2:
+            categories = []
+            for i, m in enumerate(cat_matches):
+                cat_name = m.group(1).strip()
+                start = m.end()
+                end = cat_matches[i+1].start() if i + 1 < len(cat_matches) else len(text)
+                chunk = text[start:end]
+                dis_m = re.search(r'(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)', chunk, re.IGNORECASE)
+                if dis_m:
+                    chunk = chunk[:dis_m.start()]
+                items = []
+                for line in chunk.split("\n"):
+                    line = line.strip().lstrip("-*•").strip()
+                    if line:
+                        if not line.startswith("*") and not line.endswith("*"):
+                            line = f"*{line}*"
+                        items.append(line)
+                categories.append({"name": cat_name, "items": items})
+            
+            max_items = max(len(c["items"]) for c in categories) if categories else 0
+            if max_items > 0:
+                html = ['<table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; background:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #cbd5e1;">']
+                html.append('  <thead><tr style="background:#f1f5f9;">')
+                for c in categories:
+                    html.append(f'    <th style="padding:10px 12px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:#1e293b;">{c["name"]}</th>')
+                html.append('  </tr></thead><tbody>')
+                for r in range(max_items):
+                    bg = "#ffffff" if r % 2 == 0 else "#f8fafc"
+                    html.append(f'    <tr style="background:{bg};">')
+                    for c in categories:
+                        item_str = c["items"][r] if r < len(c["items"]) else ""
+                        html.append(f'      <td style="padding:12px; border:1px solid #cbd5e1; text-align:center;">{item_str}</td>')
+                    html.append('    </tr>')
+                html.append('  </tbody></table>')
+                intro = text[:cat_matches[0].start()].strip()
+                dis_full = re.search(r'(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)', text, re.IGNORECASE)
+                dis_str = f"\n\n{dis_full.group(0)}" if dis_full else ""
+                return f"{intro}\n\n{''.join(html)}{dis_str}".strip()
+
+        # Check for Markdown table
+        lines = [l.strip() for l in text.strip().split("\n") if l.strip()]
+        table_lines = [l for l in lines if l.startswith("|") and l.endswith("|")]
+        if len(table_lines) >= 2:
+            non_table_before = []
+            non_table_after = []
+            is_table = False
+            for l in lines:
+                if l.startswith("|") and l.endswith("|"):
+                    is_table = True
+                else:
+                    if not is_table:
+                        non_table_before.append(l)
+                    else:
+                        non_table_after.append(l)
+            header_line = table_lines[0]
+            headers = [c.strip() for c in header_line.strip("|").split("|")]
+            data_start = 2 if len(table_lines) > 1 and re.match(r'^\|[\s\-:|]+\|$', table_lines[1]) else 1
+            
+            html = ['<table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; background:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #cbd5e1;">']
+            html.append('  <thead><tr style="background:#f1f5f9;">')
+            for h in headers:
+                html.append(f'    <th style="padding:10px 12px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:#1e293b;">{h}</th>')
+            html.append('  </tr></thead><tbody>')
+            for r_idx, r_line in enumerate(table_lines[data_start:]):
+                cells = [c.strip() for c in r_line.strip("|").split("|")]
+                bg = "#ffffff" if r_idx % 2 == 0 else "#f8fafc"
+                html.append(f'    <tr style="background:{bg};">')
+                for c in cells:
+                    html.append(f'      <td style="padding:12px; border:1px solid #cbd5e1; text-align:center;">{c}</td>')
+                html.append('    </tr>')
+            html.append('  </tbody></table>')
+            
+            parts = []
+            if non_table_before:
+                parts.append("\n".join(non_table_before))
+            parts.append("".join(html))
+            if non_table_after:
+                parts.append("\n".join(non_table_after))
+            return "\n\n".join(parts)
+
+        return text
+
+    @staticmethod
     def clean_slashes_for_drag_text(text):
         """
         Removes alternative options (synonyms) separated by slashes within blanks
@@ -447,6 +538,65 @@ class H5PGenerator:
                             "progressText": "Karte :num von :total", "next": "Weiter", "prev": "Zurück", "check": "Prüfen", "gotIt": "Gewusst", "incorrect": "Falsch", "showAnswer": "Antwort anzeigen"
                         }
                     })
+            elif task_format == "Wörter markieren":
+                instruction_text = task.get("instruction") or ""
+                text_to_process = formatted_blanks_text
+                if not instruction_text:
+                    lines = [l.strip() for l in text_to_process.split("\n") if l.strip()]
+                    if lines and not re.search(r'\*([^\*]+)\*', lines[0]):
+                        instruction_text = lines[0].rstrip(":")
+                        text_to_process = "\n".join(lines[1:])
+                if not instruction_text:
+                    instruction_text = task_title if (task_title and len(task_title) > 8 and not re.match(r"^Aufgabe\s*\d*$", task_title.strip(), re.IGNORECASE)) else "Klicke auf die gesuchten Wörter im Text."
+
+                # In MarkTheWords, asterisks must strictly enclose only the target word without hints or slash alternatives
+                cleaned_mark_text = re.sub(r'\*([^\*: /]+)(?:[^\*]*)\*', r'*\1*', text_to_process)
+                slides_data.append({
+                    "title": task_title,
+                    "library": "H5P.MarkTheWords 1.11",
+                    "params": {
+                        "taskDescription": instruction_text,
+                        "textField": cleaned_mark_text,
+                        "overallFeedback": overall_fb,
+                        "checkAnswerButton": "Prüfen",
+                        "tryAgainButton": "Wiederholen",
+                        "showSolutionButton": "Lösung anzeigen",
+                        "scoreBarLabel": "Du hast @score von @total Wörtern richtig markiert.",
+                        "behaviour": {
+                            "enableRetry": True,
+                            "enableSolutionsButton": False,
+                            "enableCheckButton": True,
+                            "showScorePoints": True
+                        }
+                    }
+                })
+            elif task_format in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"]:
+                table_html = H5PGenerator.format_table_drag_text(formatted_blanks_text)
+                instruction_text = task.get("instruction") or ""
+                text_to_process = table_html
+                if not instruction_text:
+                    lines = [l.strip() for l in text_to_process.split("\n") if l.strip()]
+                    if lines and not re.search(r'\*([^\*]+)\*', lines[0]) and not lines[0].startswith("<table"):
+                        instruction_text = lines[0].rstrip(":")
+                        text_to_process = "\n".join(lines[1:])
+                if not instruction_text:
+                    instruction_text = "Ordne die Begriffe den passenden Spalten zu."
+
+                drag_text_field, distractors_str = H5PGenerator.extract_drag_text_and_distractors(text_to_process, task.get("distractors"))
+                drag_params = {
+                    "taskDescription": instruction_text,
+                    "textField": drag_text_field,
+                    "overallFeedback": overall_fb,
+                    "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen",
+                    "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "instantFeedback": False, "enableCheckButton": True}
+                }
+                if distractors_str:
+                    drag_params["distractors"] = distractors_str
+                slides_data.append({
+                    "title": task_title,
+                    "library": "H5P.DragText 1.10",
+                    "params": drag_params
+                })
             else: # Lückentext
                 instruction_text = task.get("instruction") or ""
                 text_to_process = formatted_blanks_text
@@ -1134,12 +1284,23 @@ class H5PGenerator:
                     })
 
                 elif task_format == "Wörter markieren":
-                    cleaned_mark_text = H5PGenerator.clean_slashes_for_drag_text(formatted_blanks_text)
+                    instruction_text = task.get("instruction") or ""
+                    text_to_process = formatted_blanks_text
+                    if not instruction_text:
+                        lines = [l.strip() for l in text_to_process.split("\n") if l.strip()]
+                        if lines and not re.search(r'\*([^\*]+)\*', lines[0]):
+                            instruction_text = lines[0].rstrip(":")
+                            text_to_process = "\n".join(lines[1:])
+                    if not instruction_text:
+                        instruction_text = task_title if (task_title and len(task_title) > 8 and not re.match(r"^Aufgabe\s*\d*$", task_title.strip(), re.IGNORECASE)) else "Klicke auf die gesuchten Wörter im Text."
+
+                    # In MarkTheWords, asterisks must strictly enclose only the target word without hints or slash alternatives
+                    cleaned_mark_text = re.sub(r'\*([^\*: /]+)(?:[^\*]*)\*', r'*\1*', text_to_process)
                     slides_data.append({
                         "title": task_title,
-                        "library": "H5P.MarkTheWords 1.0",
+                        "library": "H5P.MarkTheWords 1.11",
                         "params": {
-                            "taskDescription": "Klicke auf die gesuchten (markierten) Wörter im Text.",
+                            "taskDescription": instruction_text,
                             "textField": cleaned_mark_text,
                             "overallFeedback": overall_fb,
                             "checkAnswerButton": "Prüfen",
@@ -1153,6 +1314,35 @@ class H5PGenerator:
                                 "showScorePoints": True
                             }
                         }
+                    })
+
+                elif task_format in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"]:
+                    table_html = H5PGenerator.format_table_drag_text(formatted_blanks_text)
+                    instruction_text = task.get("instruction") or ""
+                    text_to_process = table_html
+                    if not instruction_text:
+                        lines = [l.strip() for l in text_to_process.split("\n") if l.strip()]
+                        if lines and not re.search(r'\*([^\*]+)\*', lines[0]) and not lines[0].startswith("<table"):
+                            instruction_text = lines[0].rstrip(":")
+                            text_to_process = "\n".join(lines[1:])
+                    if not instruction_text:
+                        instruction_text = "Ordne die Begriffe den passenden Spalten zu."
+
+                    drag_text_field, distractors_str = H5PGenerator.extract_drag_text_and_distractors(text_to_process, task.get("distractors"))
+                    drag_params = {
+                        "taskDescription": instruction_text,
+                        "textField": drag_text_field,
+                        "overallFeedback": overall_fb,
+                        "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen",
+                        "score": "Du hast @score von @total Lücken richtig ausgefüllt.", "scoreBarLabel": "Punkte",
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "instantFeedback": False, "enableCheckButton": True}
+                    }
+                    if distractors_str:
+                        drag_params["distractors"] = distractors_str
+                    slides_data.append({
+                        "title": task_title,
+                        "library": "H5P.DragText 1.10",
+                        "params": drag_params
                     })
 
                 else: # Default: Lückentext (H5P.Blanks)
@@ -1767,8 +1957,10 @@ class H5PGenerator:
             "Multiple Choice": {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 16},
             "Vokabelkarten": {"machineName": "H5P.Dialogcards", "majorVersion": 1, "minorVersion": 9},
             "Drag the Words": {"machineName": "H5P.DragText", "majorVersion": 1, "minorVersion": 10},
+            "Tabellen-Zuordnung": {"machineName": "H5P.DragText", "majorVersion": 1, "minorVersion": 10},
+            "Kategorie-Zuordnung": {"machineName": "H5P.DragText", "majorVersion": 1, "minorVersion": 10},
             "Wahr/Falsch": {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 8},
-            "Wörter markieren": {"machineName": "H5P.MarkTheWords", "majorVersion": 1, "minorVersion": 0},
+            "Wörter markieren": {"machineName": "H5P.MarkTheWords", "majorVersion": 1, "minorVersion": 11},
             "Lückentext": {"machineName": "H5P.Blanks", "majorVersion": 1, "minorVersion": 14}
         }
         

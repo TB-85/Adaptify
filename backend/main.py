@@ -111,6 +111,8 @@ class ExportData(BaseModel):
     pdf_include_level_c: Optional[bool] = False
     pdf_include_qr: Optional[bool] = True
     include_level_c: Optional[bool] = False
+    video_mode: Optional[str] = None
+    interactions: Optional[List[dict]] = None
 
 @app.post("/api/generate")
 async def generate_task(
@@ -328,7 +330,7 @@ async def export_pdf(data: ExportData):
     Takes the structured task JSON and generates a premium print-ready PDF worksheet.
     """
     try:
-        is_video = (data.video_mode == "interactive_video" or (data.interactions and not data.diagnostic))
+        is_video = (getattr(data, "video_mode", None) == "interactive_video" or (getattr(data, "interactions", None) and not getattr(data, "diagnostic", None)))
         suffix = "hefteintrag_begleitblatt.pdf" if is_video else "arbeitsblatt.pdf"
         pdf_bytes = PDFGenerator.generate_worksheet_pdf(data.dict())
         disposition = make_content_disposition(data.title, suffix)

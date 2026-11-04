@@ -392,7 +392,7 @@ class AIService:
 
         format_instruction = (
             "4. Formuliere die Aufgaben für Level A und Level B. Wähle für das Feld 'format' jedes Tasks das Format, "
-            "das am besten zum jeweiligen Inhalt passt ('Lückentext', 'Drag the Words', 'Wahr/Falsch', 'Multiple Choice' oder 'Vokabelkarten'). "
+            "das am besten zum jeweiligen Inhalt passt ('Lückentext', 'Drag the Words', 'Tabellen-Zuordnung', 'Wörter markieren', 'Wahr/Falsch', 'Multiple Choice' oder 'Vokabelkarten'). "
             "Pädagogische Vorgabe für KI-Mix: Wähle für das niedrigere Niveau (Level A) einfachere Aufgaben-Formate, z. B. 'Drag the Words' anstelle eines 'Lückentextes', da vorgegebene Wörter leichter zuzuordnen sind. "
             "Für das höhere Niveau (Level B) verwende anspruchsvollere Formate, bei denen die Schüler selbst die Antworten tippen müssen (z. B. 'Lückentext'), oder nutze bei 'Multiple Choice' deutlich anspruchsvollere und mehrere Distraktoren. "
             "Variiere die Formate ganz gezielt, um die Übungen abwechslungsreich zu gestalten."
@@ -444,7 +444,7 @@ class AIService:
             source_instruction = (
                 "1. ARBEITSBLATT 1:1 DIGITALISIERUNG:\n"
                 "   - Erfasse JEDE Aufgabe des Arbeitsblatts getreu mit ihrer Nummerierung, Arbeitsanweisung und ihrem Text.\n   - WICHTIG: Bei Aufgaben, die sich auf einen Text, Satz oder unterstrichene Wörter beziehen (z. B. 'Bestimme die Wortart des unterstrichenen Wortes'): Übernimm ZWINGEND den vollständigen Satz und markiere das Wort (z. B. mit <u>Wort</u>), damit die Angabe für den Schüler vollständig und lösbar ist!\n"
-                "   - Konvertiere jede Aufgabe direkt in das dafür am besten geeignete H5P-Format ('Lückentext' mit *Lückenwörtern*, 'Drag the Words' mit *Wörtern*, 'Wahr/Falsch' oder 'Multiple Choice').\n"
+                "   - Konvertiere jede Aufgabe direkt in das dafür am besten geeignete H5P-Format ('Lückentext' mit *Lückenwörtern*, 'Drag the Words' mit *Wörtern*, 'Tabellen-Zuordnung' mit Tabellenspalten und *Wörtern*, 'Wörter markieren' mit *Wörtern*, 'Wahr/Falsch' oder 'Multiple Choice').\n"
                 "   - WICHTIG BEI DRAG THE WORDS / WÖRTSPEICHER: Falls das Arbeitsblatt im Wortspeicher zusätzliche Wörter (Distraktoren) enthält, die in keine Lücke gehören, erfasse diese ZWINGEND im Aufgaben-Feld 'distractors' (z. B. 'distractors': ['Wort1', 'Wort2']), damit sie dem Schüler im H5P-Wortspeicher zur Auswahl stehen!\n"
                 "   - WICHTIG BEI ERSETZUNGS-AUFGABEN (z. B. 'Ersetze die in Klammern angegebenen Wörter durch passende Pronomen'): Übernimm die originale Arbeitsanweisung exakt als erste Zeile und behalte die Wörter in Klammern ZWINGEND direkt neben der Lücke bei (z. B. 'Wie *sie* (die Regeln) gestaltet werden, hängt von den Eltern ab. Wenn *sie* (die Eltern) eher großzügig sind...')! Lösche NIEMALS die Klammern, da der Schüler sonst die Bezugswörter nicht kennt! Wähle hierfür bevorzugt 'Lückentext'.\n"
                 "   - Gib für jede Aufgabe eine verständliche Erklärung ('explanation') und einen ermutigenden Tipp ('hint') an.\n"
@@ -499,6 +499,22 @@ Schulart: {school_type}
 Zusätzlicher Kontext (Klasse/Thema/Zeitvorgabe): {context}
 Gewünschtes Standard-Aufgabenformat: {target_format}
 Anzahl der zu generierenden Aufgaben pro Niveau: {task_count}
+
+VORGABEN FÜR SPEZIELLE AUFGABENFORMATE:
+- 'Wörter markieren' (H5P.MarkTheWords):
+  -> Im Text klickt der Schüler gesuchte Wörter an (z. B. Wortarten, Fehler, Signalwörter).
+  -> Alle korrekten Zielwörter MÜSSEN mit *Sternchen* umschlossen sein!
+  -> Beispiel: 'Klicke alle Präpositionen an:\nDie Kinder lernen *mit* Freunden und gehen *in* die Schule.'
+- 'Tabellen-Zuordnung' (Drag & Drop in Tabellenspalten / Kategorien):
+  -> Begriffe werden Spalten/Kategorien einer Tabelle zugeordnet.
+  -> Erstelle eine Markdown-Tabelle mit Spaltenüberschriften, wobei die zu ziehenden Begriffe mit *Sternchen* in den Zellen stehen.
+  -> Beispiel:
+     Ordne die Wortarten den passenden Spalten zu:
+     | Flektierbare Wortarten | Unveränderliche Wortarten |
+     | *Nomen* | *Präposition* |
+     | *Verb* | *Konjunktion* |
+     | *Adjektiv* | *Adverb* |
+     Distraktoren: Banane, Baumhaus
 
 STRIKTE VORGABE FÜR DEN SCHWERPUNKT 'TEXTVERSTÄNDNIS' / 'LESEVERSTEHEN' / 'READING':
 - Wenn ein Schwerpunkt 'Textverständnis', 'Leseverstehen', 'Reading' oder 'Sachtext' lautet:
@@ -782,7 +798,7 @@ Generiere genau dieses JSON:
         tasks_a = []
         tasks_b = []
         tasks_c = []
-        formats_pool = ["Lückentext", "Drag the Words", "Wahr/Falsch", "Multiple Choice"]
+        formats_pool = ["Lückentext", "Drag the Words", "Tabellen-Zuordnung", "Wörter markieren", "Wahr/Falsch", "Multiple Choice"]
         
         # Parse topics & count distribution (e.g. '4 Textverständnis, 3 Fremdwörter, 2 Grafik')
         topics_list, actual_count = parse_focus_topics(topic_str, task_count)
@@ -926,6 +942,76 @@ Generiere genau dieses JSON:
                         "hint": "💡 Tipp: Verknüpfe die im Text genannten Fakten mit den Folgen.",
                         "explanation": "Diese vertiefte Synthese sichert ein nachhaltiges Textverständnis."
                     })
+            elif fmt == "Wörter markieren":
+                if subject == "Englisch":
+                    m_text = "Click all verbs in the text:\nSarah *plays* tennis while Peter *reads* a book. They *enjoy* the warm afternoon."
+                    m_hint = "💡 Hint: Verbs describe actions or states."
+                    m_exp = "'plays', 'reads', and 'enjoy' are active verbs in the sentences."
+                else:
+                    m_text = f"Klicke alle Verben im folgenden Text an:\nDie Schüler *lernen* gemeinsam, *lesen* den Text aufmerksam und *notieren* wichtige Begriffe."
+                    m_hint = "💡 Tipp: Achte auf Wörter, die Handlungen beschreiben (Was tun die Schüler?)."
+                    m_exp = "'lernen', 'lesen' und 'notieren' sind Tun-Wörter (Verben)."
+                tasks_a.append({
+                    "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
+                    "text": m_text,
+                    "format": fmt,
+                    "hint": m_hint,
+                    "explanation": m_exp
+                })
+                tasks_b.append({
+                    "title": b_title,
+                    "text": m_text,
+                    "format": fmt,
+                    "hint": m_hint,
+                    "explanation": m_exp
+                })
+            elif fmt in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"]:
+                if subject == "Englisch":
+                    is_reef = "reef" in lower_heft or "barrier" in lower_heft
+                    tbl_text = (
+                        "Assign the terms to the correct column:\n\n"
+                        "| Marine Animals | Environmental Threats |\n"
+                        "| *Sea turtles* | *Coral bleaching* |\n"
+                        "| *Clownfish* | *Rising temperatures* |\n"
+                        "| *Whales* | *Plastic pollution* |\n\n"
+                        "Distraktoren: Polar bear, Desert sand"
+                        if is_reef else
+                        f"Assign the terms to the correct category:\n\n"
+                        f"| Key Facts | Supporting Details |\n"
+                        f"| *Core finding* | *Statistical data* |\n"
+                        f"| *Main cause* | *Observed consequence* |\n\n"
+                        f"Distraktoren: Irrelevant claim, Fiction"
+                    )
+                else:
+                    is_grammar = any(w in lower_focus for w in ["wortart", "grammatik", "nomen", "verb"])
+                    tbl_text = (
+                        "Ordne die Wortarten den beiden Hauptgruppen zu:\n\n"
+                        "| Flektierbare Wortarten | Unveränderliche Wortarten |\n"
+                        "| *Nomen* | *Präposition* |\n"
+                        "| *Verb* | *Konjunktion* |\n"
+                        "| *Adjektiv* | *Adverb* |\n\n"
+                        "Distraktoren: Banane, Baumhaus"
+                        if is_grammar else
+                        f"Ordne die Begriffe den passenden Spalten zu:\n\n"
+                        f"| Ursachen & Grundlagen | Wirkungen & Folgen |\n"
+                        f"| *Hauptursache* | *Veränderung im System* |\n"
+                        f"| *Schlüsselfaktor* | *Konkrete Auswirkung* |\n\n"
+                        f"Distraktoren: Zufälliges Ereignis, Nebenbemerkung"
+                    )
+                tasks_a.append({
+                    "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
+                    "text": tbl_text,
+                    "format": fmt,
+                    "hint": "💡 Tipp: Lies die Spaltenüberschriften genau durch und ziehe jedes Kärtchen in das richtige Feld.",
+                    "explanation": "Alle Begriffe wurden ihrer passenden Kategorie zugeordnet."
+                })
+                tasks_b.append({
+                    "title": b_title,
+                    "text": tbl_text,
+                    "format": fmt,
+                    "hint": "💡 Tipp: Achte auf die genaue Definition der beiden Kategorien.",
+                    "explanation": "Alle Begriffe wurden ihrer passenden Kategorie zugeordnet."
+                })
             elif subject == "Mathematik":
                 tasks_a.append({
                     "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
