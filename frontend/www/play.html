@@ -7,7 +7,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Adaptify - Schüler-Direktspiel</title>
+    <title>Adaptify - Schüleransicht</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -16,37 +16,28 @@
                 extend: {
                     colors: {
                         brand: {
-                            50: '#f5f3ff',
-                            100: '#ede9fe',
-                            200: '#ddd6fe',
-                            300: '#c084fc',
-                            400: '#a855f7',
-                            500: '#8b5cf6',
-                            600: '#7c3aed',
-                            700: '#6d28d9',
-                            800: '#5b21b6',
-                            900: '#4c1d95',
-                        }
+                            50: '#eef3f9', 100: '#dce7f3', 200: '#bcd0e6', 300: '#8fb0d3', 400: '#5d88bb',
+                            500: '#2f65a8', 600: '#1f4f8f', 700: '#183f73', 800: '#133258', 900: '#0f2644'
+                        },
+                        success: { DEFAULT: '#1f6b4a', light: '#eff6f2' }
                     },
                     fontFamily: {
-                        sans: ['Outfit', 'Inter', 'sans-serif'],
+                        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif']
+                    },
+                    borderRadius: {
+                        'md': '5px', 'lg': '6px', 'xl': '8px', '2xl': '10px', '3xl': '12px'
                     }
                 }
             }
         }
     </script>
     <!-- Google Fonts & FontAwesome -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Canvas Confetti FX -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <style>
-        body {
-            font-family: 'Outfit', 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
-            min-height: 100vh;
-        }
+        
         
         body.embed-mode {
             background: transparent !important;
@@ -54,27 +45,23 @@
             min-height: auto !important;
         }
         body.embed-mode #screen-simulation {
-            box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
-            border-radius: 16px !important;
+            box-shadow: 0 1px 2px rgba(27,36,48,0.08) !important;
+            border-radius: 8px !important;
             max-width: 100% !important;
             margin: 0 !important;
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.7);
-        }
     </style>
+    <link rel="stylesheet" href="styles.css?v=1">
 </head>
 <body class="flex flex-col items-center justify-center p-4">
 
     <!-- Connection / PIN Screen -->
     <div id="screen-connect" class="w-full max-w-md glass-card rounded-3xl p-8 shadow-2xl space-y-6 text-center">
         <div class="h-16 w-16 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-3xl mx-auto shadow-md">
-            <i class="fa-solid fa-gamepad"></i>
+            <i class="fa-solid fa-pen-to-square"></i>
         </div>
         <div class="space-y-2">
-            <h2 class="text-2xl font-black text-slate-800">Adaptify Direktspiel</h2>
+            <h2 class="text-2xl font-black text-slate-800">Adaptify Aufgaben</h2>
             <p class="text-xs text-slate-500 font-medium">Gib den 4-stelligen Code deiner Lehrkraft ein:</p>
         </div>
         <div class="space-y-4">
@@ -874,7 +861,7 @@ window.cleanStudentTitle = cleanStudentTitle;
                                 <i class="fa-solid fa-arrow-left text-[10px]"></i> Zurück
                             </button>
                             <button onclick="goToEnd()" class="flex-1 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-2xl shadow-lg transition-all text-sm">
-                                Direktspiel beenden & einreichen
+                                Bearbeitung beenden & einreichen
                             </button>
                         </div>
                     </div>
@@ -2086,7 +2073,7 @@ window.cleanStudentTitle = cleanStudentTitle;
 
     <!-- Student Privacy & Imprint Footer Link -->
     <div class="mt-6 text-center text-[10px] text-slate-400 font-medium space-x-2 select-none">
-        <span>Adaptify Direktspiel</span>
+        <span>Adaptify Aufgaben</span>
         <span>•</span>
         <button onclick="openStudentPrivacyModal(event)" class="hover:text-brand-600 underline focus:outline-none">Datenschutz &amp; Schülerschutz</button>
         <span>•</span>
@@ -2163,7 +2150,7 @@ window.cleanStudentTitle = cleanStudentTitle;
             
             <div class="p-5 space-y-3 max-h-[360px] overflow-y-auto text-[11px] text-slate-700 leading-relaxed">
                 <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
-                    <p class="font-bold text-emerald-900 text-xs mb-1">🛡️ 100% Sicher für Schüler:</p>
+                    <p class="font-bold text-emerald-900 text-xs mb-1">100% Sicher für Schüler:</p>
                     <p class="text-emerald-800 text-[10px]">
                         Hier werden <b>keine Passwörter, E-Mail-Adressen oder private Daten</b> von dir gespeichert!
                     </p>

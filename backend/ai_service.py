@@ -82,6 +82,199 @@ class InteractiveVideoContent(BaseModel):
 
 
 
+def parse_teacher_context_directives(context: str = "", focus_topic: str = "", default_task_count: int = 5, default_format: str = "KI-Mix"):
+    """
+    Universally parses all teacher directives from the detail box (context) and focus_topic:
+    - Topic distribution & task counts (e.g. '5 Fragen zum Text und 15 zu den unterstrichenen Wörtern', 'Textverständnis: 5, Wortarten: 10')
+    - Proportions ('Hälfte X, Hälfte Y')
+    - Format constraints ('Keine Multiple Choice', 'Nur Lückentexte und Zuordnungen', 'Als Vokabelkarten')
+    - Content/Source focus ('Nur unterstrichene Wörter', 'Nur Abschnitt 2')
+    - Pedagogical/Language directives ('DaZ einfache Sprache', 'Kurze Sätze')
+    """
+    ctx = (context or "").strip()
+    foc = (focus_topic or "").strip()
+    
+    # Normalize hyphens and punctuation for directive matching
+    norm_text = re.sub(r'[-_]', ' ', f"{ctx} {foc}".lower())
+    
+    # 1. Format constraints & exclusions
+    forbidden_formats = []
+    if any(p in norm_text for p in ["keine multiple choice", "kein multiple choice", "keine mc", "kein mc", "ohne multiple choice"]):
+        forbidden_formats.append("Multiple Choice")
+    if any(p in norm_text for p in ["keine lückentexte", "kein lückentext", "ohne lücken", "ohne lückentext"]):
+        forbidden_formats.append("Lückentext")
+    if any(p in norm_text for p in ["kein freies schreiben", "keine freitexte", "kein essay", "kein aufsatz", "ohne freies schreiben"]):
+        forbidden_formats.append("Freies Schreiben")
+    if any(p in norm_text for p in ["kein wahr falsch", "keine wahr falsch", "ohne wahr falsch"]):
+        forbidden_formats.append("Wahr/Falsch")
+
+    forced_format = None
+    if any(p in norm_text for p in ["nur lückentext", "nur lückentexte", "ausschließlich lückentext"]):
+        forced_format = "Lückentext"
+    elif any(p in norm_text for p in ["nur multiple choice", "nur mc", "ausschließlich multiple choice"]):
+        forced_format = "Multiple Choice"
+    elif any(p in norm_text for p in ["nur drag the words", "nur drag and drop", "nur drag drop", "nur wortspeicher"]):
+        forced_format = "Drag the Words"
+    elif any(p in norm_text for p in ["nur tabellen zuordnung", "nur tabellenzuordnung", "nur tabellen"]):
+        forced_format = "Tabellen-Zuordnung"
+    elif any(p in norm_text for p in ["nur wahr falsch", "nur wahr oder falsch"]):
+        forced_format = "Wahr/Falsch"
+    elif any(p in norm_text for p in ["als vokabelkarten", "nur vokabelkarten", "vokabelkarten erstellen"]):
+        forced_format = "Vokabelkarten"
+    elif any(p in norm_text for p in ["nur wörter markieren", "nur mark the words"]):
+        forced_format = "Wörter markieren"
+
+    # Helper to clean meta phrases from topic strings
+    def clean_topic_str(t: str) -> str:
+        s = t.strip()
+        meta_sub = [
+            r'keine?\s+multiple[\s\-]+choice', r'kein\s+mc', r'keine\s+mc', r'ohne\s+multiple[\s\-]+choice',
+            r'nur\s+lückentext\w*', r'nur\s+multiple[\s\-]+choice', r'nur\s+drag[\s\-]+the[\s\-]+words',
+            r'nur\s+drag[\s\-]+and[\s\-]+drop', r'nur\s+wahr[\s\-]+falsch',
+            r'daz\s+einfache\s+sprache', r'einfache\s+sprache', r'leichte\s+sprache',
+            r'kurze\s+sätze', r'keine\s+schachtelsätze',
+            r'fokus\s+auf\s+', r'schwerpunkt\s+auf\s+', r'fragen\s+zu[mr]?\s+', r'aufgaben\s+zu[mr]?\s+',
+            r'^(?:zu[mr]?|zm|für|über|an|in|den|dem|die|das)\s+',
+            r'^(?:nur\s+fragen\s+zu[mr]?\s+|nur\s+aufgaben\s+zu[mr]?\s+)'
+        ]
+        for pat in meta_sub:
+            s = re.sub(pat, '', s, flags=re.IGNORECASE).strip()
+        return s.strip('.:,; -')
+
+    # 2. Topic Distribution Parsing
+    # Look first in context, but if context is only meta instructions, use focus_topic
+    dist_str = ""
+    has_ctx_distribution = bool(
+        re.search(r'\d+\s*(?:x|mal)?\s*(?:fragen?|aufgaben?|übungen?)?', ctx, re.IGNORECASE) or
+        re.search(r'[:=]\s*\d+', ctx) or
+        ("hälfte" in ctx.lower()) or
+        ("," in ctx or " und " in ctx or " + " in ctx or " & " in ctx)
+    )
+    
+    if has_ctx_distribution and ctx:
+        dist_str = ctx
+    elif foc:
+        dist_str = foc
+    else:
+        dist_str = ctx
+
+    distribution = {}
+    expanded_topics = []
+    has_explicit_counts = False
+    
+    # Check for "Hälfte X, Hälfte Y"
+    half_match = re.search(r'hälfte\s+(.+?)(?:,\s*|\s+und\s+|\s*\+\s*)(?:die\s+andere\s+)?hälfte\s+(.+)', dist_str, re.IGNORECASE)
+    if half_match:
+        top_a = clean_topic_str(half_match.group(1))
+        top_b = clean_topic_str(half_match.group(2))
+        count_half = max(1, default_task_count // 2)
+        count_rem = default_task_count - count_half
+        distribution[top_a] = count_half
+        distribution[top_b] = count_rem
+        expanded_topics = [top_a] * count_half + [top_b] * count_rem
+        has_explicit_counts = True
+    else:
+        # Protect phrases like "Abschnitt 1 und 2", "Seite 3 und 4" from splitting
+        cleaned_dist = re.sub(r'^(?:insgesamt|gesamt|insg\.?)\s*\d*\s*(?:fragen?|aufgaben?|übungen?)?[:\s,-]*', '', dist_str, flags=re.IGNORECASE).strip()
+        cleaned_dist = re.sub(
+            r'((?:abschnitt|absatz|kapitel|seite)\s+\d+)\s+und\s+(\d+)',
+            r'\1_UND_\2',
+            cleaned_dist,
+            flags=re.IGNORECASE
+        )
+        split_pattern = r'(?:\s*,\s*|\s*;\s*|\s*\+\s*|\s+und\s+|\s*&\s*|[\r\n]+)'
+        raw_parts = [p.strip() for p in re.split(split_pattern, cleaned_dist, flags=re.IGNORECASE) if p.strip()]
+
+        for part in raw_parts:
+            # Restore protected _UND_
+            part_restored = part.replace('_UND_', ' und ')
+            p_clean = clean_topic_str(part_restored)
+            
+            # If after cleaning nothing is left, or it's a pure constraint phrase with no numbers, skip
+            if not p_clean or (len(p_clean) < 2 and not re.search(r'\d+', part_restored)):
+                continue
+
+            # Pattern A: "5 fragen zum Textverständnis" or "5x Wortarten"
+            m_a = re.match(
+                r'^(\d+)\s*(?:x|mal)?\s*(?:fragen?|aufgaben?|übungen?)?\s*(?:zu[mr]?|zm|für|über|an|in|den|die|das)?\s*(.+)$',
+                part_restored,
+                re.IGNORECASE
+            )
+            # Pattern B: "Textverständnis: 5" or "Textverständnis (5)"
+            m_b = re.match(
+                r'^(.+?)\s*[:=\(]\s*(\d+)\s*(?:x|mal)?\s*(?:fragen?|aufgaben?)?\)?$',
+                part_restored,
+                re.IGNORECASE
+            )
+            if m_a and (int(m_a.group(1)) > 40 or re.match(r'(?:min|minuten|std|stunden|klasse|jahrgang|jahre|seite|seiten|uhr|prozent|euro)\b', m_a.group(2).strip(), re.IGNORECASE)):
+                m_a = None
+            if m_a:
+                count = int(m_a.group(1))
+                clean_topic = clean_topic_str(m_a.group(2))
+                if clean_topic:
+                    has_explicit_counts = True
+                    distribution[clean_topic] = distribution.get(clean_topic, 0) + count
+                    for _ in range(count):
+                        expanded_topics.append(clean_topic)
+            elif m_b:
+                count = int(m_b.group(2))
+                clean_topic = clean_topic_str(m_b.group(1))
+                if clean_topic:
+                    has_explicit_counts = True
+                    distribution[clean_topic] = distribution.get(clean_topic, 0) + count
+                    for _ in range(count):
+                        expanded_topics.append(clean_topic)
+            else:
+                if p_clean and len(p_clean) > 2 and not any(meta in p_clean.lower() for meta in ["multiple choice", "lückentext", "daz", "sprache"]):
+                    distribution[p_clean] = distribution.get(p_clean, 0) + 1
+                    expanded_topics.append(p_clean)
+
+    if has_explicit_counts and len(expanded_topics) > 0:
+        total_task_count = len(expanded_topics)
+    else:
+        total_task_count = default_task_count
+        if not expanded_topics:
+            fallback_topic = foc if foc else (clean_topic_str(ctx) if clean_topic_str(ctx) else "Grundaufgabe")
+            expanded_topics = [fallback_topic] * total_task_count
+            distribution[fallback_topic] = total_task_count
+
+    # 3. Content source targeting directives
+    content_directives = []
+    if any(w in norm_text for w in ["unterstrichen", "unterstreichung"]):
+        content_directives.append("Arbeite zwingend mit den im Originaltext UNTERSTRICHENEN Wörtern bzw. Sätzen. Zitiere den jeweiligen Satz vollständig und hebe das Zielwort hervor (z. B. <u>Wort</u>).")
+    if any(w in norm_text for w in ["gelb markiert", "grün markiert", "rot markiert", "farbig markiert", "markierten wörtern"]):
+        content_directives.append("Konzentriere dich vorrangig auf die im Dokument FARBIG MARKIERTEN Textstellen und Begriffe.")
+    if any(w in norm_text for w in ["fettgedruckt", "fett gedruckt", "fett formatierte"]):
+        content_directives.append("Beziehe dich vorrangig auf die FETTGEDRUCKTEN Fachbegriffe und Kernaussagen.")
+    abschnitt_match = re.search(r'(?:nur\s+)?(abschnitt\s+\d+(?:\s*(?:und|-|bis)\s*\d+)?|absatz\s+\d+(?:\s*(?:und|-|bis)\s*\d+)?)', norm_text)
+    if abschnitt_match:
+        content_directives.append(f"Beschränke die Fragen inhaltlich streng auf {abschnitt_match.group(1)}.")
+
+    # 4. Pedagogical & linguistic directives
+    pedagogical_directives = []
+    if any(w in norm_text for w in ["daz", "deutsch als zweitsprache", "leichte sprache", "einfache sprache", "sprachhilfe", "a2", "b1"]):
+        pedagogical_directives.append("DAZ & SPRACHSENSIBILITÄT: Verwende klare, kurze Hauptsätze, vermeide unnötige Schachtelsätze und Fremdwörter. Gib bei Level A & C zusätzliche Vokabelhilfen und eindeutige Signalwörter.")
+    if any(w in norm_text for w in ["inklusion", "förderschule", "förderbedarf", "starke entlastung"]):
+        pedagogical_directives.append("INKLUSION: Achte auf besonders niedrigschwellige Einstiege, visuelle Unterstützung und vorgegebene Auswahlwörter (Wortspeicher).")
+    if any(w in norm_text for w in ["gymnasium", "transfer", "anspruchsvoll", "begründe"]):
+        pedagogical_directives.append("HÖHERE ANFORDERUNG: Fordere bei Level B vertiefte Begründungen, Textanalysen und selbstständige Begriffstransfers.")
+    if any(w in norm_text for w in ["auf englisch", "in english", "englische aufgabenstellung"]):
+        pedagogical_directives.append("SPRACHE: Formuliere alle Aufgabenstellungen, Fragen und Optionen auf Englisch.")
+
+    return {
+        "raw_context": ctx,
+        "raw_focus": foc,
+        "total_task_count": total_task_count,
+        "distribution": distribution,
+        "expanded_topics": expanded_topics,
+        "has_explicit_counts": has_explicit_counts,
+        "forbidden_formats": forbidden_formats,
+        "forced_format": forced_format,
+        "content_directives": content_directives,
+        "pedagogical_directives": pedagogical_directives
+    }
+
+
 def parse_focus_topics(focus_topic_str: str, default_task_count: int = 2) -> tuple:
     """
     Parses expressions like:
@@ -440,27 +633,37 @@ class AIService:
         else:
             subject_instruction = f"Schulfach: {subject}"
 
-        # Check if context or focus_topic contains explicit topic distribution or count
-        parsed_str = focus_topic.strip() if focus_topic and focus_topic.strip() else ""
-        if not parsed_str and context and context.strip():
-            if re.search(r'\d+\s*(?:x|mal|fragen|aufgaben)', context, re.IGNORECASE) or any(w in context.lower() for w in ["textverst", "unterstrichen", "wortart", "grammatik"]):
-                parsed_str = context.strip()
+        # Alle Vorgaben der Lehrkraft (Detail-Box + Schwerpunkt) einheitlich auswerten
+        directives = parse_teacher_context_directives(context, focus_topic, task_count)
+        topic_dist = directives["distribution"]
+        if directives["has_explicit_counts"]:
+            task_count = directives["total_task_count"]
+        if directives["forced_format"]:
+            target_format = directives["forced_format"]
 
-        expanded_topics, detected_count, topic_dist = parse_focus_topics(parsed_str, task_count)
-        if detected_count and detected_count > 0:
-            task_count = detected_count
+        extra_rules = []
+        if directives["forbidden_formats"]:
+            extra_rules.append("VERBOTENE AUFGABENFORMATE (laut Lehrkraft): " + ", ".join(directives["forbidden_formats"]) + ". Verwende diese Formate in KEINER Aufgabe.")
+        if directives["forced_format"]:
+            extra_rules.append(f"AUSSCHLIESSLICH dieses Aufgabenformat verwenden: {directives['forced_format']}.")
+        extra_rules.extend(directives["content_directives"])
+        extra_rules.extend(directives["pedagogical_directives"])
+        if context and context.strip():
+            extra_rules.append(f"Originalwortlaut der Lehrkraft (verbindlich, jede Angabe vollständig umsetzen): \"{context.strip()}\"")
+        extra_block = ("\nZUSÄTZLICHE VERBINDLICHE VORGABEN DER LEHRKRAFT:\n" + "\n".join(f"- {r}" for r in extra_rules)) if extra_rules else ""
 
-        if topic_dist and len(topic_dist) > 0 and (len(topic_dist) > 1 or any(c > 1 for c in topic_dist.values())):
+        if directives["has_explicit_counts"] and topic_dist:
             dist_lines = []
             for top_name, top_count in topic_dist.items():
-                is_reading = any(w in top_name.lower() for w in ["textverst", "leseverst", "reading", "comprehension", "sachtext", "inhalt", "fragen zum text"])
-                is_underlined = any(w in top_name.lower() for w in ["unterstrichen", "markiert", "wortart", "grammatik", "wörter", "pronomen", "nomen", "verben"])
+                low = top_name.lower()
+                is_reading = any(w in low for w in ["textverst", "leseverst", "reading", "comprehension", "sachtext", "inhalt", "fragen zum text"])
+                is_underlined = any(w in low for w in ["unterstrichen", "markiert", "wortart", "grammatik", "wörter", "pronomen", "nomen", "verben"])
                 if is_reading:
                     dist_lines.append(f"- {top_count}x {top_name}: REINE INHALTLICHE VERSTÄNDNISFRAGEN zum Sinn, zu Fakten, Zusammenhängen und Details des Textes (KEINE Grammatik!). Jede Frage muss sich auf einen anderen Textaspekt beziehen (KEINE Dopplungen!).")
                 elif is_underlined:
                     dist_lines.append(f"- {top_count}x {top_name}: Grammatik-, Wortarten- und Bestimmungsaufgaben zu den im Text unterstrichenen oder vorkommenden Wörtern! Jede Aufgabe muss den konkreten Beispielsatz aus dem Text zitieren und das Zielwort hervorheben (z. B. mit <u>Wort</u>). Biete abwechslungsreiche Übungen (Wortarten bestimmen, Grundform/Infinitiv, Pronomen einsetzen, Wörter markieren, Tabellen-Zuordnung).")
                 else:
-                    dist_lines.append(f"- {top_count}x {top_name}: Gezielte Aufgaben zu diesem Schwerpunkt.")
+                    dist_lines.append(f"- {top_count}x {top_name}: Gezielte, inhaltlich eigenständige Aufgaben ausschließlich zu diesem Schwerpunkt.")
             dist_desc = "\n".join(dist_lines)
             focus_instruction = (
                 f"STRIKTE VORGABE FÜR DIE AUFGABEN-VERTEILUNG (GESAMT {task_count} AUFGABEN PRO NIVEAU):\n"
@@ -475,6 +678,7 @@ class AIService:
             focus_instruction = f"Übungsschwerpunkte: {focus_topic} (Erstelle gezielt Aufgaben für JEDEN dieser Schwerpunkte!)."
         else:
             focus_instruction = "Übungsschwerpunkte: Automatisch aus dem Dokument ermitteln."
+        focus_instruction += extra_block
         hefteintrag_raw = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else "Hauptthema des Dokuments")
         hefteintrag_instruction = (
             f"Thema für den Hefteintrag / Merkkasten: {hefteintrag_raw}.\n"
@@ -842,7 +1046,8 @@ Generiere genau dieses JSON:
             parsed_str = "Textverständnis, Fremdwörter, Wortarten" if subject == "Deutsch" else ("Bruchrechnen" if subject == "Mathematik" else "Simple Past")
         topic_str = parsed_str
 
-        topics_list, actual_count, topic_dist = parse_focus_topics(parsed_str, task_count)
+        _d = parse_teacher_context_directives(context, focus_topic, task_count)
+        topics_list, actual_count, topic_dist = _d["expanded_topics"], _d["total_task_count"], _d["distribution"]
         heft_str = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else "Hauptthema")
         lower_heft = (heft_str or "").lower()
         

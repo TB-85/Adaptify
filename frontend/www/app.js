@@ -79,7 +79,7 @@ function switchAppMode(mode) {
         if (viewInteractive) viewInteractive.classList.remove('hidden');
         if (viewBranching) viewBranching.classList.add('hidden');
         if (subtitle) {
-            subtitle.textContent = "Erstelle in Sekunden interaktive H5P-Videolektionen mit didaktischen Wissens-Stopps für mebis, ByCS und Moodle.";
+            subtitle.textContent = "Interaktive H5P-Videolektionen mit Haltepunkten und Verständnisfragen für mebis, ByCS und Moodle.";
         }
         if (btnSubmitLabel) btnSubmitLabel.textContent = "Interaktives Video generieren";
     } else {
@@ -92,7 +92,7 @@ function switchAppMode(mode) {
         if (viewBranching) viewBranching.classList.remove('hidden');
         if (viewInteractive) viewInteractive.classList.add('hidden');
         if (subtitle) {
-            subtitle.textContent = "Erstelle differenzierte Lernpfade (Diagnose & Level A/B/C) aus Buchseiten und druckbare PDF-Arbeitsblätter.";
+            subtitle.textContent = "Differenzierte Lernpfade (Diagnose, Level A/B/C) aus Buchseiten, Texten oder Arbeitsblättern als H5P, PDF oder Live-Sitzung.";
         }
         if (btnSubmitLabel) btnSubmitLabel.textContent = "Differenzierte Lernpfade generieren";
     }

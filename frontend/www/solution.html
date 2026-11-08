@@ -18,6 +18,7 @@
             100% { transform: scale(1.15); }
         }
     </style>
+    <link rel="stylesheet" href="styles.css?v=1">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-emerald-200">
 
@@ -89,7 +90,7 @@
                 <div class="flex items-center justify-between border-b border-amber-200/80 pb-3">
                     <div class="flex items-center gap-2 font-bold text-amber-900 text-base">
                         <i class="fa-solid fa-thumbtack text-amber-600"></i>
-                        <span id="hefteintrag-title">📌 Merkkasten / Hefteintrag</span>
+                        <span id="hefteintrag-title">Merkkasten / Hefteintrag</span>
                     </div>
                     <button id="btn-read-hefteintrag" class="speak-btn bg-amber-100 hover:bg-amber-200 text-amber-800 p-2 rounded-xl text-xs flex items-center gap-1.5 transition-all font-semibold">
                         <i class="fa-solid fa-volume-high"></i>
@@ -141,7 +142,7 @@
                 <div class="flex items-center justify-between border-b border-purple-200/80 pb-3">
                     <div class="flex items-center gap-2 font-bold text-purple-900 text-base">
                         <i class="fa-solid fa-star text-purple-600"></i>
-                        <span>⭐ Experten-Aufgaben (Zusatz)</span>
+                        <span>Experten-Aufgaben (Zusatz)</span>
                     </div>
                 </div>
                 <div id="zusatzaufgaben-body" class="space-y-3 text-sm text-purple-950">
@@ -151,24 +152,24 @@
             <!-- Self-Reflection / Feedback Box -->
             <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 text-center">
                 <h4 class="font-bold text-slate-900 text-sm">
-                    😊 Wie gut bist du mit den Aufgaben zurechtgekommen?
+                    Wie gut bist du mit den Aufgaben zurechtgekommen?
                 </h4>
                 <div class="flex items-center justify-center gap-3">
                     <button onclick="sendStudentFeedback('leicht', this)" class="flex-1 py-3 px-2 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl transition-all flex flex-col items-center gap-1 group">
-                        <span class="text-2xl group-hover:scale-110 transition-transform">🟢</span>
+                        <span class="text-2xl group-hover:scale-110 transition-transform"></span>
                         <span class="text-xs font-semibold text-slate-700 group-hover:text-emerald-800">Leicht</span>
                     </button>
                     <button onclick="sendStudentFeedback('mittel', this)" class="flex-1 py-3 px-2 bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 rounded-xl transition-all flex flex-col items-center gap-1 group">
-                        <span class="text-2xl group-hover:scale-110 transition-transform">🟡</span>
+                        <span class="text-2xl group-hover:scale-110 transition-transform"></span>
                         <span class="text-xs font-semibold text-slate-700 group-hover:text-amber-800">Genau richtig</span>
                     </button>
                     <button onclick="sendStudentFeedback('schwer', this)" class="flex-1 py-3 px-2 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-300 rounded-xl transition-all flex flex-col items-center gap-1 group">
-                        <span class="text-2xl group-hover:scale-110 transition-transform">🔴</span>
+                        <span class="text-2xl group-hover:scale-110 transition-transform"></span>
                         <span class="text-xs font-semibold text-slate-700 group-hover:text-rose-800">Schwer</span>
                     </button>
                 </div>
                 <p id="feedback-acknowledgement" class="hidden text-xs text-emerald-600 font-semibold pt-1">
-                    ✓ Danke für deine Rückmeldung!
+                    Danke für deine Rückmeldung!
                 </p>
             </div>
 
