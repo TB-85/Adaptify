@@ -1120,7 +1120,7 @@ window.adjustTotalTasks = function(delta) {
     const hiddenTaskCountInput = document.getElementById('input-task-count');
     
     let currentTotal = parseInt(hiddenTaskCountInput ? hiddenTaskCountInput.value : (totalDisplay ? totalDisplay.textContent : '5')) || 5;
-    let newTotal = Math.min(25, Math.max(1, currentTotal + delta));
+    let newTotal = Math.min(30, Math.max(1, currentTotal + delta));
     
     if (totalDisplay) totalDisplay.textContent = newTotal;
     if (hiddenTaskCountInput) hiddenTaskCountInput.value = newTotal;
@@ -2173,13 +2173,19 @@ btnSubmit.addEventListener('click', async (e) => {
             formData.append('files', new Blob([topicPromptVal], { type: 'text/plain' }), 'unterrichtseinheit.txt');
         }
 
-        const effectiveFocusTopic = (typeof inputFocusTopic !== 'undefined' && inputFocusTopic?.value.trim())
+        let effectiveFocusTopic = (typeof inputFocusTopic !== 'undefined' && inputFocusTopic?.value.trim())
             ? inputFocusTopic.value.trim()
             : topicPromptVal;
 
         let effectiveContext = (typeof inputContext !== 'undefined' && inputContext?.value.trim())
             ? inputContext.value.trim()
             : '';
+
+        if (!effectiveFocusTopic && effectiveContext) {
+            if (/(\d+\s*(?:x|mal|fragen|aufgaben)|textverst|unterstrichen|wortart|grammatik)/i.test(effectiveContext)) {
+                effectiveFocusTopic = effectiveContext;
+            }
+        }
         if (topicPromptVal && !effectiveContext.includes(topicPromptVal)) {
             effectiveContext = effectiveContext ? `${effectiveContext} | Anforderung: ${topicPromptVal}` : topicPromptVal;
         }

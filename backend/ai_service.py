@@ -84,35 +84,59 @@ class InteractiveVideoContent(BaseModel):
 
 def parse_focus_topics(focus_topic_str: str, default_task_count: int = 2) -> tuple:
     """
-    Parses expressions like '4 Textverständnis, 3 Fremdwörter, 2 Grafik' or '4x Textverständnis, 3x Fremdwörter'
-    or plain comma-separated strings.
-    Returns (expanded_topic_list, calculated_total_task_count).
+    Parses expressions like:
+    - '5 fragen zm textverständnis und 15 fragen zu den unterstrichenen wörtern'
+    - '4 Textverständnis, 3 Fremdwörter, 2 Grafik'
+    - '4x Textverständnis & 3x Grammatik'
+    - '5 Fragen zum Text + 15 Aufgaben zu den unterstrichenen Wörtern'
+    Returns (expanded_topic_list, calculated_total_task_count, topic_distribution_dict).
     """
     import re
+    default_count = max(1, default_task_count)
     if not focus_topic_str or not focus_topic_str.strip():
-        return (["Grundaufgabe"], default_task_count)
+        return (["Grundaufgabe"] * default_count, default_count, {"Grundaufgabe": default_count})
+
+    raw_str = focus_topic_str.strip()
+    raw_str = re.sub(r'^(?:insgesamt|gesamt|insg\.?)\s*\d*\s*(?:fragen?|aufgaben?|übungen?)?[:\s,-]*', '', raw_str, flags=re.IGNORECASE).strip()
     
-    parts = [p.strip() for p in focus_topic_str.split(',') if p.strip()]
+    split_pattern = r'(?:\s*,\s*|\s*;\s*|\s*\+\s*|\s+und\s+|\s*&\s*|[\r\n]+)'
+    raw_parts = [p.strip() for p in re.split(split_pattern, raw_str, flags=re.IGNORECASE) if p.strip()]
+
     expanded_topics = []
+    distribution = {}
     has_explicit_counts = False
-    
-    for part in parts:
-        match = re.match(r'^(\d+)\s*x?\s*(?:zu|für)?\s*(.+)$', part, re.IGNORECASE)
+
+    for part in raw_parts:
+        match = re.match(
+            r'^(\d+)\s*(?:x|mal)?\s*(?:fragen?|aufgaben?|übungen?)?\s*(?:zu[mr]?|zm|für|über|den|die|das)?\s*(.+)$',
+            part,
+            re.IGNORECASE
+        )
         if match:
             count = int(match.group(1))
-            topic_name = match.group(2).strip()
-            has_explicit_counts = True
-            for _ in range(count):
-                expanded_topics.append(topic_name)
+            raw_topic = match.group(2).strip()
+            clean_topic = re.sub(r'^(?:zu[mr]?|zm|für|über|in|an|den|dem|die|das)\s+', '', raw_topic, flags=re.IGNORECASE).strip()
+            clean_topic = clean_topic.rstrip('.:,; ')
+            if clean_topic:
+                has_explicit_counts = True
+                distribution[clean_topic] = distribution.get(clean_topic, 0) + count
+                for _ in range(count):
+                    expanded_topics.append(clean_topic)
         else:
-            expanded_topics.append(part)
-            
+            clean_part = re.sub(r'^(?:zu[mr]?|zm|für|über|in|an|den|dem|die|das)\s+', '', part, flags=re.IGNORECASE).strip()
+            clean_part = clean_part.rstrip('.:,; ')
+            if clean_part:
+                distribution[clean_part] = distribution.get(clean_part, 0) + 1
+                expanded_topics.append(clean_part)
+
     if has_explicit_counts and len(expanded_topics) > 0:
         total_count = len(expanded_topics)
     else:
-        total_count = default_task_count
-        
-    return (expanded_topics, total_count)
+        total_count = default_count
+        if len(expanded_topics) == 0:
+            expanded_topics = ["Grundaufgabe"] * total_count
+
+    return (expanded_topics, total_count, distribution)
 
 def extract_text_from_docx(docx_bytes):
     try:
@@ -416,7 +440,41 @@ class AIService:
         else:
             subject_instruction = f"Schulfach: {subject}"
 
-        focus_instruction = f"Übungsschwerpunkte: {focus_topic} (Erstelle gezielt Aufgaben für JEDEN dieser Schwerpunkte!)." if focus_topic else "Übungsschwerpunkte: Automatisch aus dem Dokument ermitteln."
+        # Check if context or focus_topic contains explicit topic distribution or count
+        parsed_str = focus_topic.strip() if focus_topic and focus_topic.strip() else ""
+        if not parsed_str and context and context.strip():
+            if re.search(r'\d+\s*(?:x|mal|fragen|aufgaben)', context, re.IGNORECASE) or any(w in context.lower() for w in ["textverst", "unterstrichen", "wortart", "grammatik"]):
+                parsed_str = context.strip()
+
+        expanded_topics, detected_count, topic_dist = parse_focus_topics(parsed_str, task_count)
+        if detected_count and detected_count > 0:
+            task_count = detected_count
+
+        if topic_dist and len(topic_dist) > 0 and (len(topic_dist) > 1 or any(c > 1 for c in topic_dist.values())):
+            dist_lines = []
+            for top_name, top_count in topic_dist.items():
+                is_reading = any(w in top_name.lower() for w in ["textverst", "leseverst", "reading", "comprehension", "sachtext", "inhalt", "fragen zum text"])
+                is_underlined = any(w in top_name.lower() for w in ["unterstrichen", "markiert", "wortart", "grammatik", "wörter", "pronomen", "nomen", "verben"])
+                if is_reading:
+                    dist_lines.append(f"- {top_count}x {top_name}: REINE INHALTLICHE VERSTÄNDNISFRAGEN zum Sinn, zu Fakten, Zusammenhängen und Details des Textes (KEINE Grammatik!). Jede Frage muss sich auf einen anderen Textaspekt beziehen (KEINE Dopplungen!).")
+                elif is_underlined:
+                    dist_lines.append(f"- {top_count}x {top_name}: Grammatik-, Wortarten- und Bestimmungsaufgaben zu den im Text unterstrichenen oder vorkommenden Wörtern! Jede Aufgabe muss den konkreten Beispielsatz aus dem Text zitieren und das Zielwort hervorheben (z. B. mit <u>Wort</u>). Biete abwechslungsreiche Übungen (Wortarten bestimmen, Grundform/Infinitiv, Pronomen einsetzen, Wörter markieren, Tabellen-Zuordnung).")
+                else:
+                    dist_lines.append(f"- {top_count}x {top_name}: Gezielte Aufgaben zu diesem Schwerpunkt.")
+            dist_desc = "\n".join(dist_lines)
+            focus_instruction = (
+                f"STRIKTE VORGABE FÜR DIE AUFGABEN-VERTEILUNG (GESAMT {task_count} AUFGABEN PRO NIVEAU):\n"
+                f"Die Lehrkraft hat eine EXAKTE Verteilung von {task_count} Aufgaben gefordert:\n"
+                f"{dist_desc}\n"
+                f"WICHTIG:\n"
+                f"1. Generiere ZWINGEND GENAU {task_count} Aufgaben in 'level_a.tasks' und GENAU {task_count} Aufgaben in 'level_b.tasks'!\n"
+                f"2. Halte die Reihenfolge der Themenblöcke exakt ein: Zuerst alle Aufgaben zum ersten Schwerpunkt, danach die weiteren Schwerpunkte.\n"
+                f"3. KEINE DOPPELTEN AUFGABEN: Jede einzelne der {task_count} Aufgaben muss eine eigenständige, neue Frage oder Übung sein!"
+            )
+        elif focus_topic:
+            focus_instruction = f"Übungsschwerpunkte: {focus_topic} (Erstelle gezielt Aufgaben für JEDEN dieser Schwerpunkte!)."
+        else:
+            focus_instruction = "Übungsschwerpunkte: Automatisch aus dem Dokument ermitteln."
         hefteintrag_raw = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else "Hauptthema des Dokuments")
         hefteintrag_instruction = (
             f"Thema für den Hefteintrag / Merkkasten: {hefteintrag_raw}.\n"
@@ -672,6 +730,7 @@ WICHTIGE ANWEISUNGEN:
                         config=types.GenerateContentConfig(
                             response_mime_type="application/json",
                             response_schema=DifferentiatedContent,
+                            max_output_tokens=8192,
                         )
                     )
                     if response and response.text:
@@ -778,13 +837,17 @@ Generiere genau dieses JSON:
 
     def _get_mock_data(self, context: str = "", target_format: str = "KI-Mix", task_count: int = 2, subject: str = "Deutsch", school_type: str = "Grundschule", focus_topic: str = "", hefteintrag_topic: str = "", error_message: str = None, differentiation_mode: str = "differentiated") -> dict:
         """Returns beautiful default mock data in case API key is missing or fails."""
-        topic_str = focus_topic if focus_topic else ("Textverständnis, Fremdwörter, Wortarten" if subject == "Deutsch" else ("Bruchrechnen" if subject == "Mathematik" else "Simple Past"))
-        heft_str = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else "Fremdwörter")
+        parsed_str = focus_topic.strip() if focus_topic and focus_topic.strip() else (context.strip() if context and context.strip() else "")
+        if not parsed_str:
+            parsed_str = "Textverständnis, Fremdwörter, Wortarten" if subject == "Deutsch" else ("Bruchrechnen" if subject == "Mathematik" else "Simple Past")
+        topic_str = parsed_str
+
+        topics_list, actual_count, topic_dist = parse_focus_topics(parsed_str, task_count)
+        heft_str = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else "Hauptthema")
         lower_heft = (heft_str or "").lower()
         
-        # Clean topic_str from raw count numbers for a professional document title
         import re
-        clean_title_topic = re.sub(r'\d+\s*x?\s*(?:zu|für)?\s*', '', topic_str).strip()
+        clean_title_topic = re.sub(r'\d+\s*x?\s*(?:zu|für)?\s*', '', parsed_str).strip()
         clean_title_topic = re.sub(r'^\s*,\s*|\s*,\s*$', '', clean_title_topic)
         if not clean_title_topic or len(clean_title_topic) < 3:
             clean_title_topic = "Müll im Ozean - Der achte Kontinent" if subject == "Deutsch" else ("Bruchrechnen" if subject == "Mathematik" else "Grammar & Reading")
@@ -795,303 +858,210 @@ Generiere genau dieses JSON:
         if subject == "Mathematik":
             extracted += "Beispiel: 'Ein Kuchen wird in 8 gleiche Teile geschnitten. Anna isst 2 Teile, Ben isst 3 Teile. Welcher Anteil bleibt übrig?'\n"
         elif subject == "Deutsch":
-            extracted += "Beispiel: 'Der kleine Hund läuft schnell durch den grünen Garten und bellt laut den Postboten an.'\n"
+            extracted += "Kinder brauchen im Familienleben feste Regeln. Wie sie gestaltet werden, hängt von den Eltern ab.\nWenn Eltern eher großzügig sind, gehen sie oft lockerer mit den Regeln um.\nMerkt das Kind, dass Regeln nur manchmal gelten, wird es sich nicht unbedingt an ihnen orientieren, sondern am Verhalten seiner Eltern.\n"
         else:
-            extracted += "Beispiel: 'Yesterday, Sarah and Peter went to the school yard. Sarah played basketball, but Peter forgot his ball.'\n"
+            extracted += "The Great Barrier Reef is the largest coral reef system on Earth, located off the northeast coast of Australia.\nRising sea temperatures cause coral bleaching and threaten marine biodiversity.\n"
         
         extracted += "\nBildbeschreibung: Eine illustrative Grafik passend zum Thema."
         
         tasks_a = []
         tasks_b = []
         tasks_c = []
-        formats_pool = ["Lückentext", "Drag the Words", "Tabellen-Zuordnung", "Wörter markieren", "Wahr/Falsch", "Multiple Choice"]
-        
-        # Parse topics & count distribution (e.g. '4 Textverständnis, 3 Fremdwörter, 2 Grafik')
-        topics_list, actual_count = parse_focus_topics(topic_str, task_count)
+
+        # Rich pool for Reading Comprehension
+        reading_pool_de = [
+            {
+                "format": "Multiple Choice", "suffix": "Kernaussage des Textes",
+                "a_text": f"Frage: Worüber informiert der vorliegende Text zu '{clean_title_topic}' hauptsächlich?\n[X] Über feste Regeln, klare Orientierung und das Zusammenleben in der Familie\n[ ] Dass Absprachen im Alltag überhaupt keine Rolle spielen\n[ ] Ausschließlich über Freizeitaktivitäten in den Schulferien",
+                "b_text": f"Frage: Welche zentrale Schlussfolgerung zieht der Autor über familiäre Regeln?\n[X] Verlässlichkeit und Vorbildfunktion der Eltern sind entscheidend für die Orientierung des Kindes\n[ ] Kinder orientieren sich nur dann, wenn keinerlei Grenzen existieren\n[ ] Regeln müssen täglich komplett neu verhandelt werden",
+                "hint": "💡 Tipp: Achte genau auf den ersten und letzten Satz des Textes.",
+                "exp": "Die Kernaussage betont die Verlässlichkeit und Vorbildfunktion der Eltern."
+            },
+            {
+                "format": "Wahr/Falsch", "suffix": "Detailaussagen zum Text",
+                "a_text": "Aussage: Wenn Eltern Regeln nur manchmal gelten lassen, fällt es Kindern schwerer, sich daran zu halten.\nAntwort: Wahr",
+                "b_text": "Aussage: Kinder orientieren sich primär am tatsächlichen Verhalten der Eltern und nicht an theoretischen Vorgaben.\nAntwort: Wahr",
+                "hint": "💡 Tipp: Lies den letzten Satz des Abschnitts noch einmal aufmerksam.",
+                "exp": "Das Kind orientiert sich am tatsächlichen Verhalten der Eltern."
+            },
+            {
+                "format": "Lückentext", "suffix": "Kausalzusammenhänge erfassen",
+                "a_text": "Kinder brauchen feste *Regeln*, um sich sicher zu fühlen. Wie diese gestaltet werden, entscheiden die *Eltern*. Ein *Verhalten*, das verlässlich ist, gibt Kindern klare *Orientierung*.",
+                "b_text": "Inkonsequentes *Verhalten* führt dazu, dass Kinder bestehende *Regeln* hinterfragen. Eine verlässliche *Struktur* erfordert klare *Absprachen* zwischen Eltern und Kind.",
+                "hint": "💡 Tipp: Achte auf die Schlüsselwörter im Text.",
+                "exp": "Regeln und Orientierung bilden das didaktische Fundament des Textes."
+            },
+            {
+                "format": "Wörter markieren", "suffix": "Zentrale Textbegriffe markieren",
+                "a_text": "Klicke alle Schlüsselbegriffe im folgenden Satz an:\nFeste *Regeln* im *Familienleben* geben Kindern Halt und wichtige *Orientierung*.",
+                "b_text": "Klicke alle Verhaltensweisen und Kriterien an:\nWenn Eltern *großzügig* oder *locker* handeln, müssen Absprachen *verlässlich* bleiben.",
+                "hint": "💡 Tipp: Markiere die wesentlichen Leitbegriffe des Textes.",
+                "exp": "'Regeln', 'Familienleben' und 'Orientierung' sind die thematischen Ankerbegriffe."
+            },
+            {
+                "format": "Multiple Choice", "suffix": "Textanalyse & Vertiefung",
+                "a_text": "Frage: Was passiert laut Text, wenn Regeln nur manchmal gelten?\n[X] Das Kind orientiert sich am Verhalten der Eltern statt an der Regel\n[ ] Das Kind beachtet die Regeln sofort doppelt so aufmerksam\n[ ] Es hat keinerlei Auswirkungen auf das Kind",
+                "b_text": "Frage: Warum ist elterliche Konsequenz laut Text von so großer Bedeutung?\n[X] Weil Vorbildwirkung und Regelanwendung das Werteverständnis des Kindes prägen\n[ ] Weil Eltern dadurch weniger Freizeit haben\n[ ] Weil das Gesetz tägliche schriftliche Kontrollen vorschreibt",
+                "hint": "💡 Tipp: Verknüpfe Ursache und Folge im Text.",
+                "exp": "Inkonsequenz führt zu Orientierungslosigkeit bei Kindern."
+            }
+        ]
+
+        # Rich pool for Underlined Words & Grammar
+        grammar_pool_de = [
+            {
+                "format": "Wörter markieren", "suffix": "Nomen erkennen",
+                "a_text": "Klicke alle unterstrichenen Nomen im Satz an:\nIm *Familienleben* brauchen *Kinder* feste *Regeln* und klare *Orientierung*.",
+                "b_text": "Klicke alle Nomen mit Signalwörtern an:\nDas *Verhalten* der *Eltern* bestimmt den *Alltag* und die *Grenzen*.",
+                "hint": "💡 Tipp: Nomen werden großgeschrieben und bezeichnen Dinge, Lebewesen oder Begriffe.",
+                "exp": "Nomen bezeichnen Lebewesen, Gegenstände oder Begriffe."
+            },
+            {
+                "format": "Lückentext", "suffix": "Pronomen mit Klammerbezug einsetzen",
+                "a_text": "Ersetze die in Klammern angegebenen Wörter durch passende Pronomen:\nWie *sie* (die Regeln) gestaltet werden, hängt von den Eltern ab. Wenn *sie* (die Eltern) eher großzügig sind, wird *es* (das Kind) sich nicht an *ihnen* (den Regeln) orientieren.",
+                "b_text": "Ersetze die Satzglieder durch zutreffende Pronomen:\nMerkt das Kind, dass Regeln gelten, orientiert *es* (das Kind) sich am Verhalten *seiner* (des Kindes) Eltern, denn *sie* (die Eltern) sind Vorbilder für *ihn/es* (das Kind).",
+                "hint": "💡 Tipp: Achte auf Fall (Kasus) und grammatisches Geschlecht (Genus).",
+                "exp": "Pronomen stehen als Stellvertreter für bereits genannte Nomen."
+            },
+            {
+                "format": "Drag the Words", "suffix": "Verben in die Grundform (Infinitiv) setzen",
+                "a_text": "Ordne den gebeugten Verben ihre Grundform (Infinitiv) zu:\n'hängt ab' -> *abhängen*\n'gehen um' -> *umgehen*\n'gilt' -> *gelten*\n'orientiert sich' -> *orientieren*",
+                "b_text": "Ordne den Präteritum-Formen den Infinitiv zu:\n'brauchten' -> *brauchen*\n'galten' -> *gelten*\n'gingen' -> *gehen*\n'merkte' -> *merken*",
+                "hint": "💡 Tipp: Der Infinitiv endet im Deutschen meist auf -en.",
+                "exp": "Die Grundform eines Verbs ist der Infinitiv."
+            },
+            {
+                "format": "Tabellen-Zuordnung", "suffix": "Wortarten in Tabelle zuordnen",
+                "a_text": "Ordne die unterstrichenen Wörter den passenden Wortarten-Spalten zu:\n\n| Nomen | Verben | Adjektive |\n| *Familienleben* | *gestalten* | *großzügig* |\n| *Regeln* | *orientieren* | *locker* |\n\nDistraktoren: gestern, schnell",
+                "b_text": "Ordne die Wörter den passenden Kategorien zu:\n\n| Nomen | Verben | Pronomen |\n| *Eltern* | *brauchen* | *sie* |\n| *Verhalten* | *gelten* | *ihnen* |\n\nDistraktoren: heute, dort",
+                "hint": "💡 Tipp: Ziehe jedes Kärtchen in die passende Spalte.",
+                "exp": "Wortarten lassen sich anhand ihrer grammatischen Merkmale eindeutig bestimmen."
+            },
+            {
+                "format": "Multiple Choice", "suffix": "Adjektive und Gegenteile",
+                "a_text": "Frage: Welches Wort ist das genaue Gegenteil des unterstrichenen Adjektivs <u>großzügig</u>?\nBeispielsatz: 'Wenn Eltern eher <u>großzügig</u> sind, gehen sie lockerer mit Regeln um.'\n[X] streng / geizig\n[ ] tolerant\n[ ] freundlich",
+                "b_text": "Frage: Welches Antonym passt exakt zum unterstrichenen Adjektiv <u>locker</u>?\nBeispielsatz: 'Sie gehen <u>lockerer</u> mit den Absprachen um.'\n[X] strikt / verbindlich\n[ ] lässig\n[ ] entspannt",
+                "hint": "💡 Tipp: Gegenteile bedeuten das genaue Gegenteil des Adjektivs.",
+                "exp": "Großzügig hat als Antonym geizig oder streng."
+            },
+            {
+                "format": "Wörter markieren", "suffix": "Präpositionen (Verhältniswörter)",
+                "a_text": "Klicke alle Präpositionen im Satz an:\nKinder orientieren sich *an* den Eltern und leben *in* einer Familie *mit* festen Regeln.",
+                "b_text": "Klicke alle Präpositionen mit Dativ/Akkusativ an:\nSie lernen *durch* das Vorbild und handeln *nach* den Vorgaben *von* Erwachsenen.",
+                "hint": "💡 Tipp: Präpositionen verlangen einen bestimmten Fall (Dativ oder Akkusativ).",
+                "exp": "'an', 'in' und 'mit' sind Präpositionen."
+            },
+            {
+                "format": "Drag the Words", "suffix": "Konjunktionen im Satzgefüge",
+                "a_text": "Setze die passenden Konjunktionen (Bindewörter) ein:\n*Wenn* Eltern großzügig sind, gelten Regeln manchmal nicht, *weil* die Konsequenz fehlt, *dass* Absprachen eingehalten werden.",
+                "b_text": "Verbinde die Haupt- und Nebensätze mit Konjunktionen:\nDas Kind merkt schnell, *dass* Regeln Orientierung geben, *obwohl* Ausnahmen verlockend sind, *damit* das Miteinander gelingt.",
+                "hint": "💡 Tipp: Konjunktionen verbinden Sätze und leiten Nebensätze ein.",
+                "exp": "'wenn', 'weil' und 'dass' sind unterordnende Konjunktionen."
+            },
+            {
+                "format": "Multiple Choice", "suffix": "Satzglieder bestimmen (Subjekt)",
+                "a_text": "Frage: Welches Satzglied ist der unterstrichene Teil <u>das Kind</u>?\nBeispielsatz: 'Merkt <u>das Kind</u> die Ausnahme, orientiert es sich daran.'\n[X] Subjekt (Satzgegenstand: Wer oder was?)\n[ ] Prädikat (Satzaussage)\n[ ] Akkusativobjekt (Wen-Ergänzung)",
+                "b_text": "Frage: Welche syntaktische Funktion hat <u>von den Eltern</u> im Satz?\nBeispielsatz: 'Wie Regeln gestaltet werden, hängt <u>von den Eltern</u> ab.'\n[X] Präpositionalobjekt\n[ ] Subjekt\n[ ] Adverbiale Bestimmung der Zeit",
+                "hint": "💡 Tipp: Frage nach dem Satzglied: Wer oder was merkt die Ausnahme?",
+                "exp": "'Das Kind' ist das Subjekt, da es die Handlung im Satz ausführt."
+            },
+            {
+                "format": "Lückentext", "suffix": "Komposita (Zusammengesetzte Nomen)",
+                "a_text": "Zerlege das zusammengesetzte Nomen 'Familienleben':\nEs setzt sich zusammen aus dem Bestimmungswort *Familie/Familien* und dem Grundwort *Leben*.",
+                "b_text": "Bilde aus den beiden Nomen 'Regel' und 'Verstoß' ein Kompositum:\nDas zusammengesetzte Nomen lautet *Regelverstoß* mit dem Grundwort *Verstoß*.",
+                "hint": "💡 Tipp: Das Grundwort bestimmt den Artikel des zusammengesetzten Nomens.",
+                "exp": "Familie + Leben = das Familienleben."
+            },
+            {
+                "format": "Lückentext", "suffix": "Steigerung von Adjektiven",
+                "a_text": "Bilde die Steigerungsstufen des unterstrichenen Adjektivs 'locker':\nPositiv: *locker* -> Komparativ: *lockerer* -> Superlativ: *am lockersten*.",
+                "b_text": "Bilde die Steigerung des Adjektivs 'fest':\nPositiv: *fest* -> Komparativ: *fester* -> Superlativ: *am festesten*.",
+                "hint": "💡 Tipp: Achte auf die Endungen -er und -sten.",
+                "exp": "Adjektive lassen sich regelmäßig mit -er und -sten steigern."
+            },
+            {
+                "format": "Tabellen-Zuordnung", "suffix": "Flektierbare vs. Unflektierbare Wortarten",
+                "a_text": "Ordne die Wörter den beiden Hauptkategorien zu:\n\n| Flektierbare Wortarten (veränderbar) | Unveränderliche Wortarten |\n| *Eltern* | *manchmal* |\n| *brauchen* | *nicht* |\n| *fest* | *sondern* |\n\nDistraktoren: Baum, Haus",
+                "b_text": "Ordne nach grammatischer Veränderbarkeit:\n\n| Flektierbar | Nicht flektierbar |\n| *Regel* | *sehr* |\n| *gelten* | *oft* |\n| *großzügig* | *wenn* |\n\nDistraktoren: Kind, Tisch",
+                "hint": "💡 Tipp: Flektierbare Wörter lassen sich beugen, deklinieren oder konjugieren.",
+                "exp": "Nomen, Verben und Adjektive sind flektierbar; Adverbien und Konjunktionen unveränderlich."
+            },
+            {
+                "format": "Drag the Words", "suffix": "Wortfamilien & Wortstamm",
+                "a_text": "Finde Wörter aus der Wortfamilie mit dem Wortstamm *halt* (von 'verhalten'):\nDas *Verhalten*, der *Halt*, die *Haltung* und das Verb *behalten*.",
+                "b_text": "Ordne Wörter mit dem Wortstamm *stell* (von 'gestalten'):\nDie *Gestaltung*, der *Darsteller*, *vorstellen* und die *Stelle*.",
+                "hint": "💡 Tipp: Wörter einer Wortfamilie haben den gleichen Wortstamm.",
+                "exp": "Alle diese Wörter teilen den gemeinsamen Wortstamm."
+            },
+            {
+                "format": "Lückentext", "suffix": "Zeitformen der Verben (Präteritum)",
+                "a_text": "Setze die unterstrichenen Verben in die einfache Vergangenheit (Präteritum):\nDie Eltern *brauchten* (brauchen) Ruhe. Sie *galten* (gelten) als verlässlich und *halfen* (helfen) den Kindern.",
+                "b_text": "Wandle die Präsenssätze ins Präteritum um:\nDas Kind *merkte* (merken) die Ausnahme und *ging* (gehen) lockerer mit der Regel um.",
+                "hint": "💡 Tipp: Achte auf unregelmäßige (starke) Verben: gelten -> galt.",
+                "exp": "'brauchten' ist regelmäßig, 'galten' und 'ging' sind unregelmäßige Präteritum-Formen."
+            },
+            {
+                "format": "Wahr/Falsch", "suffix": "Grammatische Merkmale prüfen",
+                "a_text": "Aussage: Das Wort 'Regeln' im Satz 'Kinder brauchen feste Regeln' steht im Plural (Mehrzahl) und im Akkusativ (Wen-Fall).\nAntwort: Wahr",
+                "b_text": "Aussage: Das Wort 'großzügig' fungiert im Satz 'Wenn Eltern großzügig sind' als prädikatives Adjektiv und wird nicht flektiert.\nAntwort: Wahr",
+                "hint": "💡 Tipp: Frage nach dem Fall: Wen oder was brauchen Kinder? Feste Regeln.",
+                "exp": "'Regeln' ist Akkusativ Plural von 'die Regel'."
+            },
+            {
+                "format": "Freies Schreiben", "suffix": "Transfer: Eigene Regelsätze verfassen",
+                "a_text": "Formuliere 3 eigene, wichtige Regeln für deine Klasse oder Familie (ca. 4-5 Sätze).\nKriterien:\n- Verwende mindestens zwei Nomen, zwei Verben und zwei Adjektive aus dem Text.\n- Markiere deine Nomen blau, Verben rot und Adjektive grün.",
+                "b_text": "Verfasse eine kurze Reflexion (ca. 6-8 Sätze) zum Thema 'Brauchen Jugendliche Regeln?'.\nKriterien:\n- Begründe deine Meinung mit zwei Argumenten.\n- Verwende mindestens drei verschiedene Konjunktionen (weil, dass, obwohl).\n- Baue Fachbegriffe wie 'Orientierung' und 'Verlässlichkeit' ein.",
+                "hint": "💡 Tipp: Verwende Satzanfänge wie 'Es ist wichtig, dass...' oder 'Wir achten darauf, dass...'",
+                "exp": "Ein gelungener Regelsatz verbindet klare Kriterien mit korrekter Grammatik."
+            }
+        ]
+
+        reading_counter = 0
+        grammar_counter = 0
 
         for i in range(actual_count):
-            fmt = formats_pool[i % len(formats_pool)] if target_format == "KI-Mix" else target_format
             t_focus = topics_list[i % len(topics_list)]
             lower_focus = (t_focus or "").lower()
             is_reading_focus = any(w in lower_focus for w in [
                 "textverst", "leseverst", "reading", "comprehension", "sachtext",
                 "inhalt", "fragen zum text", "information", "fakten"
             ])
-            
-            is_last = (i == task_count - 1)
-            b_title = f"Transfer & Anwendung - {t_focus}" if is_last else f"Fordern - {t_focus} (Aufgabe {i+1})"
-            
+            is_last = (i == actual_count - 1)
+
+            if is_reading_focus:
+                pool_item = reading_pool_de[reading_counter % len(reading_pool_de)]
+                reading_counter += 1
+            else:
+                pool_item = grammar_pool_de[grammar_counter % len(grammar_pool_de)]
+                grammar_counter += 1
+
+            fmt = target_format if target_format != "KI-Mix" else pool_item["format"]
+            a_title = f"Fördern - {t_focus} ({pool_item['suffix']})"
+            b_title = f"Transfer & Anwendung - {t_focus}" if is_last else f"Fordern - {t_focus} ({pool_item['suffix']})"
+
             # Level C (Inklusion & DaZ)
-            if is_reading_focus:
-                if subject == "Englisch":
-                    tasks_c.append({
-                        "title": f"Inklusion/DaZ - {t_focus} (Aufgabe {i+1})",
-                        "text": "Easy English:\nThe Great Barrier Reef is in *Australia*.\nMany colorful animals live in the *ocean*.",
-                        "format": "Drag the Words",
-                        "hint": "💡 Language Support: Australia is a country surrounded by water.",
-                        "explanation": "Simple language supports basic reading comprehension."
-                    })
-                else:
-                    tasks_c.append({
-                        "title": f"Inklusion/DaZ - {t_focus} (Aufgabe {i+1})",
-                        "text": f"Leichte Sprache ({subject}):\nDer Text gibt wichtige *Informationen*.\nWir lesen den Text *genau*.",
-                        "format": "Drag the Words",
-                        "hint": "💡 Sprachhilfe: Konzentriere dich auf die Schlüsselbegriffe im Text.",
-                        "explanation": "Sehr einfache Sprache unterstützt das Textverständnis."
-                    })
-            else:
-                tasks_c.append({
-                    "title": f"Inklusion/DaZ - {t_focus} (Aufgabe {i+1})",
-                    "text": f"Leichte Sprache ({subject}):\nDas Wort *Hund* ist ein *Nomen*.\nDas Wort *läuft* ist ein *Verb*.",
-                    "format": "Drag the Words",
-                    "hint": "💡 Sprachhilfe: Verben beschreiben Handlungen (Was tut jemand?).",
-                    "explanation": "Sehr einfache Sprache unterstützt das Sprachverständnis."
-                })
+            tasks_c.append({
+                "title": f"Inklusion/DaZ - {t_focus} (Aufgabe {i+1})",
+                "text": f"Leichte Sprache ({subject}):\nDer Text gibt wichtige *Regeln*.\nWir lesen den Text *genau*.",
+                "format": "Drag the Words",
+                "hint": "💡 Sprachhilfe: Konzentriere dich auf die Schlüsselbegriffe im Text.",
+                "explanation": "Sehr einfache Sprache unterstützt das Textverständnis."
+            })
 
-            # Reading Comprehension Task Generation for all formats
-            if is_reading_focus:
-                if subject == "Englisch":
-                    is_reef = "reef" in lower_heft or "barrier" in lower_heft or "australi" in lower_heft
-                    if fmt == "Multiple Choice":
-                        a_text = (
-                            "Frage: Where is the Great Barrier Reef located according to the text?\n"
-                            "[X] Off the northeast coast of Australia\n"
-                            "[ ] In the Mediterranean Sea near Europe\n"
-                            "[ ] In the North Sea"
-                            if is_reef else
-                            f"Frage: What is the main subject described in the text?\n"
-                            f"[X] Important factual information and background regarding {clean_title_topic}\n"
-                            f"[ ] An invented fairy tale with mythical creatures\n"
-                            f"[ ] An advertisement for commercial products"
-                        )
-                        b_text = (
-                            "Frage: What serious consequence does coral bleaching have according to the text?\n"
-                            "[X] Corals lose their vital algae and can die, which severely endangers marine life\n"
-                            "[ ] The ocean water immediately turns completely sweet\n"
-                            "[ ] It makes corals grow ten times faster"
-                            if is_reef else
-                            f"Frage: Which deeper connection is highlighted regarding '{t_focus}'?\n"
-                            f"[X] The direct cause-and-effect relationship between factors described in the text\n"
-                            f"[ ] That all mentioned events happened purely by coincidence\n"
-                            f"[ ] That there is no scientific evidence for the facts"
-                        )
-                    elif fmt == "Wahr/Falsch":
-                        a_text = (
-                            "Aussage: According to the text, rising ocean temperatures are a major threat to the corals.\nAntwort: Wahr"
-                            if is_reef else
-                            f"Aussage: The text provides factual evidence regarding '{t_focus}'.\nAntwort: Wahr"
-                        )
-                        b_text = (
-                            "Aussage: Both global climate change and local pollution threaten delicate marine ecosystems.\nAntwort: Wahr"
-                            if is_reef else
-                            f"Aussage: The text emphasizes that identifying causes is crucial for understanding {clean_title_topic}.\nAntwort: Wahr"
-                        )
-                    else: # Lückentext or Drag the Words
-                        a_text = (
-                            "The Great Barrier Reef is located in *Australia*. It is famous for its rich marine *biodiversity*. Scientists warn that warming water *temperatures* harm the fragile *corals*."
-                            if is_reef else
-                            f"When reading an informational text about *{clean_title_topic}*, focusing on *key facts* is essential. The text explains important *causes* and *consequences*."
-                        )
-                        b_text = (
-                            "Due to global *warming*, corals lose their microscopic *algae*. This process is called *bleaching* and threatens ocean *ecosystems* worldwide."
-                            if is_reef else
-                            f"Analyzing *complex* texts requires connecting factual *evidence* with broader *consequences*."
-                        )
-                    
-                    tasks_a.append({
-                        "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
-                        "text": a_text,
-                        "format": fmt,
-                        "hint": "💡 Tipp: Schau noch einmal in den ersten Abschnitt des Textes.",
-                        "explanation": "Diese Kernaussage wird direkt im Basistext beschrieben."
-                    })
-                    tasks_b.append({
-                        "title": b_title,
-                        "text": b_text,
-                        "format": fmt,
-                        "hint": "💡 Tipp: Achte genau auf Ursache und Wirkung im Text.",
-                        "explanation": "Dieser Zusammenhang ist eine zentrale Schlussfolgerung des Textes."
-                    })
-                else:
-                    # Deutsch Reading Comprehension
-                    if fmt == "Multiple Choice":
-                        a_text = (
-                            f"Frage: Worüber informiert der Text zum Thema '{t_focus}' hauptsächlich?\n"
-                            f"[X] Über die wesentlichen Fakten, Ursachen und Zusammenhänge zu {clean_title_topic}\n"
-                            f"[ ] Über ein frei erfundenes Zaubermärchen\n"
-                            f"[ ] Über ein geheimes Kochrezept"
-                        )
-                        b_text = (
-                            f"Frage: Welche Schlussfolgerung lässt sich aus den Ursachen und Folgen im Text ziehen?\n"
-                            f"[X] Die Zusammenhänge erfordern gezielte Maßnahmen und ein genaues Verständnis der Ursachen\n"
-                            f"[ ] Der Text zeigt, dass keinerlei Handlungsbedarf besteht\n"
-                            f"[ ] Der Autor widerspricht allen wissenschaftlichen Erkenntnissen"
-                        )
-                    elif fmt == "Wahr/Falsch":
-                        a_text = f"Aussage: Der Text liefert konkrete Fakten und Hintergründe zum Thema '{t_focus}'.\nAntwort: Wahr"
-                        b_text = f"Aussage: Der Text verdeutlicht, dass Ursachen und Wirkungen eng miteinander verknüpft sind.\nAntwort: Wahr"
-                    else:
-                        a_text = f"Beim genauen Lesen eines Sachtextes sind die *Kernaussagen* und *Fachbegriffe* entscheidend. Der Text informiert über wichtige *Zusammenhänge* zu {clean_title_topic}."
-                        b_text = f"Eine vertiefte Textanalyse verknüpft *Ursachen* und *Wirkungen*. Nur wer Zusammenhänge *hinterfragt*, versteht den vollen *Sinn* des Themas."
-
-                    tasks_a.append({
-                        "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
-                        "text": a_text,
-                        "format": fmt,
-                        "hint": "💡 Tipp: Überfliege den Text und achte auf die Zwischenüberschriften.",
-                        "explanation": "Die Kernaussagen fassen den Informationstext treffend zusammen."
-                    })
-                    tasks_b.append({
-                        "title": b_title,
-                        "text": b_text,
-                        "format": fmt,
-                        "hint": "💡 Tipp: Verknüpfe die im Text genannten Fakten mit den Folgen.",
-                        "explanation": "Diese vertiefte Synthese sichert ein nachhaltiges Textverständnis."
-                    })
-            elif fmt == "Wörter markieren":
-                if subject == "Englisch":
-                    m_text = "Click all verbs in the text:\nSarah *plays* tennis while Peter *reads* a book. They *enjoy* the warm afternoon."
-                    m_hint = "💡 Hint: Verbs describe actions or states."
-                    m_exp = "'plays', 'reads', and 'enjoy' are active verbs in the sentences."
-                else:
-                    m_text = f"Klicke alle Verben im folgenden Text an:\nDie Schüler *lernen* gemeinsam, *lesen* den Text aufmerksam und *notieren* wichtige Begriffe."
-                    m_hint = "💡 Tipp: Achte auf Wörter, die Handlungen beschreiben (Was tun die Schüler?)."
-                    m_exp = "'lernen', 'lesen' und 'notieren' sind Tun-Wörter (Verben)."
-                tasks_a.append({
-                    "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
-                    "text": m_text,
-                    "format": fmt,
-                    "hint": m_hint,
-                    "explanation": m_exp
-                })
-                tasks_b.append({
-                    "title": b_title,
-                    "text": m_text,
-                    "format": fmt,
-                    "hint": m_hint,
-                    "explanation": m_exp
-                })
-            elif fmt in ["Freies Schreiben", "Essay", "Kreatives Schreiben", "Schreibaufgabe"]:
-                a_text = (
-                    f"Schreibe einen kurzen Text (ca. 4-5 Sätze) zum Thema '{clean_title_topic}'.\n"
-                    f"Kriterien:\n"
-                    f"- Verwende mindestens zwei Präpositionen (z. B. in, auf, mit, bei).\n"
-                    f"- Verwende mindestens zwei Konjunktionen (z. B. weil, dass, und, obwohl).\n"
-                    f"- Verwende mindestens zwei Adverbien (z. B. heute, oft, gerne, besonders)."
-                )
-                b_text = (
-                    f"Verfasse eine begründete Stellungnahme (ca. 6-8 Sätze) zum Thema '{clean_title_topic}'.\n"
-                    f"Kriterien:\n"
-                    f"- Formuliere eine klare eigene Meinung mit zwei aussagekräftigen Argumenten.\n"
-                    f"- Verwende mindestens drei verschiedene Konjunktionen (z. B. da, weil, sodass, obwohl).\n"
-                    f"- Achte auf abwechslungsreiche Satzanfänge und treffende Fachbegriffe."
-                )
-                tasks_a.append({
-                    "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
-                    "text": a_text,
-                    "format": "Freies Schreiben",
-                    "hint": "💡 Tipp: Überlege dir vor dem Schreiben Stichpunkte und achte auf die Wortarten.",
-                    "explanation": f"Musteranfang: Zum Thema '{clean_title_topic}' gibt es heute viele spannende Aspekte..."
-                })
-                tasks_b.append({
-                    "title": b_title,
-                    "text": b_text,
-                    "format": "Freies Schreiben",
-                    "hint": "💡 Tipp: Verwende Signalwörter wie 'einerseits ... andererseits' für deine Argumentation.",
-                    "explanation": f"Musterbeispiel: Meiner Ansicht nach ist '{clean_title_topic}' von großer Bedeutung, weil..."
-                })
-            elif fmt in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"]:
-                if subject == "Englisch":
-                    is_reef = "reef" in lower_heft or "barrier" in lower_heft
-                    tbl_text = (
-                        "Assign the terms to the correct column:\n\n"
-                        "| Marine Animals | Environmental Threats |\n"
-                        "| *Sea turtles* | *Coral bleaching* |\n"
-                        "| *Clownfish* | *Rising temperatures* |\n"
-                        "| *Whales* | *Plastic pollution* |\n\n"
-                        "Distraktoren: Polar bear, Desert sand"
-                        if is_reef else
-                        f"Assign the terms to the correct category:\n\n"
-                        f"| Key Facts | Supporting Details |\n"
-                        f"| *Core finding* | *Statistical data* |\n"
-                        f"| *Main cause* | *Observed consequence* |\n\n"
-                        f"Distraktoren: Irrelevant claim, Fiction"
-                    )
-                else:
-                    is_grammar = any(w in lower_focus for w in ["wortart", "grammatik", "nomen", "verb"])
-                    tbl_text = (
-                        "Ordne die Wortarten den beiden Hauptgruppen zu:\n\n"
-                        "| Flektierbare Wortarten | Unveränderliche Wortarten |\n"
-                        "| *Nomen* | *Präposition* |\n"
-                        "| *Verb* | *Konjunktion* |\n"
-                        "| *Adjektiv* | *Adverb* |\n\n"
-                        "Distraktoren: Banane, Baumhaus"
-                        if is_grammar else
-                        f"Ordne die Begriffe den passenden Spalten zu:\n\n"
-                        f"| Ursachen & Grundlagen | Wirkungen & Folgen |\n"
-                        f"| *Hauptursache* | *Veränderung im System* |\n"
-                        f"| *Schlüsselfaktor* | *Konkrete Auswirkung* |\n\n"
-                        f"Distraktoren: Zufälliges Ereignis, Nebenbemerkung"
-                    )
-                tasks_a.append({
-                    "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
-                    "text": tbl_text,
-                    "format": fmt,
-                    "hint": "💡 Tipp: Lies die Spaltenüberschriften genau durch und ziehe jedes Kärtchen in das richtige Feld.",
-                    "explanation": "Alle Begriffe wurden ihrer passenden Kategorie zugeordnet."
-                })
-                tasks_b.append({
-                    "title": b_title,
-                    "text": tbl_text,
-                    "format": fmt,
-                    "hint": "💡 Tipp: Achte auf die genaue Definition der beiden Kategorien.",
-                    "explanation": "Alle Begriffe wurden ihrer passenden Kategorie zugeordnet."
-                })
-            elif subject == "Mathematik":
-                tasks_a.append({
-                    "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
-                    "text": "Anna isst 2 von 8 Teilen. Das ist der Bruch *2/8* (zwei Achtel).\nDer verbleibende Rest ist *3/8* (drei Achtel).",
-                    "format": fmt,
-                    "hint": "💡 Tipp: Gehe von insgesamt 8 gleich großen Tortenstücken aus.",
-                    "explanation": "2 von 8 Stücken bedeutet 2/8 (zwei Achtel)."
-                })
-                tasks_b.append({
-                    "title": b_title,
-                    "text": "Transferaufgabe: Ein Kuchen wird in 12 Teile geschnitten. Kürze den Anteil 3/12 auf *1/4*.\nDer Rest von 9/12 entspricht gekürzt *3/4*.",
-                    "format": fmt,
-                    "hint": "",
-                    "explanation": "Gebe Brüche immer in ihrer am weitesten gekürzten Form an."
-                })
-            elif subject == "Deutsch":
-                tasks_a.append({
-                    "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
-                    "text": f"Aufgabe zum Schwerpunkt '{t_focus}':\n'Der' ist ein *Artikel*.\n'Hund' ist ein *Nomen*.\n'läuft' ist ein *Verb*.",
-                    "format": fmt,
-                    "hint": "💡 Tipp: Nomen werden großgeschrieben (z. B. Hund). Verben beschreiben Tun-Wörter.",
-                    "explanation": "Nomen bezeichnen Lebewesen/Dinge, Verben beschreiben Handlungen."
-                })
-                tasks_b.append({
-                    "title": b_title,
-                    "text": f"Transferaufgabe zum Schwerpunkt '{t_focus}':\nWende die Regel auf folgenden neuen Satz an:\n'Das *Laufen* fällt ihm schwer.' -> 'Laufen' wird hier als *Nomen* gebraucht.",
-                    "format": fmt,
-                    "hint": "",
-                    "explanation": "Durch den Signalartikel 'Das' wird das Verb 'laufen' nominalisiert."
-                })
-            else:
-                tasks_a.append({
-                    "title": f"Fördern - {t_focus} (Aufgabe {i+1})",
-                    "text": f"Sarah und Peter *went* (gehen) gestern zum Schulhof.\nSarah *played* (spielen) Basketball.",
-                    "format": fmt,
-                    "hint": "💡 Tipp: 'yesterday' verlangt die Vergangenheitsform (Simple Past).",
-                    "explanation": "'went' is the irregular past tense of 'to go'."
-                })
-                tasks_b.append({
-                    "title": b_title,
-                    "text": f"Transfer Task on '{t_focus}':\nApply the rule to a new context:\nBefore they *left* (leave) the playground, they *had found* (find) a lost key.",
-                    "format": fmt,
-                    "hint": "",
-                    "explanation": "Use Past Perfect ('had found') for the action completed prior to leaving."
-                })
+            tasks_a.append({
+                "title": a_title,
+                "text": pool_item["a_text"],
+                "format": fmt,
+                "hint": pool_item["hint"],
+                "explanation": pool_item["exp"]
+            })
+            tasks_b.append({
+                "title": b_title,
+                "text": pool_item["b_text"],
+                "format": fmt,
+                "hint": "",
+                "explanation": pool_item["exp"]
+            })
 
         # Determine whether Hefteintrag is content/fact-focused vs. method/rule-focused
         lower_heft = (heft_str or "").lower()

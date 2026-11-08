@@ -229,6 +229,11 @@ async def generate_task(
                 video_duration=video_duration
             )
         else:
+            effective_focus = focus_topic
+            if not effective_focus and context:
+                if re.search(r'\d+\s*(?:x|mal|fragen|aufgaben)', context, re.IGNORECASE) or any(w in context.lower() for w in ["textverst", "unterstrichen", "wortart", "grammatik"]):
+                    effective_focus = context
+
             result = await asyncio.to_thread(
                 ai_service.generate_differentiated_content,
                 files=file_items,
@@ -237,7 +242,7 @@ async def generate_task(
                 task_count=task_count,
                 subject=subject,
                 school_type=school_type,
-                focus_topic=focus_topic,
+                focus_topic=effective_focus,
                 hefteintrag_topic=hefteintrag_topic,
                 api_key=effective_api_key,
                 differentiation_mode=differentiation_mode

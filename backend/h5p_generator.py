@@ -446,6 +446,22 @@ class H5PGenerator:
             task_title = task.get("title", "Aufgabe")
             task_hint = task.get("hint", "").strip()
             task_exp = task.get("explanation", "").strip()
+            # Auto-heal: Check if content is actually a table or category sorting task
+            is_table_content = bool(
+                ("<table" in raw_text.lower()) or 
+                (len([l for l in raw_text.strip().split("\n") if l.strip().startswith("|") and l.strip().endswith("|")]) >= 2) or
+                ("kategorie:" in raw_text.lower() and "spalte:" in raw_text.lower()) or
+                (re.search(r'(in\s+(?:die\s+)?tabellen?\s+zuordnen|spalten\s+zuordnen|kategorien\s+zuordnen)', task_title + " " + raw_text, re.IGNORECASE) and "*" in raw_text)
+            )
+
+            if is_table_content and task_format in ["Lückentext", "Lueckentext"]:
+                task_format = "Tabellen-Zuordnung"
+
+            if task_format in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"] and not is_table_content:
+                if "ordne" in raw_text.lower() or "ziehe" in raw_text.lower():
+                    task_format = "Drag the Words"
+                else:
+                    task_format = "Lückentext"
 
             formatted_blanks_text = raw_text
             if task_hint:
@@ -639,6 +655,8 @@ class H5PGenerator:
                         text_to_process = "\n".join(lines[1:])
                 if not instruction_text:
                     instruction_text = task_title if (task_title and len(task_title) > 8 and not re.match(r"^Aufgabe\s*\d*$", task_title.strip(), re.IGNORECASE)) else "Bitte fülle die Lücken im Text aus."
+                instruction_text = re.sub(r'in\s+(?:die\s+)?tabellen?\s+zuordnen', 'in die Lücken einsetzen', instruction_text, flags=re.IGNORECASE)
+                text_to_process = re.sub(r'in\s+(?:die\s+)?tabellen?\s+zuordnen', 'in die Lücken einsetzen', text_to_process, flags=re.IGNORECASE)
 
                 hint_to_use = task_hint if task_hint else "Achte auf die genauen Merksätze im Merkkasten!"
                 def inject_blank_hint(m):
@@ -1195,9 +1213,24 @@ class H5PGenerator:
                 task_format = task.get("format", target_format)
                 raw_text = task.get("text", "")
                 task_title = task.get("title", node_title)
-                
                 task_hint = task.get("hint", "").strip()
                 task_exp = task.get("explanation", "").strip()
+            # Auto-heal: Check if content is actually a table or category sorting task
+            is_table_content = bool(
+                ("<table" in raw_text.lower()) or 
+                (len([l for l in raw_text.strip().split("\n") if l.strip().startswith("|") and l.strip().endswith("|")]) >= 2) or
+                ("kategorie:" in raw_text.lower() and "spalte:" in raw_text.lower()) or
+                (re.search(r'(in\s+(?:die\s+)?tabellen?\s+zuordnen|spalten\s+zuordnen|kategorien\s+zuordnen)', task_title + " " + raw_text, re.IGNORECASE) and "*" in raw_text)
+            )
+
+            if is_table_content and task_format in ["Lückentext", "Lueckentext"]:
+                task_format = "Tabellen-Zuordnung"
+
+            if task_format in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"] and not is_table_content:
+                if "ordne" in raw_text.lower() or "ziehe" in raw_text.lower():
+                    task_format = "Drag the Words"
+                else:
+                    task_format = "Lückentext"
                 
                 # Format text with embedded gap hint for Level A if hint exists
                 formatted_blanks_text = raw_text
@@ -2123,11 +2156,27 @@ class H5PGenerator:
         # 2. Process tasks for this level
         for task in tasks:
             task_format = task.get("format", target_format)
-            used_formats.add(task_format)
             raw_text = task.get("text", "")
             task_title = task.get("title", "Aufgabe")
             task_hint = task.get("hint", "").strip()
             task_exp = task.get("explanation", "").strip()
+            # Auto-heal: Check if content is actually a table or category sorting task
+            is_table_content = bool(
+                ("<table" in raw_text.lower()) or 
+                (len([l for l in raw_text.strip().split("\n") if l.strip().startswith("|") and l.strip().endswith("|")]) >= 2) or
+                ("kategorie:" in raw_text.lower() and "spalte:" in raw_text.lower()) or
+                (re.search(r'(in\s+(?:die\s+)?tabellen?\s+zuordnen|spalten\s+zuordnen|kategorien\s+zuordnen)', task_title + " " + raw_text, re.IGNORECASE) and "*" in raw_text)
+            )
+
+            if is_table_content and task_format in ["Lückentext", "Lueckentext"]:
+                task_format = "Tabellen-Zuordnung"
+
+            if task_format in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"] and not is_table_content:
+                if "ordne" in raw_text.lower() or "ziehe" in raw_text.lower():
+                    task_format = "Drag the Words"
+                else:
+                    task_format = "Lückentext"
+            used_formats.add(task_format)
 
             formatted_blanks_text = raw_text
             if task_hint:
@@ -2318,6 +2367,8 @@ class H5PGenerator:
                         text_to_process = "\n".join(lines[1:])
                 if not instruction_text:
                     instruction_text = task_title if (task_title and len(task_title) > 8 and not re.match(r"^Aufgabe\s*\d*$", task_title.strip(), re.IGNORECASE)) else "Bitte fülle die Lücken im Text aus."
+                instruction_text = re.sub(r'in\s+(?:die\s+)?tabellen?\s+zuordnen', 'in die Lücken einsetzen', instruction_text, flags=re.IGNORECASE)
+                text_to_process = re.sub(r'in\s+(?:die\s+)?tabellen?\s+zuordnen', 'in die Lücken einsetzen', text_to_process, flags=re.IGNORECASE)
 
                 hint_to_use = task_hint if task_hint else "Achte auf die genauen Merksätze im Merkkasten!"
                 def inject_blank_hint(m):
