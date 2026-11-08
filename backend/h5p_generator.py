@@ -2083,5 +2083,414 @@ class H5PGenerator:
         zip_buffer.seek(0)
         return zip_buffer.getvalue()
 
+    @staticmethod
+    def build_course_presentation_slides(data, level="A", target_format=None):
+        """
+        Builds a sequential list of CoursePresentation slides for a single level (A = Basic, B = Profi).
+        Returns (slides_list, used_formats).
+        """
+        level_char = level.upper() if level else "A"
+        level_key = "level_a" if level_char == "A" else "level_b"
+        level_obj = data.get(level_key, {})
+        tasks = level_obj.get("tasks", [])
+        if not tasks:
+            tasks = data.get("level_a" if level_char == "B" else "level_b", {}).get("tasks", []) or data.get("tasks", [])
+            
+        target_format = target_format or data.get("target_format", "Lückentext")
+        used_formats = set()
+        raw_slides = []
+
+        # 1. Slide 1: Merkkasten / Hefteintrag if available
+        hefteintrag = data.get("hefteintrag", {})
+        notes = hefteintrag.get("level_a_notes" if level_char == "A" else "level_b_notes") or hefteintrag.get("summary")
+        if notes and notes.strip():
+            formatted_notes = notes.replace("\n", "<br/>")
+            level_sub = "Grundlagen" if level_char == "A" else "Vertiefung"
+            raw_slides.append({
+                "library": "H5P.AdvancedText 1.1",
+                "params": {
+                    "text": (
+                        f"<div style='background-color:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid #2563eb; padding:9px 13px; border-radius:8px; margin-bottom:12px; font-size:13.5px; font-weight:700; color:#1e40af;'>"
+                        f"✍️ <strong>Aufgabe für dein Heft ({level_sub}):</strong> Übertrage diesen Merkkasten jetzt sauber in dein Schulheft!"
+                        f"</div>"
+                        f"<h3 style='color:#0f766e; margin-top:0;'>📌 Zusammenfassung / Merkkasten</h3>"
+                        f"<div style='background-color:#fef3c7; border-left:4px solid #f59e0b; padding:12px 14px; border-radius:8px; font-size:14px; line-height:1.6; color:#78350f;'>{formatted_notes}</div>"
+                    )
+                },
+                "title": "📌 Zusammenfassung / Merkkasten"
+            })
+
+        # 2. Process tasks for this level
+        for task in tasks:
+            task_format = task.get("format", target_format)
+            used_formats.add(task_format)
+            raw_text = task.get("text", "")
+            task_title = task.get("title", "Aufgabe")
+            task_hint = task.get("hint", "").strip()
+            task_exp = task.get("explanation", "").strip()
+
+            formatted_blanks_text = raw_text
+            if task_hint:
+                formatted_blanks_text = re.sub(r'\*([^\*:]+)\*', r'*\1:' + task_hint.replace(':', ' ') + r'*', raw_text)
+
+            overall_fb = [
+                {"from": 0, "to": 99, "feedback": f"💬 Hinweis / Erklärung: {task_exp}" if task_exp else "Überprüfe deine Antworten noch einmal."},
+                {"from": 100, "to": 100, "feedback": "🎉 Hervorragend! Du hast diese Aufgabe richtig gelöst."}
+            ]
+
+            if task_format == "Multiple Choice":
+                mc_questions = H5PGenerator.parse_multiple_choice_text(raw_text, task_title)
+                if not mc_questions and "*" in raw_text:
+                    task_format = "Lückentext"
+                else:
+                    first_q = mc_questions[0] if mc_questions else {
+                        "question": f"<p>{raw_text.strip() if raw_text.strip() and not raw_text.startswith('[') else task_title}</p>\n",
+                        "answers": [
+                            {"text": "Trifft zu / Richtig", "correct": True, "tipsAndFeedback": {"tip": "", "chosenFeedback": "Sehr gut gelöst!", "notChosenFeedback": ""}},
+                            {"text": "Trifft nicht zu / Falsch", "correct": False, "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""}}
+                        ]
+                    }
+                    hint_to_use = task_hint if task_hint else "Achte auf die Merkmale im Merkkasten!"
+                    if first_q.get("answers"):
+                        for ans in first_q["answers"]:
+                            ans.setdefault("tipsAndFeedback", {})
+                            ans["tipsAndFeedback"]["tip"] = hint_to_use
+                            if not ans.get("correct"):
+                                ans["tipsAndFeedback"]["chosenFeedback"] = f"💡 Tipp: {hint_to_use}"
+                    raw_slides.append({
+                        "title": task_title,
+                        "library": "H5P.MultiChoice 1.16",
+                        "params": {
+                            "question": first_q.get("question"),
+                            "answers": first_q.get("answers"),
+                            "overallFeedback": overall_fb,
+                            "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "singleAnswer": True, "singlePoint": True, "randomAnswers": False, "showSolutionsRequiresInput": True, "autoCheck": False, "passPercentage": 80, "type": "auto"},
+                            "UI": {"checkAnswerButton": "Prüfen", "submitAnswerButton": "Absenden", "tryAgainButton": "Wiederholen", "showSolutionButton": "Lösung anzeigen", "correctText": "Richtig!", "almostText": "Fast!", "wrongText": "Falsch", "feedback": "Du hast @score von @total Punkten erreicht"}
+                        }
+                    })
+
+            elif task_format == "Drag the Words":
+                instruction_text = task.get("instruction") or ""
+                text_to_process = formatted_blanks_text
+                if not instruction_text and "\n" in text_to_process:
+                    lines = [l.strip() for l in text_to_process.split("\n") if l.strip()]
+                    if len(lines) > 1 and not any(m in lines[0] for m in ["*", "[ ]", "[X]"]) and len(lines[0]) > 8:
+                        instruction_text = lines[0].rstrip(":")
+                        text_to_process = "\n".join(lines[1:])
+                if not instruction_text:
+                    instruction_text = task_title if (task_title and len(task_title) > 8 and not re.match(r"^Aufgabe\s*\d*$", task_title.strip(), re.IGNORECASE)) else "Ziehe die passenden Wörter in die Lücken."
+
+                drag_text_field, distractors_str = H5PGenerator.extract_drag_text_and_distractors(text_to_process, task.get("distractors"))
+                drag_params = {
+                    "taskDescription": instruction_text,
+                    "textField": drag_text_field,
+                    "overallFeedback": overall_fb,
+                    "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen",
+                    "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "instantFeedback": False, "enableCheckButton": True}
+                }
+                if distractors_str:
+                    drag_params["distractors"] = distractors_str
+                raw_slides.append({
+                    "title": task_title,
+                    "library": "H5P.DragText 1.10",
+                    "params": drag_params
+                })
+
+            elif task_format == "Wahr/Falsch":
+                tf_statements = H5PGenerator.parse_true_false_text(raw_text)
+                first_tf = tf_statements[0] if tf_statements else {"question": f"<p>{task_title}</p>\n", "correct": True}
+                raw_slides.append({
+                    "title": task_title,
+                    "library": "H5P.TrueFalse 1.8",
+                    "params": {
+                        "question": first_tf.get("question"),
+                        "correct": "true" if first_tf.get("correct") else "false",
+                        "feedback": f"💡 Tipp: {task_hint}" if task_hint else "Lies dir die Aussage noch einmal aufmerksam durch!",
+                        "l10n": {"trueText": "Wahr", "falseText": "Falsch", "score": "Punkte", "checkAnswer": "Prüfen", "showSolutionButton": "Lösung", "tryAgain": "Wiederholen"},
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "enableCheckButton": True}
+                    }
+                })
+
+            elif task_format == "Vokabelkarten":
+                cards = H5PGenerator.parse_dialogcards_text(raw_text)
+                if cards:
+                    raw_slides.append({
+                        "title": task_title,
+                        "library": "H5P.Dialogcards 1.9",
+                        "params": {
+                            "title": task_title, "description": "Präge dir die Begriffe ein.", "dialogs": cards,
+                            "behaviour": {"enableRetry": True, "randomise": False, "scaleTextNotCard": False},
+                            "progressText": "Karte :num von :total", "next": "Weiter", "prev": "Zurück", "check": "Prüfen", "gotIt": "Gewusst", "incorrect": "Falsch", "showAnswer": "Antwort anzeigen"
+                        }
+                    })
+
+            elif task_format == "Wörter markieren":
+                instruction_text = task.get("instruction") or ""
+                text_to_process = formatted_blanks_text
+                if not instruction_text:
+                    lines = [l.strip() for l in text_to_process.split("\n") if l.strip()]
+                    if lines and not re.search(r'\*([^\*]+)\*', lines[0]):
+                        instruction_text = lines[0].rstrip(":")
+                        text_to_process = "\n".join(lines[1:])
+                if not instruction_text:
+                    instruction_text = task_title if (task_title and len(task_title) > 8 and not re.match(r"^Aufgabe\s*\d*$", task_title.strip(), re.IGNORECASE)) else "Klicke auf die gesuchten Wörter im Text."
+
+                cleaned_mark_text = re.sub(r'\*([^\*: /]+)(?:[^\*]*)\*', r'*\1*', text_to_process)
+                raw_slides.append({
+                    "title": task_title,
+                    "library": "H5P.MarkTheWords 1.11",
+                    "params": {
+                        "taskDescription": instruction_text,
+                        "textField": cleaned_mark_text,
+                        "overallFeedback": overall_fb,
+                        "checkAnswerButton": "Prüfen",
+                        "tryAgainButton": "Wiederholen",
+                        "showSolutionButton": "Lösung anzeigen",
+                        "scoreBarLabel": "Du hast @score von @total Wörtern richtig markiert.",
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "enableCheckButton": True, "showScorePoints": True}
+                    }
+                })
+
+            elif task_format in ["Freies Schreiben", "Essay", "Kreatives Schreiben", "Schreibaufgabe", "Textproduktion"]:
+                instruction_text = task.get("instruction") or raw_text
+                clean_instruction = instruction_text.replace("\n", "<br/>")
+                encoded_title = quote(task_title)
+                encoded_instruction = quote(instruction_text)
+                web_link = f"play.html?mode=essay&title={encoded_title}&instruction={encoded_instruction}"
+                
+                essay_card_html = (
+                    f"<div style='background:linear-gradient(135deg, #f8fafc 0%, #ede9fe 100%); border:2px solid #8b5cf6; border-radius:14px; padding:18px; box-shadow:0 4px 12px rgba(139,92,246,0.12); font-family:sans-serif; text-align:left;'>"
+                    f"<div style='display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #ddd6fe; padding-bottom:8px;'>"
+                    f"  <span style='background-color:#7c3aed; color:#ffffff; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; padding:4px 10px; border-radius:20px;'>✍️ KI-Schreibcoach (Web-Modul)</span>"
+                    f"  <span style='color:#6d28d9; font-size:11px; font-weight:700;'>BayernCloud Schule & mebis integriert</span>"
+                    f"</div>"
+                    f"<h3 style='color:#4c1d95; margin:0 0 8px 0; font-size:17px; font-weight:800;'>{task_title}</h3>"
+                    f"<div style='background-color:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:13.5px; line-height:1.6; color:#334155;'>{clean_instruction}</div>"
+                    f"<div style='background-color:#f5f3ff; border-left:4px solid #8b5cf6; padding:10px 12px; border-radius:6px; margin-bottom:14px; font-size:12px; color:#5b21b6; line-height:1.5;'>"
+                    f"💡 <strong>Pädagogische KI-Korrektur:</strong> Schreibe deinen Text im interaktiven Schreibcoach. Die KI prüft deine Vorgaben (Wortarten, Kriterien, Aufbau) semantisch und gibt dir sofort individuelles Feedback!"
+                    f"</div>"
+                    f"<div style='text-align:center; margin-top:14px;'>"
+                    f"  <a href='{web_link}' target='_blank' style='display:inline-block; background:linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color:#ffffff; font-weight:800; font-size:13.5px; padding:11px 22px; border-radius:12px; text-decoration:none; box-shadow:0 3px 8px rgba(109,40,217,0.3);'>🚀 Text jetzt schreiben & KI-Feedback erhalten</a>"
+                    f"</div>"
+                    f"</div>"
+                )
+                raw_slides.append({
+                    "title": task_title,
+                    "library": "H5P.AdvancedText 1.1",
+                    "params": {"text": essay_card_html}
+                })
+
+            elif task_format in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"]:
+                table_html = H5PGenerator.format_table_drag_text(formatted_blanks_text)
+                instruction_text = task.get("instruction") or ""
+                text_to_process = table_html
+                if not instruction_text:
+                    lines = [l.strip() for l in text_to_process.split("\n") if l.strip()]
+                    if lines and not re.search(r'\*([^\*]+)\*', lines[0]) and not lines[0].startswith("<table"):
+                        instruction_text = lines[0].rstrip(":")
+                        text_to_process = "\n".join(lines[1:])
+                if not instruction_text:
+                    instruction_text = "Ordne die Begriffe den passenden Spalten zu."
+
+                drag_text_field, distractors_str = H5PGenerator.extract_drag_text_and_distractors(text_to_process, task.get("distractors"))
+                drag_params = {
+                    "taskDescription": instruction_text,
+                    "textField": drag_text_field,
+                    "overallFeedback": overall_fb,
+                    "checkAnswer": "Prüfen", "tryAgain": "Wiederholen", "showSolution": "Lösung anzeigen",
+                    "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "instantFeedback": False, "enableCheckButton": True}
+                }
+                if distractors_str:
+                    drag_params["distractors"] = distractors_str
+                raw_slides.append({
+                    "title": task_title,
+                    "library": "H5P.DragText 1.10",
+                    "params": drag_params
+                })
+
+            else: # Lückentext
+                instruction_text = task.get("instruction") or ""
+                text_to_process = formatted_blanks_text
+                if not instruction_text and "\n" in text_to_process:
+                    lines = [l.strip() for l in text_to_process.split("\n") if l.strip()]
+                    if len(lines) > 1 and not any(m in lines[0] for m in ["*", "[ ]", "[X]"]) and len(lines[0]) > 8:
+                        instruction_text = lines[0].rstrip(":")
+                        text_to_process = "\n".join(lines[1:])
+                if not instruction_text:
+                    instruction_text = task_title if (task_title and len(task_title) > 8 and not re.match(r"^Aufgabe\s*\d*$", task_title.strip(), re.IGNORECASE)) else "Bitte fülle die Lücken im Text aus."
+
+                hint_to_use = task_hint if task_hint else "Achte auf die genauen Merksätze im Merkkasten!"
+                def inject_blank_hint(m):
+                    inner = m.group(1)
+                    if ":" in inner:
+                        return f"*{inner}*"
+                    return f"*{inner}:{hint_to_use}*"
+                blanks_with_hints = re.sub(r'\*([^*]+)\*', inject_blank_hint, text_to_process)
+                raw_slides.append({
+                    "title": task_title,
+                    "library": "H5P.Blanks 1.14",
+                    "params": {
+                        "text": f"<p><strong>{instruction_text}</strong> (Klicke auf 💡 für einen Tipp)</p>",
+                        "questions": [f"<p>{blanks_with_hints}</p>"],
+                        "overallFeedback": overall_fb,
+                        "title": task_title,
+                        "behaviour": {"enableRetry": True, "enableSolutionsButton": False, "enableCheckButton": True, "autoCheck": False, "caseSensitive": False, "showSolutionsRequiresInput": True}
+                    }
+                })
+
+        # 3. If Level B (Profi), add Experten-Aufgaben (Zusatzaufgaben) if present
+        if level_char == "B":
+            zusatzaufgaben = data.get("zusatzaufgaben", [])
+            for z_idx, z in enumerate(zusatzaufgaben):
+                z_title = z.get("title", f"Experten-Aufgabe {z_idx+1}")
+                z_task = z.get("task", "")
+                z_is_writing = any(kw in (z_title + " " + z_task).lower() for kw in ["schreib", "essay", "text"])
+                z_coach_btn = ""
+                if z_is_writing:
+                    z_enc_title = quote(z_title)
+                    z_enc_inst = quote(z_task)
+                    z_link = f"play.html?mode=essay&title={z_enc_title}&instruction={z_enc_inst}"
+                    z_coach_btn = f"<div style='margin-top:14px; text-align:center;'><a href='{z_link}' target='_blank' style='display:inline-block; background:linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color:#ffffff; font-weight:800; font-size:13px; padding:10px 20px; border-radius:10px; text-decoration:none; box-shadow:0 3px 8px rgba(37,99,235,0.3);'>✍️ Im KI-Schreibcoach schreiben & prüfen</a></div>"
+                raw_slides.append({
+                    "title": f"🚀 {z_title}",
+                    "library": "H5P.AdvancedText 1.1",
+                    "params": {
+                        "text": f"<div style='background-color:#eff6ff; border-left:4px solid #3b82f6; padding:15px; border-radius:8px;'><h3 style='color:#1d4ed8; margin-top:0;'>🚀 {z_title}</h3><p style='font-size:16px; color:#1e3a8a; line-height:1.6;'>{z_task}</p>{z_coach_btn}</div>"
+                    }
+                })
+
+        # 4. Wrap raw_slides into CoursePresentation slide structure
+        slides_list = []
+        for slide in raw_slides:
+            slides_list.append({
+                "elements": [
+                    {
+                        "x": 3.125,
+                        "y": 6.172,
+                        "width": 93.75,
+                        "height": 87.65,
+                        "action": {
+                            "library": slide["library"],
+                            "params": slide["params"],
+                            "subContentId": str(uuid.uuid4()),
+                            "metadata": {
+                                "contentType": "Text",
+                                "license": "U",
+                                "title": slide.get("title", "Aufgabe")
+                            }
+                        },
+                        "alwaysDisplayComments": False,
+                        "backgroundOpacity": 0,
+                        "displayAsButton": False,
+                        "invisible": False,
+                        "solution": ""
+                    }
+                ]
+            })
+
+        return slides_list, used_formats
+
+    @staticmethod
+    def create_single_course_presentation_h5p_zip(data, level="A"):
+        """
+        Creates a standalone, clean H5P.CoursePresentation .h5p package for a single level (A = Basic, B = Profi).
+        Contains no branching questions or scenario wrappers. 100% ByCS and mebis compliant.
+        """
+        level_char = level.upper() if level else "A"
+        clean_title = H5PGenerator.clean_student_title(data.get("title", "Lerneinheit"))
+        level_label = "Basic (Grundlagen)" if level_char == "A" else "Profi (Vertiefung)"
+        full_title = f"{clean_title} – {level_label}"
+
+        slides_list, used_formats = H5PGenerator.build_course_presentation_slides(data, level=level_char)
+
+        cp_content = {
+            "presentation": {
+                "slides": slides_list,
+                "keywordListEnabled": False,
+                "globalBackgroundSelector": {
+                    "fillGlobalBackground": ""
+                },
+                "keywordListAlwaysShow": False,
+                "keywordListAutoHide": False,
+                "keywordListOpacity": 90
+            },
+            "l10n": {
+                "slide": "Folie", "score": "Punktzahl", "yourScore": "Deine Punktzahl",
+                "maxScore": "Maximale Punktzahl", "total": "Summe", "totalScore": "Gesamtpunktzahl",
+                "showSolutions": "Lösungen anzeigen", "retry": "Wiederholen", "prevSlide": "Vorherige Folie",
+                "nextSlide": "Nächste Folie", "currentSlide": "Aktuelle Folie", "lastSlide": "Letzte Folie"
+            },
+            "override": {
+                "activeSurface": False, "hideSummarySlide": False, "showSolutionButton": "off", "retryButton": "on"
+            }
+        }
+
+        dependencies = [
+            {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
+            {"machineName": "H5P.CoursePresentation", "majorVersion": 1, "minorVersion": 25},
+            {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1}
+        ]
+
+        library_map = {
+            "Multiple Choice": {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 16},
+            "Vokabelkarten": {"machineName": "H5P.Dialogcards", "majorVersion": 1, "minorVersion": 9},
+            "Drag the Words": {"machineName": "H5P.DragText", "majorVersion": 1, "minorVersion": 10},
+            "Tabellen-Zuordnung": {"machineName": "H5P.DragText", "majorVersion": 1, "minorVersion": 10},
+            "Kategorie-Zuordnung": {"machineName": "H5P.DragText", "majorVersion": 1, "minorVersion": 10},
+            "Wahr/Falsch": {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 8},
+            "Wörter markieren": {"machineName": "H5P.MarkTheWords", "majorVersion": 1, "minorVersion": 11},
+            "Freies Schreiben": {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1},
+            "Essay": {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1},
+            "Kreatives Schreiben": {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1},
+            "Lückentext": {"machineName": "H5P.Blanks", "majorVersion": 1, "minorVersion": 14}
+        }
+
+        for fmt in used_formats:
+            if fmt in library_map and library_map[fmt] not in dependencies:
+                dependencies.append(library_map[fmt])
+
+        # Ensure H5P.Blanks is present if no other format was added
+        if len(dependencies) <= 3 and library_map["Lückentext"] not in dependencies:
+            dependencies.append(library_map["Lückentext"])
+
+        h5p_manifest = {
+            "title": full_title,
+            "language": "und",
+            "mainLibrary": "H5P.CoursePresentation",
+            "embedTypes": ["div"],
+            "license": "U",
+            "defaultLanguage": "de",
+            "preloadedDependencies": dependencies
+        }
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as z:
+            z.writestr("h5p.json", json.dumps(h5p_manifest, indent=2, ensure_ascii=False))
+            z.writestr("content/content.json", json.dumps(cp_content, indent=2, ensure_ascii=False))
+
+        zip_buffer.seek(0)
+        return zip_buffer.getvalue()
+
+    @staticmethod
+    def create_differentiated_bundle_zip(data):
+        """
+        Creates a zip archive holding both separate H5P files:
+        1. [Title]_Basic_LevelA.h5p
+        2. [Title]_Profi_LevelB.h5p
+        """
+        clean_title = H5PGenerator.clean_student_title(data.get("title", "Lerneinheit"))
+        safe_title = re.sub(r'[^a-zA-Z0-9_-]', '_', clean_title).strip('_') or "Lernpfad"
+
+        basic_bytes = H5PGenerator.create_single_course_presentation_h5p_zip(data, level="A")
+        profi_bytes = H5PGenerator.create_single_course_presentation_h5p_zip(data, level="B")
+
+        bundle_buffer = io.BytesIO()
+        with zipfile.ZipFile(bundle_buffer, "w", zipfile.ZIP_DEFLATED) as bz:
+            bz.writestr(f"{safe_title}_Basic_LevelA.h5p", basic_bytes)
+            bz.writestr(f"{safe_title}_Profi_LevelB.h5p", profi_bytes)
+
+        bundle_buffer.seek(0)
+        return bundle_buffer.getvalue()
+
 
 clean_student_title = H5PGenerator.clean_student_title

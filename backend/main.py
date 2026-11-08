@@ -304,9 +304,18 @@ async def refine_task(req: RefineTaskRequest):
         raise HTTPException(status_code=500, detail=f"Aufgaben-Anpassung fehlgeschlagen: {str(e)}")
 
 @app.post("/api/export/h5p")
-async def export_h5p(data: str = Form(...), video_file: UploadFile = File(None)):
+async def export_h5p(
+    data: str = Form(...), 
+    video_file: UploadFile = File(None),
+    variant: Optional[str] = Form(None)
+):
     """
-    Takes the structured task JSON and builds the H5P Branching Scenario zip file.
+    Takes the structured task JSON and builds the H5P file(s).
+    Supports:
+    - variant='branching' (default): Combined Branching Scenario
+    - variant='basic': Standalone Course Presentation for Level A (Basic / Grundlagen)
+    - variant='profi': Standalone Course Presentation for Level B (Profi / Vertiefung)
+    - variant='bundle': .zip archive containing both Basic.h5p and Profi.h5p files
     """
     import json
     try:
@@ -314,12 +323,25 @@ async def export_h5p(data: str = Form(...), video_file: UploadFile = File(None))
         if video_file and video_file.filename:
             json_data["video_bytes"] = await video_file.read()
             json_data["video_filename"] = video_file.filename
-            
-        h5p_bytes = H5PGenerator.create_h5p_zip(json_data)
-        if json_data.get("video_mode") == "interactive_video" or json_data.get("is_interactive_video"):
-            suffix = "interaktives_video.h5p"
+
+        effective_variant = (variant or json_data.get("export_variant") or "branching").lower()
+
+        if effective_variant in ["basic", "level_a", "a"]:
+            h5p_bytes = H5PGenerator.create_single_course_presentation_h5p_zip(json_data, level="A")
+            suffix = "basic_levelA.h5p"
+        elif effective_variant in ["profi", "level_b", "b"]:
+            h5p_bytes = H5PGenerator.create_single_course_presentation_h5p_zip(json_data, level="B")
+            suffix = "profi_levelB.h5p"
+        elif effective_variant in ["bundle", "both", "two_files"]:
+            h5p_bytes = H5PGenerator.create_differentiated_bundle_zip(json_data)
+            suffix = "basic_und_profi_h5p.zip"
         else:
-            suffix = "differenziert.h5p"
+            h5p_bytes = H5PGenerator.create_h5p_zip(json_data)
+            if json_data.get("video_mode") == "interactive_video" or json_data.get("is_interactive_video"):
+                suffix = "interaktives_video.h5p"
+            else:
+                suffix = "differenziert.h5p"
+                
         disposition = make_content_disposition(json_data.get("title", "Export"), suffix)
         
         return Response(

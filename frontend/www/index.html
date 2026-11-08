@@ -737,6 +737,27 @@
                             <input type="text" id="input-context" placeholder="Zusätzlicher didaktischer Hinweis (z.B. DaZ)..." class="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-xs">
                         </div>
 
+                        <!-- H5P Struktur / Paketierungsauswahl -->
+                        <div class="p-3 bg-emerald-50/70 border border-emerald-200/90 rounded-2xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-black text-emerald-950 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-boxes-stacked text-emerald-600"></i> H5P-Dateistruktur:
+                                </span>
+                                <span id="h5p-structure-badge" class="text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">2 Getrennte Dateien</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1.5 bg-slate-200/60 p-1 rounded-xl">
+                                <button type="button" id="btn-struct-two" onclick="setH5PStructureMode('two_files')" class="px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all bg-white text-slate-900 shadow-sm cursor-pointer flex items-center justify-center gap-1">
+                                    <span>📦 2 Dateien (Basic &amp; Profi)</span>
+                                </button>
+                                <button type="button" id="btn-struct-branching" onclick="setH5PStructureMode('branching')" class="px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1">
+                                    <span>🌳 1 Branching-Paket</span>
+                                </button>
+                            </div>
+                            <p id="h5p-structure-desc" class="text-[10px] text-slate-600 leading-tight">
+                                <b>Empfohlen für ByCS / mebis:</b> Erzeugt zwei saubere Course Presentation H5P-Dateien (ohne Einstufungsquiz) – einmal Basic und einmal Profi.
+                            </p>
+                        </div>
+
                         <div class="flex items-center gap-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl">
                             <input type="checkbox" id="input-include-level-c" class="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer">
                             <label for="input-include-level-c" class="text-xs font-bold text-slate-800 cursor-pointer select-none">
@@ -1210,31 +1231,76 @@
                     </div>
                 </div>
 
-                <!-- Export Buttons Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto">
-                    <button id="btn-download-h5p" class="flex flex-col items-center gap-2 p-5 bg-gradient-to-b from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white rounded-3xl shadow-xl transition-all duration-300 group hover:-translate-y-1 relative ring-2 ring-brand-400 ring-offset-2 cursor-pointer">
-                        <span class="absolute -top-3 bg-amber-400 text-slate-900 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow">Standard für ByCS</span>
-                        <i class="fa-solid fa-file-zipper text-3xl group-hover:scale-110 transition-all"></i>
-                        <span class="font-bold text-sm">ByCS H5P-Datei (.h5p)</span>
-                        <span class="text-xxs text-brand-200">Direkt in den Inhaltsspeicher hochladen</span>
+                <!-- Differentiated H5P Downloads (Two files: Basic & Profi) -->
+                <div class="glass-panel p-5 rounded-3xl shadow-lg max-w-lg mx-auto border-2 border-emerald-300/80 bg-gradient-to-br from-emerald-50/50 via-white to-teal-50/30 space-y-3.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-sm">
+                                <i class="fa-solid fa-file-zipper"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-xs text-slate-900">2 getrennte H5P-Dateien (ByCS / mebis)</h4>
+                                <p class="text-[10px] text-slate-500 font-medium">Direkt in den Inhaltsspeicher (Course Presentation 1.25)</p>
+                            </div>
+                        </div>
+                        <span class="text-[9px] bg-emerald-100 text-emerald-800 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Ohne Branching</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <!-- Basic (Level A) -->
+                        <button type="button" onclick="downloadH5PVariant('basic')" class="flex items-center gap-3 p-3 bg-white hover:bg-emerald-50/70 border border-emerald-200/90 rounded-2xl shadow-xs transition-all duration-200 hover:-translate-y-0.5 group text-left cursor-pointer">
+                            <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-xs shrink-0 group-hover:scale-105 transition-all">A</span>
+                            <div class="min-w-0">
+                                <span class="font-bold text-xs text-slate-800 block truncate">🟢 Basic (Level A)</span>
+                                <span class="text-[10px] text-slate-500 block truncate">Fördern &amp; Merkkasten</span>
+                            </div>
+                        </button>
+
+                        <!-- Profi (Level B) -->
+                        <button type="button" onclick="downloadH5PVariant('profi')" class="flex items-center gap-3 p-3 bg-white hover:bg-purple-50/70 border border-purple-200/90 rounded-2xl shadow-xs transition-all duration-200 hover:-translate-y-0.5 group text-left cursor-pointer">
+                            <span class="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-xs shrink-0 group-hover:scale-105 transition-all">B</span>
+                            <div class="min-w-0">
+                                <span class="font-bold text-xs text-slate-800 block truncate">🟣 Profi (Level B)</span>
+                                <span class="text-[10px] text-slate-500 block truncate">Fordern &amp; Vertiefung</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Bundle Download Button -->
+                    <button type="button" onclick="downloadH5PVariant('bundle')" class="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg">
+                        <i class="fa-solid fa-box-archive"></i>
+                        <span>📦 Beide Dateien als ZIP herunterladen (Basic + Profi)</span>
+                    </button>
+                </div>
+
+                <!-- Further Export Formats: Branching, PDF, SCORM, iFrame -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
+                    <!-- Branching Scenario H5P -->
+                    <button type="button" id="btn-download-h5p" class="flex flex-col items-center gap-1.5 p-4 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl border border-slate-200 shadow-sm transition-all duration-200 group hover:-translate-y-0.5 cursor-pointer text-center">
+                        <i class="fa-solid fa-diagram-project text-2xl text-brand-600 group-hover:scale-110 transition-all"></i>
+                        <span class="font-bold text-xs text-slate-800">🌳 Adaptives Branching-Paket</span>
+                        <span class="text-[10px] text-slate-400">1 Datei mit Einstufungsquiz</span>
                     </button>
 
-                    <button id="btn-download-pdf" class="flex flex-col items-center gap-2 p-5 bg-white hover:bg-slate-50 text-slate-800 rounded-3xl border border-slate-200 shadow-xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer">
-                        <i class="fa-solid fa-file-pdf text-3xl text-red-500 group-hover:scale-110 transition-all"></i>
-                        <span class="font-bold text-sm">Arbeitsblatt (PDF)</span>
-                        <span class="text-xxs text-slate-400">Mit QR-Lösung &amp; Red-Ink</span>
+                    <!-- PDF Worksheet -->
+                    <button id="btn-download-pdf" class="flex flex-col items-center gap-1.5 p-4 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl border border-slate-200 shadow-sm transition-all duration-200 group hover:-translate-y-0.5 cursor-pointer text-center">
+                        <i class="fa-solid fa-file-pdf text-2xl text-red-500 group-hover:scale-110 transition-all"></i>
+                        <span class="font-bold text-xs text-slate-800">Arbeitsblatt (PDF)</span>
+                        <span class="text-[10px] text-slate-400">Mit QR-Lösung &amp; Red-Ink</span>
                     </button>
 
-                    <button id="btn-download-scorm" onclick="downloadSCORMPackage()" class="flex flex-col items-center gap-2 p-5 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 rounded-3xl border border-indigo-200 shadow-md transition-all duration-300 group hover:-translate-y-1 cursor-pointer">
-                        <i class="fa-solid fa-box-archive text-3xl text-indigo-600 group-hover:scale-110 transition-all"></i>
-                        <span class="font-bold text-sm">SCORM 1.2 Paket (.zip)</span>
-                        <span class="text-xxs text-indigo-600">Mit Notenübermittlung</span>
+                    <!-- SCORM 1.2 -->
+                    <button id="btn-download-scorm" onclick="downloadSCORMPackage()" class="flex flex-col items-center gap-1.5 p-4 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl border border-slate-200 shadow-sm transition-all duration-200 group hover:-translate-y-0.5 cursor-pointer text-center">
+                        <i class="fa-solid fa-box-archive text-2xl text-indigo-600 group-hover:scale-110 transition-all"></i>
+                        <span class="font-bold text-xs text-slate-800">SCORM 1.2 Paket (.zip)</span>
+                        <span class="text-[10px] text-indigo-600">Mit Notenübermittlung</span>
                     </button>
 
-                    <button id="btn-copy-embed" onclick="copyIframeEmbedCode()" class="flex flex-col items-center gap-2 p-5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-3xl border border-amber-200 shadow-md transition-all duration-300 group hover:-translate-y-1 cursor-pointer">
-                        <i class="fa-solid fa-code text-3xl text-amber-600 group-hover:scale-110 transition-all"></i>
-                        <span class="font-bold text-sm">ByCS iFrame</span>
-                        <span class="text-xxs text-amber-700">1-Klick Einbettungscode</span>
+                    <!-- ByCS iFrame -->
+                    <button id="btn-copy-embed" onclick="copyIframeEmbedCode()" class="flex flex-col items-center gap-1.5 p-4 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl border border-slate-200 shadow-sm transition-all duration-200 group hover:-translate-y-0.5 cursor-pointer text-center">
+                        <i class="fa-solid fa-code text-2xl text-amber-600 group-hover:scale-110 transition-all"></i>
+                        <span class="font-bold text-xs text-slate-800">ByCS iFrame</span>
+                        <span class="text-[10px] text-amber-700">1-Klick Einbettungscode</span>
                     </button>
                 </div>
 
@@ -2117,6 +2183,6 @@
     </div>
 
     <!-- App JavaScript -->
-    <script src="app.js?v=47"></script>
+    <script src="app.js?v=48"></script>
 </body>
 </html>

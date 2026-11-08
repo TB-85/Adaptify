@@ -2685,41 +2685,118 @@ if (btnPackH5P) {
 // ----------------------------------------------------
 // DOWNLOAD ACTIONS
 // ----------------------------------------------------
-if (btnDownloadH5P) {
-    btnDownloadH5P.addEventListener('click', async () => {
+let h5pStructureMode = 'two_files'; // 'two_files' or 'branching'
+
+function setH5PStructureMode(mode) {
+    h5pStructureMode = mode;
+    const btnTwo = document.getElementById('btn-struct-two');
+    const btnBranching = document.getElementById('btn-struct-branching');
+    const badge = document.getElementById('h5p-structure-badge');
+    const desc = document.getElementById('h5p-structure-desc');
+
+    if (mode === 'two_files') {
+        if (btnTwo) {
+            btnTwo.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all bg-white text-slate-900 shadow-sm cursor-pointer flex items-center justify-center gap-1";
+        }
+        if (btnBranching) {
+            btnBranching.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1";
+        }
+        if (badge) {
+            badge.textContent = "2 Getrennte Dateien";
+            badge.className = "text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800";
+        }
+        if (desc) {
+            desc.innerHTML = "<b>Empfohlen für ByCS / mebis:</b> Erzeugt zwei saubere Course Presentation H5P-Dateien (ohne Einstufungsquiz) – einmal Basic und einmal Profi.";
+        }
+    } else {
+        if (btnTwo) {
+            btnTwo.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1";
+        }
+        if (btnBranching) {
+            btnBranching.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all bg-white text-slate-900 shadow-sm cursor-pointer flex items-center justify-center gap-1";
+        }
+        if (badge) {
+            badge.textContent = "1 Branching-Paket";
+            badge.className = "text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800";
+        }
+        if (desc) {
+            desc.innerHTML = "<b>Klassisches Branching Scenario:</b> Schüler bearbeiten zuerst Einstiegs-Diagnosefragen und werden automatisch auf Pfad A oder B geleitet.";
+        }
+    }
+}
+window.setH5PStructureMode = setH5PStructureMode;
+
+async function downloadH5PVariant(variant = 'branching', triggerBtn = null) {
     const payload = getEditedData();
-    
+    payload.export_variant = variant;
+
+    const btn = triggerBtn || (typeof event !== 'undefined' && event && event.currentTarget ? event.currentTarget : null);
+    const origHTML = btn ? btn.innerHTML : null;
+    if (btn) {
+        btn.classList.add('opacity-70', 'pointer-events-none');
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> <span>Erstelle...</span>`;
+    }
+
     try {
         const videoInput = document.getElementById('input-video-file');
         const videoFile = appState.selectedVideoFile || (videoInput && videoInput.files.length > 0 ? videoInput.files[0] : null);
-        
+
         let formData = new FormData();
         formData.append('data', JSON.stringify(payload));
+        formData.append('variant', variant);
         if (videoFile) formData.append('video_file', videoFile);
-        
+
         const response = await fetch(`${API_BASE}/api/export/h5p`, {
             method: 'POST',
             body: formData
         });
 
-        if (!response.ok) throw new Error("Failed to download H5P");
+        if (!response.ok) {
+            const errJson = await response.json().catch(() => ({}));
+            throw new Error(errJson.detail || "Fehler beim Erstellen der H5P-Datei");
+        }
+
+        let downloadName = '';
+        const disposition = response.headers.get('content-disposition');
+        if (disposition && disposition.indexOf('filename=') !== -1) {
+            const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+            if (matches != null && matches[1]) {
+                downloadName = matches[1].replace(/['"]/g, '');
+            }
+        }
+        if (!downloadName) {
+            const safeTitle = (payload.title || 'Lerneinheit').replace(/\s+/g, '_');
+            if (variant === 'basic') downloadName = `${safeTitle}_Basic_LevelA.h5p`;
+            else if (variant === 'profi') downloadName = `${safeTitle}_Profi_LevelB.h5p`;
+            else if (variant === 'bundle') downloadName = `${safeTitle}_Basic_und_Profi_H5P.zip`;
+            else downloadName = `${safeTitle}_differenziert.h5p`;
+        }
 
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const suffix = (payload.video_mode === 'interactive_video' || (payload.interactions && !payload.diagnostic)) ? '_interaktives_video.h5p' : '_differenziert.h5p';
-        a.download = `${payload.title.replace(/\s+/g, '_')}${suffix}`;
+        a.download = downloadName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-
     } catch (err) {
         console.error("H5P Download error:", err);
-        alert("Herunterladen der H5P-Datei fehlgeschlagen.");
+        alert("Herunterladen fehlgeschlagen: " + (err.message || err));
+    } finally {
+        if (btn && origHTML) {
+            btn.classList.remove('opacity-70', 'pointer-events-none');
+            btn.innerHTML = origHTML;
+        }
     }
-});
+}
+window.downloadH5PVariant = downloadH5PVariant;
+
+if (btnDownloadH5P) {
+    btnDownloadH5P.addEventListener('click', (e) => {
+        downloadH5PVariant('branching', btnDownloadH5P);
+    });
 }
 
 let pdfLogoBase64 = null;
