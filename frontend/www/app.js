@@ -1219,12 +1219,13 @@ window.updateTopicSummary = function() {
     
     if (Array.isArray(dynamicTopics) && dynamicTopics.length > 0) {
         dynamicTopics[0].count = totalTasks;
-        const summaryParts = dynamicTopics
-            .filter(t => t.count > 0 && t.name && t.name.trim())
-            .map(t => `${t.count} ${t.name.trim()}`);
-        if (hiddenTopicInput && summaryParts.length > 0) {
-            hiddenTopicInput.value = summaryParts.join(', ');
+        const validTopics = dynamicTopics
+            .filter(t => t.count > 0 && t.name && t.name.trim() && !t.name.toLowerCase().includes("ki wählt schwerpunkte") && !t.name.toLowerCase().includes("automatisch aus dem"));
+        if (hiddenTopicInput) {
+            hiddenTopicInput.value = validTopics.length > 0 ? validTopics.map(t => `${t.count} ${t.name.trim()}`).join(', ') : '';
         }
+    } else if (hiddenTopicInput) {
+        hiddenTopicInput.value = '';
     }
 };
 
@@ -2173,9 +2174,22 @@ btnSubmit.addEventListener('click', async (e) => {
             formData.append('files', new Blob([topicPromptVal], { type: 'text/plain' }), 'unterrichtseinheit.txt');
         }
 
-        let effectiveFocusTopic = (typeof inputFocusTopic !== 'undefined' && inputFocusTopic?.value.trim())
+        let rawFocusTopic = (typeof inputFocusTopic !== 'undefined' && inputFocusTopic?.value.trim())
             ? inputFocusTopic.value.trim()
-            : topicPromptVal;
+            : '';
+        if (rawFocusTopic && (rawFocusTopic.toLowerCase().includes("ki wählt schwerpunkte") || rawFocusTopic.toLowerCase().includes("automatisch aus dem"))) {
+            rawFocusTopic = '';
+        }
+
+        let effectiveFocusTopic = '';
+        const isPromptMode = (appState.branchingSourceMode === 'prompt' || (!appState.selectedFile && !!topicPromptVal));
+        if (isPromptMode && topicPromptVal) {
+            effectiveFocusTopic = topicPromptVal;
+        } else if (rawFocusTopic) {
+            effectiveFocusTopic = rawFocusTopic;
+        } else if (topicPromptVal) {
+            effectiveFocusTopic = topicPromptVal;
+        }
 
         let effectiveContext = (typeof inputContext !== 'undefined' && inputContext?.value.trim())
             ? inputContext.value.trim()

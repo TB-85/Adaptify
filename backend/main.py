@@ -145,6 +145,14 @@ async def generate_task(
     differentiated task content, board entries, and extension tasks using Gemini Vision.
     """
     logger.info(f"Received files: {[f.filename for f in files]}, school_type: {school_type}, subject: {subject}, focus: {focus_topic}, hefteintrag_topic: {hefteintrag_topic}, context: {context}, format: {target_format}, count: {task_count}, promo: {promo_code}")
+
+    # Sanitize placeholder strings so UI defaults never pollute LLM prompt or mock data
+    if focus_topic and any(p in focus_topic.lower() for p in ["ki wählt schwerpunkte", "automatisch aus dem"]):
+        focus_topic = ""
+    if hefteintrag_topic and any(p in hefteintrag_topic.lower() for p in ["ki wählt schwerpunkte", "automatisch aus dem"]):
+        hefteintrag_topic = ""
+    if context and any(p in context.lower() for p in ["ki wählt schwerpunkte", "automatisch aus dem"]):
+        context = ""
     
     # Check subscription / BYOK credentials
     effective_api_key = api_key

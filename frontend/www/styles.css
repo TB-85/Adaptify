@@ -149,3 +149,145 @@ nav.hidden.md\:flex > button:not(:disabled):hover { background: var(--line-soft)
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* ==========================================================================
+   Ebene 2: Fachanwendung statt Marketing-Optik
+   ========================================================================== */
+:root {
+  --surface-2: #f7f8fa;
+}
+
+/* 1. Farbige Hinweiskästen -> neutrale Fläche mit feiner Linie.
+      Nur Akzent (Blau) und Statusfarben bleiben erhalten. */
+[class*="bg-amber-"], [class*="bg-orange-"], [class*="bg-yellow-"],
+[class*="bg-emerald-50"], [class*="bg-emerald-100"], [class*="bg-teal-50"], [class*="bg-teal-100"],
+[class*="bg-green-50"], [class*="bg-green-100"], [class*="bg-sky-"], [class*="bg-cyan-"],
+[class*="bg-blue-50"], [class*="bg-blue-100"], [class*="bg-purple-"], [class*="bg-pink-"] {
+  background-color: var(--surface-2) !important;
+}
+[class*="border-amber-"], [class*="border-orange-"], [class*="border-yellow-"], [class*="border-emerald-"],
+[class*="border-teal-"], [class*="border-green-"], [class*="border-sky-"], [class*="border-blue-"],
+[class*="border-purple-"] {
+  border-color: var(--line) !important;
+}
+[class*="text-amber-"], [class*="text-orange-"], [class*="text-yellow-"], [class*="text-sky-"],
+[class*="text-cyan-"], [class*="text-purple-"], [class*="text-pink-"] {
+  color: var(--ink-soft) !important;
+}
+/* Tönungen innerhalb der Akzentfamilie ebenfalls beruhigen */
+[class*="bg-brand-50"]:not(button):not(a):not(label) { background-color: var(--surface-2) !important; }
+[class*="border-brand-200"]:not(button):not(input):not(select):not(textarea) { border-color: var(--line) !important; }
+
+/* 2. Mini-Badges in Versalien (BETA, FOKUS, BINNENDIFFERENZIERT, ...) -> schlichte Randnotiz */
+span.uppercase[class*="rounded"], div.uppercase[class*="rounded"] {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  color: var(--ink-mute) !important;
+  letter-spacing: 0.06em;
+  font-weight: 500 !important;
+  font-size: 10.5px !important;
+}
+span.uppercase[class*="rounded-full"][class*="bg-"] { box-shadow: none !important; }
+
+/* 3. Nummerierte Kacheln in Überschriften -> einfache Ziffer */
+h3 > span[class*="bg-brand-100"][class*="h-6"],
+h3 > span[class*="bg-brand-100"][class*="w-6"] {
+  background: none !important;
+  width: auto !important;
+  height: auto !important;
+  color: var(--ink-mute) !important;
+  font-weight: 600 !important;
+  font-size: inherit !important;
+  min-width: 0 !important;
+  margin-right: -2px;
+}
+h3 > span[class*="bg-brand-100"][class*="h-6"]::after,
+h3 > span[class*="bg-brand-100"][class*="w-6"]::after { content: "."; }
+
+/* Icon-Kacheln in Reitern ohne Hintergrund */
+button > span[class*="w-6"][class*="h-6"][class*="rounded-lg"] {
+  background: none !important;
+  width: auto !important;
+  height: auto !important;
+  color: var(--ink-mute) !important;
+}
+
+/* 4. Seitenkopf: Anwendungstitel links, nicht zentrierter Werbetitel */
+#screen-upload > .text-center { text-align: left !important; padding-top: 0 !important; }
+#screen-upload > .text-center h2 {
+  font-size: 22px !important;
+  line-height: 1.25 !important;
+  font-weight: 600 !important;
+  color: var(--ink);
+}
+#screen-upload > .text-center #mode-subtitle {
+  max-width: none !important;
+  margin: 4px 0 0 0 !important;
+  font-size: 13.5px !important;
+  color: var(--ink-soft) !important;
+  font-weight: 400 !important;
+}
+#screen-upload > .text-center > .flex.justify-center { justify-content: flex-start !important; padding-top: 12px !important; }
+
+/* Moduswahl: Unterstrichene Reiter statt Pillen-Schalter */
+#screen-upload > .text-center .inline-flex.p-1\.5 {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  box-shadow: none !important;
+  width: 100%;
+}
+#tab-mode-interactive, #tab-mode-branching {
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 10px 18px !important;
+  margin-bottom: -1px;
+  color: var(--ink-soft) !important;
+  font-size: 14px !important;
+}
+#tab-mode-interactive.bg-white, #tab-mode-branching.bg-white {
+  border-bottom-color: var(--accent) !important;
+  color: var(--ink) !important;
+}
+
+/* 5. Segmentierte Umschalter (Quelle, Modus, Dateistruktur) flach und dezent */
+div[class*="bg-slate-100"][class*="p-1"][class*="rounded-2xl"],
+div[class*="bg-slate-200"][class*="p-1"][class*="rounded-2xl"] {
+  background: var(--line-soft) !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+div[class*="bg-slate-100"][class*="p-1"] > button.bg-white,
+div[class*="bg-slate-200"][class*="p-1"] > button.bg-white {
+  border: 1px solid var(--line) !important;
+  border-radius: 5px !important;
+}
+
+/* 6. Ablagefläche: kein Icon-Kreis, ruhige Kante */
+#drop-zone { border-color: var(--line) !important; border-width: 1px !important; border-style: dashed !important; background: var(--surface) !important; }
+#drop-zone:hover { border-color: var(--accent) !important; }
+#drop-zone-icon { background: none !important; box-shadow: none !important; color: var(--ink-mute) !important; width: auto !important; height: auto !important; }
+#drop-zone-icon i { font-size: 28px !important; }
+#drop-zone .group-hover\:scale-110 { transform: none !important; }
+
+/* 7. Kartenüberschriften: keine Trennlinien-Orgie, klare Hierarchie */
+.glass-panel h3 { font-size: 14px; font-weight: 600; color: var(--ink); }
+.glass-panel .border-b { border-color: var(--line-soft) !important; }
+
+/* 8. Bedienelemente */
+button { letter-spacing: 0; }
+.bg-brand-600, button.bg-brand-600 { background-color: var(--accent) !important; }
+.bg-brand-600:hover, button.bg-brand-600:hover { background-color: var(--accent-hover) !important; }
+label.text-xs, .block.text-xs.font-bold { color: var(--ink) !important; font-weight: 500 !important; }
+
+/* 9. Fußzeile ruhiger */
+footer { background: #1b2430 !important; }
+footer .rounded-full { border-radius: 4px !important; }

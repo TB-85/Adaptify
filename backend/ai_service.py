@@ -93,6 +93,10 @@ def parse_teacher_context_directives(context: str = "", focus_topic: str = "", d
     """
     ctx = (context or "").strip()
     foc = (focus_topic or "").strip()
+    if any(p in ctx.lower() for p in ["ki wählt schwerpunkte", "automatisch aus dem"]):
+        ctx = ""
+    if any(p in foc.lower() for p in ["ki wählt schwerpunkte", "automatisch aus dem"]):
+        foc = "" 
     
     # Normalize hyphens and punctuation for directive matching
     norm_text = re.sub(r'[-_]', ' ', f"{ctx} {foc}".lower())
@@ -578,6 +582,14 @@ class AIService:
         separate Hefteintrag topic, subject-specific adaptations, and Zusatzaufgaben.
         Supports differentiation_mode == 'direct' for 1:1 worksheet transcription.
         """
+        # Sanitize placeholder strings
+        if focus_topic and any(p in focus_topic.lower() for p in ["ki wählt schwerpunkte", "automatisch aus dem"]):
+            focus_topic = ""
+        if hefteintrag_topic and any(p in hefteintrag_topic.lower() for p in ["ki wählt schwerpunkte", "automatisch aus dem"]):
+            hefteintrag_topic = ""
+        if context and any(p in context.lower() for p in ["ki wählt schwerpunkte", "automatisch aus dem"]):
+            context = ""
+
         # Check SQLite Generation Cache first
         try:
             from database import compute_cache_hash, get_cached_generation, set_cached_generation
@@ -923,26 +935,44 @@ WICHTIGE ANWEISUNGEN:
             )
             contents.append(prompt)
             
-            candidate_models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
+            candidate_models = [
+                'gemini-3.5-flash',
+                'gemini-3.5-flash-lite',
+                'gemini-3.6-flash',
+                'gemini-3.7-flash',
+                'gemini-flash-latest',
+                'gemini-2.5-pro'
+            ]
             response = None
             last_err = None
+            import time
             for model_name in candidate_models:
-                try:
-                    response = client.models.generate_content(
-                        model=model_name,
-                        contents=contents,
-                        config=types.GenerateContentConfig(
-                            response_mime_type="application/json",
-                            response_schema=DifferentiatedContent,
-                            max_output_tokens=8192,
+                # Up to 2 attempts per candidate in case of temporary 503 spike
+                for attempt in range(2):
+                    try:
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=contents,
+                            config=types.GenerateContentConfig(
+                                response_mime_type="application/json",
+                                response_schema=DifferentiatedContent,
+                                max_output_tokens=8192,
+                            )
                         )
-                    )
-                    if response and response.text:
-                        logger.info(f"Successfully generated content using Gemini model '{model_name}'")
-                        break
-                except Exception as m_err:
-                    logger.warning(f"Gemini model '{model_name}' failed: {m_err}. Trying next candidate model...")
-                    last_err = m_err
+                        if response and response.text:
+                            logger.info(f"Successfully generated content using Gemini model '{model_name}'")
+                            break
+                    except Exception as m_err:
+                        last_err = m_err
+                        err_str = str(m_err)
+                        if "503" in err_str or "UNAVAILABLE" in err_str:
+                            logger.warning(f"Gemini model '{model_name}' (attempt {attempt+1}/2) busy (503): {m_err}. Waiting 1.5s...")
+                            time.sleep(1.5)
+                        else:
+                            logger.warning(f"Gemini model '{model_name}' failed: {m_err}. Trying next candidate model...")
+                            break
+                if response and response.text:
+                    break
 
             if not response or not response.text:
                 raise last_err or Exception("All Gemini models failed")
@@ -959,7 +989,10 @@ WICHTIGE ANWEISUNGEN:
                     logger.error(f"Failed to parse JSON even after escaping backslashes: {inner_e}")
                     raise jde
             if isinstance(result_json, dict) and "title" in result_json:
-                from .h5p_generator import clean_student_title
+                try:
+                    from h5p_generator import clean_student_title
+                except ImportError:
+                    from .h5p_generator import clean_student_title
                 result_json["title"] = clean_student_title(result_json["title"])
 
             if differentiation_mode == "direct" and isinstance(result_json, dict):
@@ -1048,12 +1081,15 @@ Generiere genau dieses JSON:
 
         _d = parse_teacher_context_directives(context, focus_topic, task_count)
         topics_list, actual_count, topic_dist = _d["expanded_topics"], _d["total_task_count"], _d["distribution"]
-        heft_str = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else "Hauptthema")
+        heft_str = hefteintrag_topic if (hefteintrag_topic and not any(p in hefteintrag_topic.lower() for p in ["ki wählt", "automatisch"])) else (focus_topic if (focus_topic and not any(p in focus_topic.lower() for p in ["ki wählt", "automatisch"])) else clean_title_topic)
         lower_heft = (heft_str or "").lower()
         
         import re
-        clean_title_topic = re.sub(r'\d+\s*x?\s*(?:zu|für)?\s*', '', parsed_str).strip()
+        # Only strip leading counts at the start of the string, preserving numbers inside titles (e.g. 'Konjunktiv 1 und 2')
+        clean_title_topic = re.sub(r'^\s*\d+\s*x?\s*(?:zu|für)?\s*', '', parsed_str).strip()
         clean_title_topic = re.sub(r'^\s*,\s*|\s*,\s*$', '', clean_title_topic)
+        if clean_title_topic and any(p in clean_title_topic.lower() for p in ["ki wählt schwerpunkte", "automatisch aus dem"]):
+            clean_title_topic = ""
         if not clean_title_topic or len(clean_title_topic) < 3:
             clean_title_topic = "Müll im Ozean - Der achte Kontinent" if subject == "Deutsch" else ("Bruchrechnen" if subject == "Mathematik" else "Grammar & Reading")
 
@@ -1601,7 +1637,10 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
                                 inter["time_formatted"] = f"{m:02d}:{s:02d}"
 
                         if "title" in parsed and parsed["title"]:
-                            from .h5p_generator import clean_student_title
+                            try:
+                                from h5p_generator import clean_student_title
+                            except ImportError:
+                                from .h5p_generator import clean_student_title
                             parsed["title"] = clean_student_title(parsed["title"])
 
                         logger.info(f"Successfully generated interactive video quiz for subject='{parsed.get('subject')}', title='{parsed.get('title')}' with {len(parsed.get('interactions', []))} checkpoints (duration: {detected_duration_sec}s)")
