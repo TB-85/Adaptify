@@ -10947,5 +10947,2545 @@
         "timestamp": "08:18:52"
       }
     ]
+  },
+  "42AK": {
+    "title": "Einnahmen und Ausgaben",
+    "data": {
+      "title": "Einnahmen und Ausgaben",
+      "data": {
+        "title": "Einnahmen und Ausgaben",
+        "lehrplan_code": "E6 G1",
+        "lehrplan_competency": "LehrplanPlus Bayern (WiB): Kompetenzen im Bereich 'Einnahmen und Ausgaben' anwenden und reflektieren",
+        "extracted_text": "[DEMO-MODUS] Hier steht der extrahierte Text der Buchseite für WiB.\n\nBeispiel: 'Yesterday, Sarah and Peter went to the school yard. Sarah played basketball, but Peter forgot his ball.'\n\nBildbeschreibung: Eine illustrative Grafik passend zum Thema.",
+        "diagnostic": {
+          "questions": [
+            {
+              "question": "Welches Grundprinzip gilt beim Thema 'Einnahmen und Ausgaben'?",
+              "options": [
+                "Die grundlegende Regel zu Einnahmen und Ausgaben schrittweise anwenden",
+                "Regeln und Rechenschritte beliebig vertauschen"
+              ],
+              "correct": 0
+            },
+            {
+              "question": "Wie gehst du bei einer kniffligeren Aufgabe zu 'Einnahmen und Ausgaben' vor?",
+              "options": [
+                "Sofort aufgeben",
+                "Die Aufgabenstellung genau analysieren und den passenden Lösungsweg wählen"
+              ],
+              "correct": 1
+            }
+          ]
+        },
+        "hefteintrag": {
+          "title": "Wie wende ich die Regeln zu 'Einnahmen und Ausgaben' richtig an?",
+          "summary": "📌 WIE WENDE ICH DIE REGELN ZU 'EINNAHMEN UND AUSGABEN' RICHTIG AN?\n\n1. MERKREGEL:\nWichtigste Grundregel zum Thema 'Einnahmen und Ausgaben' kurz und prägnant erklärt.\n\n2. SCHRITTE ZUR ANWENDUNG:\n• Schritt 1: Gegebenes genau analysieren & Signalwörter markieren.\n• Schritt 2: Passende Regel oder Formel anwenden.\n• Schritt 3: Ergebnis auf Richtigkeit und Plausibilität überprüfen.\n\n3. MUSTERBEISPIEL / MERKSATZ:\nAnschauliches Beispiel für den 1:1 Übertrag in das Merkheft.",
+          "level_a_notes": "",
+          "level_b_notes": ""
+        },
+        "zusatzaufgaben": [
+          {
+            "title": "⭐ Experten-Aufgabe 1 (Transfer)",
+            "task": "Verbinde das Thema 'Einnahmen und Ausgaben' mit einer eigenen Alltagssituation und erstelle ein Rätsel für deine Mitschüler."
+          },
+          {
+            "title": "⭐ Experten-Aufgabe 2 (Erweiterung)",
+            "task": "Finde 3 weitere Beispiele zum Thema 'Einnahmen und Ausgaben' aus deiner eigenen Lektüre und begründe deine Auswahl."
+          }
+        ],
+        "level_c": {
+          "title": "Level C - Inklusion & DaZ (Leichte Sprache)",
+          "tasks": [
+            {
+              "title": "Inklusion/DaZ - Einnahmen und Ausgaben (Aufgabe 1)",
+              "text": "Leichte Sprache (WiB):\nDas Wort *Hund* ist ein *Nomen*.\nDas Wort *läuft* ist ein *Verb*.",
+              "format": "Drag the Words",
+              "hint": "💡 Sprachhilfe: Verben beschreiben Handlungen (Was tut jemand?).",
+              "explanation": "Sehr einfache Sprache unterstützt das Sprachverständnis."
+            },
+            {
+              "title": "Inklusion/DaZ - Einnahmen und Ausgaben (Aufgabe 2)",
+              "text": "Leichte Sprache (WiB):\nDas Wort *Hund* ist ein *Nomen*.\nDas Wort *läuft* ist ein *Verb*.",
+              "format": "Drag the Words",
+              "hint": "💡 Sprachhilfe: Verben beschreiben Handlungen (Was tut jemand?).",
+              "explanation": "Sehr einfache Sprache unterstützt das Sprachverständnis."
+            }
+          ]
+        },
+        "level_a": {
+          "title": "Level A - Grundlagen (Fördern)",
+          "tasks": [
+            {
+              "title": "Fördern - Einnahmen und Ausgaben (Aufgabe 1)",
+              "text": "Sarah und Peter *went* (gehen) gestern zum Schulhof.\nSarah *played* (spielen) Basketball.",
+              "format": "Lückentext",
+              "hint": "💡 Tipp: 'yesterday' verlangt die Vergangenheitsform (Simple Past).",
+              "explanation": "'went' is the irregular past tense of 'to go'."
+            },
+            {
+              "title": "Fördern - Einnahmen und Ausgaben (Aufgabe 2)",
+              "text": "Sarah und Peter *went* (gehen) gestern zum Schulhof.\nSarah *played* (spielen) Basketball.",
+              "format": "Drag the Words",
+              "hint": "💡 Tipp: 'yesterday' verlangt die Vergangenheitsform (Simple Past).",
+              "explanation": "'went' is the irregular past tense of 'to go'."
+            }
+          ]
+        },
+        "level_b": {
+          "title": "Level B - Vertiefung (Fordern)",
+          "tasks": [
+            {
+              "title": "Fordern - Einnahmen und Ausgaben (Aufgabe 1)",
+              "text": "Transfer Task on 'Einnahmen und Ausgaben':\nApply the rule to a new context:\nBefore they *left* (leave) the playground, they *had found* (find) a lost key.",
+              "format": "Lückentext",
+              "hint": "",
+              "explanation": "Use Past Perfect ('had found') for the action completed prior to leaving."
+            },
+            {
+              "title": "Transfer & Anwendung - Einnahmen und Ausgaben",
+              "text": "Transfer Task on 'Einnahmen und Ausgaben':\nApply the rule to a new context:\nBefore they *left* (leave) the playground, they *had found* (find) a lost key.",
+              "format": "Drag the Words",
+              "hint": "",
+              "explanation": "Use Past Perfect ('had found') for the action completed prior to leaving."
+            }
+          ]
+        },
+        "error": null
+      }
+    },
+    "results": [
+      {
+        "student_name": "Anna",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Ben",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Clara",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "David",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Emma",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Felix",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Greta",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Hannes",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Ida",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Jonas",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Klara",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Leo",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Mia",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Noah",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Olivia",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Paul",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Quinn",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Rosa",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Samuel",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Theresa",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Uli",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Valentin",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Wilma",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Xaver",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Yara",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Zoe",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Lukas",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Maximilian",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Sophie",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:25:47"
+      },
+      {
+        "student_name": "Tim",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:25:47"
+      }
+    ]
+  },
+  "FVC9": {
+    "title": "Umlaut Test",
+    "data": {
+      "title": "Umlaut Test",
+      "data": {}
+    },
+    "results": [
+      {
+        "student_name": "Müller-Lüdenscheidt & Söhne (Schüler 123) 🦊",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [],
+        "timestamp": "10:25:48"
+      }
+    ]
+  },
+  "BF52": {
+    "title": "Einnahmen und Ausgaben",
+    "data": {
+      "title": "Einnahmen und Ausgaben",
+      "data": {
+        "title": "Einnahmen und Ausgaben",
+        "lehrplan_code": "E6 G1",
+        "lehrplan_competency": "LehrplanPlus Bayern (WiB): Kompetenzen im Bereich 'Einnahmen und Ausgaben' anwenden und reflektieren",
+        "extracted_text": "[DEMO-MODUS] Hier steht der extrahierte Text der Buchseite für WiB.\n\nBeispiel: 'Yesterday, Sarah and Peter went to the school yard. Sarah played basketball, but Peter forgot his ball.'\n\nBildbeschreibung: Eine illustrative Grafik passend zum Thema.",
+        "diagnostic": {
+          "questions": [
+            {
+              "question": "Welches Grundprinzip gilt beim Thema 'Einnahmen und Ausgaben'?",
+              "options": [
+                "Die grundlegende Regel zu Einnahmen und Ausgaben schrittweise anwenden",
+                "Regeln und Rechenschritte beliebig vertauschen"
+              ],
+              "correct": 0
+            },
+            {
+              "question": "Wie gehst du bei einer kniffligeren Aufgabe zu 'Einnahmen und Ausgaben' vor?",
+              "options": [
+                "Sofort aufgeben",
+                "Die Aufgabenstellung genau analysieren und den passenden Lösungsweg wählen"
+              ],
+              "correct": 1
+            }
+          ]
+        },
+        "hefteintrag": {
+          "title": "Wie wende ich die Regeln zu 'Einnahmen und Ausgaben' richtig an?",
+          "summary": "📌 WIE WENDE ICH DIE REGELN ZU 'EINNAHMEN UND AUSGABEN' RICHTIG AN?\n\n1. MERKREGEL:\nWichtigste Grundregel zum Thema 'Einnahmen und Ausgaben' kurz und prägnant erklärt.\n\n2. SCHRITTE ZUR ANWENDUNG:\n• Schritt 1: Gegebenes genau analysieren & Signalwörter markieren.\n• Schritt 2: Passende Regel oder Formel anwenden.\n• Schritt 3: Ergebnis auf Richtigkeit und Plausibilität überprüfen.\n\n3. MUSTERBEISPIEL / MERKSATZ:\nAnschauliches Beispiel für den 1:1 Übertrag in das Merkheft.",
+          "level_a_notes": "",
+          "level_b_notes": ""
+        },
+        "zusatzaufgaben": [
+          {
+            "title": "⭐ Experten-Aufgabe 1 (Transfer)",
+            "task": "Verbinde das Thema 'Einnahmen und Ausgaben' mit einer eigenen Alltagssituation und erstelle ein Rätsel für deine Mitschüler."
+          },
+          {
+            "title": "⭐ Experten-Aufgabe 2 (Erweiterung)",
+            "task": "Finde 3 weitere Beispiele zum Thema 'Einnahmen und Ausgaben' aus deiner eigenen Lektüre und begründe deine Auswahl."
+          }
+        ],
+        "level_c": {
+          "title": "Level C - Inklusion & DaZ (Leichte Sprache)",
+          "tasks": [
+            {
+              "title": "Inklusion/DaZ - Einnahmen und Ausgaben (Aufgabe 1)",
+              "text": "Leichte Sprache (WiB):\nDas Wort *Hund* ist ein *Nomen*.\nDas Wort *läuft* ist ein *Verb*.",
+              "format": "Drag the Words",
+              "hint": "💡 Sprachhilfe: Verben beschreiben Handlungen (Was tut jemand?).",
+              "explanation": "Sehr einfache Sprache unterstützt das Sprachverständnis."
+            },
+            {
+              "title": "Inklusion/DaZ - Einnahmen und Ausgaben (Aufgabe 2)",
+              "text": "Leichte Sprache (WiB):\nDas Wort *Hund* ist ein *Nomen*.\nDas Wort *läuft* ist ein *Verb*.",
+              "format": "Drag the Words",
+              "hint": "💡 Sprachhilfe: Verben beschreiben Handlungen (Was tut jemand?).",
+              "explanation": "Sehr einfache Sprache unterstützt das Sprachverständnis."
+            }
+          ]
+        },
+        "level_a": {
+          "title": "Level A - Grundlagen (Fördern)",
+          "tasks": [
+            {
+              "title": "Fördern - Einnahmen und Ausgaben (Aufgabe 1)",
+              "text": "Sarah und Peter *went* (gehen) gestern zum Schulhof.\nSarah *played* (spielen) Basketball.",
+              "format": "Lückentext",
+              "hint": "💡 Tipp: 'yesterday' verlangt die Vergangenheitsform (Simple Past).",
+              "explanation": "'went' is the irregular past tense of 'to go'."
+            },
+            {
+              "title": "Fördern - Einnahmen und Ausgaben (Aufgabe 2)",
+              "text": "Sarah und Peter *went* (gehen) gestern zum Schulhof.\nSarah *played* (spielen) Basketball.",
+              "format": "Drag the Words",
+              "hint": "💡 Tipp: 'yesterday' verlangt die Vergangenheitsform (Simple Past).",
+              "explanation": "'went' is the irregular past tense of 'to go'."
+            }
+          ]
+        },
+        "level_b": {
+          "title": "Level B - Vertiefung (Fordern)",
+          "tasks": [
+            {
+              "title": "Fordern - Einnahmen und Ausgaben (Aufgabe 1)",
+              "text": "Transfer Task on 'Einnahmen und Ausgaben':\nApply the rule to a new context:\nBefore they *left* (leave) the playground, they *had found* (find) a lost key.",
+              "format": "Lückentext",
+              "hint": "",
+              "explanation": "Use Past Perfect ('had found') for the action completed prior to leaving."
+            },
+            {
+              "title": "Transfer & Anwendung - Einnahmen und Ausgaben",
+              "text": "Transfer Task on 'Einnahmen und Ausgaben':\nApply the rule to a new context:\nBefore they *left* (leave) the playground, they *had found* (find) a lost key.",
+              "format": "Drag the Words",
+              "hint": "",
+              "explanation": "Use Past Perfect ('had found') for the action completed prior to leaving."
+            }
+          ]
+        },
+        "error": null
+      }
+    },
+    "results": [
+      {
+        "student_name": "Anna",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Ben",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Clara",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "David",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Emma",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Felix",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Greta",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Hannes",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Ida",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Jonas",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Klara",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Leo",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Mia",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Noah",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Olivia",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Paul",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Quinn",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Rosa",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Samuel",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Theresa",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Uli",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Valentin",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Wilma",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Xaver",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Yara",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Zoe",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Lukas",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Maximilian",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Sophie",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:27:24"
+      },
+      {
+        "student_name": "Tim",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:27:24"
+      }
+    ]
+  },
+  "J5J6": {
+    "title": "Umlaut Test",
+    "data": {
+      "title": "Umlaut Test",
+      "data": {}
+    },
+    "results": [
+      {
+        "student_name": "Müller-Lüdenscheidt & Söhne (Schüler 123) 🦊",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [],
+        "timestamp": "10:27:25"
+      }
+    ]
+  },
+  "EWQE": {
+    "title": "Einnahmen und Ausgaben",
+    "data": {
+      "title": "Einnahmen und Ausgaben",
+      "data": {
+        "title": "Einnahmen und Ausgaben",
+        "lehrplan_code": "E6 G1",
+        "lehrplan_competency": "LehrplanPlus Bayern (WiB): Kompetenzen im Bereich 'Einnahmen und Ausgaben' anwenden und reflektieren",
+        "extracted_text": "[DEMO-MODUS] Hier steht der extrahierte Text der Buchseite für WiB.\n\nThe Great Barrier Reef is the largest coral reef system on Earth, located off the northeast coast of Australia.\nRising sea temperatures cause coral bleaching and threaten marine biodiversity.\n\nBildbeschreibung: Eine illustrative Grafik passend zum Thema.",
+        "diagnostic": {
+          "questions": [
+            {
+              "question": "Welches Grundprinzip gilt beim Thema 'Einnahmen und Ausgaben'?",
+              "options": [
+                "Die grundlegende Regel zu Einnahmen und Ausgaben schrittweise anwenden",
+                "Regeln und Rechenschritte beliebig vertauschen"
+              ],
+              "correct": 0
+            },
+            {
+              "question": "Wie gehst du bei einer kniffligeren Aufgabe zu 'Einnahmen und Ausgaben' vor?",
+              "options": [
+                "Sofort aufgeben",
+                "Die Aufgabenstellung genau analysieren und den passenden Lösungsweg wählen"
+              ],
+              "correct": 1
+            }
+          ]
+        },
+        "hefteintrag": {
+          "title": "Wie wende ich die Regeln zu 'Einnahmen und Ausgaben' richtig an?",
+          "summary": "📌 WIE WENDE ICH DIE REGELN ZU 'EINNAHMEN UND AUSGABEN' RICHTIG AN?\n\n1. MERKREGEL:\nWichtigste Grundregel zum Thema 'Einnahmen und Ausgaben' kurz und prägnant erklärt.\n\n2. SCHRITTE ZUR ANWENDUNG:\n• Schritt 1: Gegebenes genau analysieren & Signalwörter markieren.\n• Schritt 2: Passende Regel oder Formel anwenden.\n• Schritt 3: Ergebnis auf Richtigkeit und Plausibilität überprüfen.\n\n3. MUSTERBEISPIEL / MERKSATZ:\nAnschauliches Beispiel für den 1:1 Übertrag in das Merkheft.",
+          "level_a_notes": "",
+          "level_b_notes": ""
+        },
+        "zusatzaufgaben": [
+          {
+            "title": "⭐ Experten-Aufgabe 1 (Transfer)",
+            "task": "Verbinde das Thema 'Einnahmen und Ausgaben' mit einer eigenen Alltagssituation und erstelle ein Rätsel für deine Mitschüler."
+          },
+          {
+            "title": "⭐ Experten-Aufgabe 2 (Erweiterung)",
+            "task": "Finde 3 weitere Beispiele zum Thema 'Einnahmen und Ausgaben' aus deiner eigenen Lektüre und begründe deine Auswahl."
+          }
+        ],
+        "level_c": {
+          "title": "Level C - Inklusion & DaZ (Leichte Sprache)",
+          "tasks": [
+            {
+              "title": "Inklusion/DaZ - Einnahmen (Aufgabe 1)",
+              "text": "Leichte Sprache (WiB):\nDer Text gibt wichtige *Regeln*.\nWir lesen den Text *genau*.",
+              "format": "Drag the Words",
+              "hint": "💡 Sprachhilfe: Konzentriere dich auf die Schlüsselbegriffe im Text.",
+              "explanation": "Sehr einfache Sprache unterstützt das Textverständnis."
+            },
+            {
+              "title": "Inklusion/DaZ - Ausgaben (Aufgabe 2)",
+              "text": "Leichte Sprache (WiB):\nDer Text gibt wichtige *Regeln*.\nWir lesen den Text *genau*.",
+              "format": "Drag the Words",
+              "hint": "💡 Sprachhilfe: Konzentriere dich auf die Schlüsselbegriffe im Text.",
+              "explanation": "Sehr einfache Sprache unterstützt das Textverständnis."
+            }
+          ]
+        },
+        "level_a": {
+          "title": "Level A - Grundlagen (Fördern)",
+          "tasks": [
+            {
+              "title": "Fördern - Einnahmen (Nomen erkennen)",
+              "text": "Klicke alle unterstrichenen Nomen im Satz an:\nIm *Familienleben* brauchen *Kinder* feste *Regeln* und klare *Orientierung*.",
+              "format": "Wörter markieren",
+              "hint": "💡 Tipp: Nomen werden großgeschrieben und bezeichnen Dinge, Lebewesen oder Begriffe.",
+              "explanation": "Nomen bezeichnen Lebewesen, Gegenstände oder Begriffe."
+            },
+            {
+              "title": "Fördern - Ausgaben (Pronomen mit Klammerbezug einsetzen)",
+              "text": "Ersetze die in Klammern angegebenen Wörter durch passende Pronomen:\nWie *sie* (die Regeln) gestaltet werden, hängt von den Eltern ab. Wenn *sie* (die Eltern) eher großzügig sind, wird *es* (das Kind) sich nicht an *ihnen* (den Regeln) orientieren.",
+              "format": "Lückentext",
+              "hint": "💡 Tipp: Achte auf Fall (Kasus) und grammatisches Geschlecht (Genus).",
+              "explanation": "Pronomen stehen als Stellvertreter für bereits genannte Nomen."
+            }
+          ]
+        },
+        "level_b": {
+          "title": "Level B - Vertiefung (Fordern)",
+          "tasks": [
+            {
+              "title": "Fordern - Einnahmen (Nomen erkennen)",
+              "text": "Klicke alle Nomen mit Signalwörtern an:\nDas *Verhalten* der *Eltern* bestimmt den *Alltag* und die *Grenzen*.",
+              "format": "Wörter markieren",
+              "hint": "",
+              "explanation": "Nomen bezeichnen Lebewesen, Gegenstände oder Begriffe."
+            },
+            {
+              "title": "Transfer & Anwendung - Ausgaben",
+              "text": "Ersetze die Satzglieder durch zutreffende Pronomen:\nMerkt das Kind, dass Regeln gelten, orientiert *es* (das Kind) sich am Verhalten *seiner* (des Kindes) Eltern, denn *sie* (die Eltern) sind Vorbilder für *ihn/es* (das Kind).",
+              "format": "Lückentext",
+              "hint": "",
+              "explanation": "Pronomen stehen als Stellvertreter für bereits genannte Nomen."
+            }
+          ]
+        },
+        "error": null
+      }
+    },
+    "results": [
+      {
+        "student_name": "Anna",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Ben",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Clara",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "David",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Emma",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Felix",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Greta",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Hannes",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Ida",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Jonas",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Klara",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Leo",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Mia",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Noah",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Olivia",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Paul",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Quinn",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Rosa",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Samuel",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Theresa",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Uli",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Valentin",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Wilma",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Xaver",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Yara",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Zoe",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Lukas",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Maximilian",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Sophie",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "10:47:52"
+      },
+      {
+        "student_name": "Tim",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "10:47:52"
+      }
+    ]
+  },
+  "5592": {
+    "title": "Umlaut Test",
+    "data": {
+      "title": "Umlaut Test",
+      "data": {}
+    },
+    "results": [
+      {
+        "student_name": "Müller-Lüdenscheidt & Söhne (Schüler 123) 🦊",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [],
+        "timestamp": "10:47:53"
+      }
+    ]
+  },
+  "GQQK": {
+    "title": "Einnahmen und Ausgaben",
+    "data": {
+      "title": "Einnahmen und Ausgaben",
+      "data": {
+        "title": "Einnahmen und Ausgaben",
+        "lehrplan_code": "E6 G1",
+        "lehrplan_competency": "LehrplanPlus Bayern (WiB): Kompetenzen im Bereich 'Einnahmen und Ausgaben' anwenden und reflektieren",
+        "extracted_text": "[DEMO-MODUS] Hier steht der extrahierte Text der Buchseite für WiB.\n\nThe Great Barrier Reef is the largest coral reef system on Earth, located off the northeast coast of Australia.\nRising sea temperatures cause coral bleaching and threaten marine biodiversity.\n\nBildbeschreibung: Eine illustrative Grafik passend zum Thema.",
+        "diagnostic": {
+          "questions": [
+            {
+              "question": "Welches Grundprinzip gilt beim Thema 'Einnahmen und Ausgaben'?",
+              "options": [
+                "Die grundlegende Regel zu Einnahmen und Ausgaben schrittweise anwenden",
+                "Regeln und Rechenschritte beliebig vertauschen"
+              ],
+              "correct": 0
+            },
+            {
+              "question": "Wie gehst du bei einer kniffligeren Aufgabe zu 'Einnahmen und Ausgaben' vor?",
+              "options": [
+                "Sofort aufgeben",
+                "Die Aufgabenstellung genau analysieren und den passenden Lösungsweg wählen"
+              ],
+              "correct": 1
+            }
+          ]
+        },
+        "hefteintrag": {
+          "title": "Wie wende ich die Regeln zu 'Einnahmen und Ausgaben' richtig an?",
+          "summary": "📌 WIE WENDE ICH DIE REGELN ZU 'EINNAHMEN UND AUSGABEN' RICHTIG AN?\n\n1. MERKREGEL:\nWichtigste Grundregel zum Thema 'Einnahmen und Ausgaben' kurz und prägnant erklärt.\n\n2. SCHRITTE ZUR ANWENDUNG:\n• Schritt 1: Gegebenes genau analysieren & Signalwörter markieren.\n• Schritt 2: Passende Regel oder Formel anwenden.\n• Schritt 3: Ergebnis auf Richtigkeit und Plausibilität überprüfen.\n\n3. MUSTERBEISPIEL / MERKSATZ:\nAnschauliches Beispiel für den 1:1 Übertrag in das Merkheft.",
+          "level_a_notes": "",
+          "level_b_notes": ""
+        },
+        "zusatzaufgaben": [
+          {
+            "title": "⭐ Experten-Aufgabe 1 (Transfer)",
+            "task": "Verbinde das Thema 'Einnahmen und Ausgaben' mit einer eigenen Alltagssituation und erstelle ein Rätsel für deine Mitschüler."
+          },
+          {
+            "title": "⭐ Experten-Aufgabe 2 (Erweiterung)",
+            "task": "Finde 3 weitere Beispiele zum Thema 'Einnahmen und Ausgaben' aus deiner eigenen Lektüre und begründe deine Auswahl."
+          }
+        ],
+        "level_c": {
+          "title": "Level C - Inklusion & DaZ (Leichte Sprache)",
+          "tasks": [
+            {
+              "title": "Inklusion/DaZ - Einnahmen (Aufgabe 1)",
+              "text": "Leichte Sprache (WiB):\nDer Text gibt wichtige *Regeln*.\nWir lesen den Text *genau*.",
+              "format": "Drag the Words",
+              "hint": "💡 Sprachhilfe: Konzentriere dich auf die Schlüsselbegriffe im Text.",
+              "explanation": "Sehr einfache Sprache unterstützt das Textverständnis."
+            },
+            {
+              "title": "Inklusion/DaZ - Ausgaben (Aufgabe 2)",
+              "text": "Leichte Sprache (WiB):\nDer Text gibt wichtige *Regeln*.\nWir lesen den Text *genau*.",
+              "format": "Drag the Words",
+              "hint": "💡 Sprachhilfe: Konzentriere dich auf die Schlüsselbegriffe im Text.",
+              "explanation": "Sehr einfache Sprache unterstützt das Textverständnis."
+            }
+          ]
+        },
+        "level_a": {
+          "title": "Level A - Grundlagen (Fördern)",
+          "tasks": [
+            {
+              "title": "Fördern - Einnahmen (Nomen erkennen)",
+              "text": "Klicke alle unterstrichenen Nomen im Satz an:\nIm *Familienleben* brauchen *Kinder* feste *Regeln* und klare *Orientierung*.",
+              "format": "Wörter markieren",
+              "hint": "💡 Tipp: Nomen werden großgeschrieben und bezeichnen Dinge, Lebewesen oder Begriffe.",
+              "explanation": "Nomen bezeichnen Lebewesen, Gegenstände oder Begriffe."
+            },
+            {
+              "title": "Fördern - Ausgaben (Pronomen mit Klammerbezug einsetzen)",
+              "text": "Ersetze die in Klammern angegebenen Wörter durch passende Pronomen:\nWie *sie* (die Regeln) gestaltet werden, hängt von den Eltern ab. Wenn *sie* (die Eltern) eher großzügig sind, wird *es* (das Kind) sich nicht an *ihnen* (den Regeln) orientieren.",
+              "format": "Lückentext",
+              "hint": "💡 Tipp: Achte auf Fall (Kasus) und grammatisches Geschlecht (Genus).",
+              "explanation": "Pronomen stehen als Stellvertreter für bereits genannte Nomen."
+            }
+          ]
+        },
+        "level_b": {
+          "title": "Level B - Vertiefung (Fordern)",
+          "tasks": [
+            {
+              "title": "Fordern - Einnahmen (Nomen erkennen)",
+              "text": "Klicke alle Nomen mit Signalwörtern an:\nDas *Verhalten* der *Eltern* bestimmt den *Alltag* und die *Grenzen*.",
+              "format": "Wörter markieren",
+              "hint": "",
+              "explanation": "Nomen bezeichnen Lebewesen, Gegenstände oder Begriffe."
+            },
+            {
+              "title": "Transfer & Anwendung - Ausgaben",
+              "text": "Ersetze die Satzglieder durch zutreffende Pronomen:\nMerkt das Kind, dass Regeln gelten, orientiert *es* (das Kind) sich am Verhalten *seiner* (des Kindes) Eltern, denn *sie* (die Eltern) sind Vorbilder für *ihn/es* (das Kind).",
+              "format": "Lückentext",
+              "hint": "",
+              "explanation": "Pronomen stehen als Stellvertreter für bereits genannte Nomen."
+            }
+          ]
+        },
+        "error": null
+      }
+    },
+    "results": [
+      {
+        "student_name": "Anna",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Ben",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Clara",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "David",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Emma",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Felix",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Greta",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Hannes",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Ida",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Jonas",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Klara",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Leo",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Mia",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Noah",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Olivia",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Paul",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Quinn",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Rosa",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Samuel",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Theresa",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Uli",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Valentin",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Wilma",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Xaver",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Yara",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Zoe",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Lukas",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Maximilian",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Sophie",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": true
+          }
+        ],
+        "timestamp": "12:08:55"
+      },
+      {
+        "student_name": "Tim",
+        "score": 1,
+        "max_score": 2,
+        "level_reached": "A",
+        "answers_detail": [
+          {
+            "question": "Frage 1",
+            "correct": true
+          },
+          {
+            "question": "Frage 2",
+            "correct": false
+          }
+        ],
+        "timestamp": "12:08:55"
+      }
+    ]
+  },
+  "CE2Q": {
+    "title": "Umlaut Test",
+    "data": {
+      "title": "Umlaut Test",
+      "data": {}
+    },
+    "results": [
+      {
+        "student_name": "Müller-Lüdenscheidt & Söhne (Schüler 123) 🦊",
+        "score": 2,
+        "max_score": 2,
+        "level_reached": "B",
+        "answers_detail": [],
+        "timestamp": "12:08:56"
+      }
+    ]
   }
 }
