@@ -2134,7 +2134,7 @@ btnSubmit.addEventListener('click', async (e) => {
     }, 20000);
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), isIvMode ? 180000 : 120000);
+    const timeoutId = setTimeout(() => controller.abort(), isIvMode ? 240000 : 180000);
 
     const apiKeyVal = (typeof inputApiKey !== 'undefined' && inputApiKey) ? (inputApiKey.value || '').trim() : '';
     const promoCodeVal = (typeof inputPromoCode !== 'undefined' && inputPromoCode) ? (inputPromoCode.value || '').trim() : '';
@@ -2293,7 +2293,11 @@ btnSubmit.addEventListener('click', async (e) => {
         
         console.error("Failed to generate task:", err);
         if (err.name === 'AbortError' || (err.message && err.message.toLowerCase().includes('aborted'))) {
-            alert("Zeitüberschreitung bei der Generierung (Timeout).\n\nBei sehr langen Videos oder schwächerer Internetverbindung kann die Analyse etwas mehr Zeit in Anspruch nehmen. Bitte versuche es noch einmal.");
+            alert(
+                "Zeitüberschreitung bei der Generierung (Timeout):\n\n" +
+                "• Der Server war im Ruhezustand (Render Cold-Start) oder die KI benötigt bei umfangreichen Aufgaben etwas mehr Zeit.\n" +
+                "• Da der Server jetzt aktiv ist, klicke bitte direkt noch einmal auf 'Differenzierte Lernpfade erstellen' – der zweite Versuch startet sofort ohne Wartezeit!"
+            );
         } else {
             const rawMsg = err.message || '';
             const isNetworkError = rawMsg.includes('Failed to fetch') || 

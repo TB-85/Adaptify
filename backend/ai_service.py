@@ -936,12 +936,8 @@ WICHTIGE ANWEISUNGEN:
             contents.append(prompt)
             
             candidate_models = [
-                'gemini-3.5-flash',
                 'gemini-3.5-flash-lite',
-                'gemini-3.6-flash',
-                'gemini-3.7-flash',
-                'gemini-flash-latest',
-                'gemini-2.5-pro'
+                'gemini-3.5-flash'
             ]
             response = None
             last_err = None
@@ -1582,7 +1578,7 @@ Erstelle genau {task_count} passgenaue, chronologische Haltepunkte für dieses V
             else:
                 contents.append(prompt)
 
-            candidate_models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
+            candidate_models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash']
             last_err = None
             for model_name in candidate_models:
                 try:
@@ -1881,7 +1877,7 @@ Antworte ausschließlich in folgendem validen JSON:
   "revised_example": "Hier ist eine Inspiration für einen eleganten Satz..."
 }}
 """
-            candidate_models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
+            candidate_models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash']
             for model_name in candidate_models:
                 try:
                     response = client.models.generate_content(
