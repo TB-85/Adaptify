@@ -145,6 +145,13 @@ def parse_teacher_context_directives(context: str = "", focus_topic: str = "", d
             s = re.sub(pat, '', s, flags=re.IGNORECASE).strip()
         return s.strip('.:,; -')
 
+    # Total task count detection from context
+    m_tot = re.search(r'(?:insgesamt|gesamt|insg\.?|zusammen|alle)?\s*(\d+)\s*(?:fragen?|aufgaben?|übungen?|tasks?)', norm_text)
+    if m_tot:
+        val = int(m_tot.group(1))
+        if 1 <= val <= 35:
+            default_task_count = val
+
     # 2. Topic Distribution Parsing
     # Look first in context, but if context is only meta instructions, use focus_topic
     dist_str = ""
@@ -215,11 +222,12 @@ def parse_teacher_context_directives(context: str = "", focus_topic: str = "", d
             if m_a:
                 count = int(m_a.group(1))
                 clean_topic = clean_topic_str(m_a.group(2))
-                if clean_topic:
-                    has_explicit_counts = True
-                    distribution[clean_topic] = distribution.get(clean_topic, 0) + count
-                    for _ in range(count):
-                        expanded_topics.append(clean_topic)
+                if not clean_topic or len(clean_topic) < 2:
+                    clean_topic = foc if foc else "Aufgabe"
+                has_explicit_counts = True
+                distribution[clean_topic] = distribution.get(clean_topic, 0) + count
+                for _ in range(count):
+                    expanded_topics.append(clean_topic)
             elif m_b:
                 count = int(m_b.group(2))
                 clean_topic = clean_topic_str(m_b.group(1))
@@ -687,9 +695,21 @@ class AIService:
                 f"3. KEINE DOPPELTEN AUFGABEN: Jede einzelne der {task_count} Aufgaben muss eine eigenständige, neue Frage oder Übung sein!"
             )
         elif focus_topic:
-            focus_instruction = f"Übungsschwerpunkte: {focus_topic} (Erstelle gezielt Aufgaben für JEDEN dieser Schwerpunkte!)."
+            focus_instruction = (
+                f"STRIKTE VORGABE FÜR DIE AUFGABEN-ANZAHL (GESAMT EXAKT {task_count} AUFGABEN PRO NIVEAU):\n"
+                f"Übungsschwerpunkte: {focus_topic}.\n"
+                f"WICHTIG:\n"
+                f"1. Generiere ZWINGEND GENAU {task_count} verschiedene Aufgaben in 'level_a.tasks' und ZWINGEND GENAU {task_count} verschiedene Aufgaben in 'level_b.tasks'!\n"
+                f"2. Jede einzelne der {task_count} Aufgaben muss eine eigenständige, didaktisch abwechslungsreiche Übung zu diesen Schwerpunkten sein!"
+            )
         else:
-            focus_instruction = "Übungsschwerpunkte: Automatisch aus dem Dokument ermitteln."
+            focus_instruction = (
+                f"STRIKTE VORGABE FÜR DIE AUFGABEN-ANZAHL (GESAMT EXAKT {task_count} AUFGABEN PRO NIVEAU):\n"
+                f"Übungsschwerpunkte: Automatisch aus dem Dokument ermitteln.\n"
+                f"WICHTIG:\n"
+                f"1. Generiere ZWINGEND GENAU {task_count} verschiedene Aufgaben in 'level_a.tasks' und ZWINGEND GENAU {task_count} verschiedene Aufgaben in 'level_b.tasks'!\n"
+                f"2. Jede einzelne der {task_count} Aufgaben muss eine eigenständige, didaktisch abwechslungsreiche Übung sein!"
+            )
         focus_instruction += extra_block
         hefteintrag_raw = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else "Hauptthema des Dokuments")
         hefteintrag_instruction = (
@@ -923,7 +943,11 @@ WICHTIGE ANWEISUNGEN:
 9. Formuliere 2 Diagnosefragen, die das Verständnis prüfen.
 10. Formuliere 2 motivierende Zusatzaufgaben für Schnellarbeiter (Experten-Aufgaben).
 {format_instruction}
-11. Antworte AUSSCHLIESSLICH im gültigen JSON-Format ohne Markdown-Wrapper.
+11. AUFGABEN-ANZAHL (STRIKTE PFLICHT):
+    - Die Liste 'level_a.tasks' MUSS ZWINGEND GENAU {task_count} vollwertige Aufgaben-Objekte enthalten!
+    - Die Liste 'level_b.tasks' MUSS ZWINGEND GENAU {task_count} vollwertige Aufgaben-Objekte enthalten!
+    - Es ist STRENGSTENS UNTERSAGT, weniger oder mehr als {task_count} Aufgaben pro Niveau zu erzeugen.
+12. Antworte AUSSCHLIESSLICH im gültigen JSON-Format ohne Markdown-Wrapper.
 """
 
         uploaded_gemini_files = []
@@ -984,6 +1008,27 @@ WICHTIGE ANWEISUNGEN:
                 except Exception as inner_e:
                     logger.error(f"Failed to parse JSON even after escaping backslashes: {inner_e}")
                     raise jde
+            if isinstance(result_json, dict):
+                # Ensure level_a and level_b have exact task_count tasks
+                for lvl in ["level_a", "level_b"]:
+                    if lvl in result_json and isinstance(result_json[lvl], dict):
+                        curr_tasks = result_json[lvl].get("tasks", [])
+                        if len(curr_tasks) < task_count:
+                            logger.warning(f"Gemini returned {len(curr_tasks)} tasks for {lvl}, supplementing up to requested {task_count}...")
+                            supp = self._get_mock_data(
+                                context=context, target_format=target_format,
+                                task_count=task_count, subject=subject,
+                                school_type=school_type, focus_topic=focus_topic,
+                                hefteintrag_topic=hefteintrag_topic,
+                                differentiation_mode=differentiation_mode
+                            )
+                            supp_tasks = supp.get(lvl, {}).get("tasks", [])
+                            idx = 0
+                            while len(curr_tasks) < task_count and supp_tasks:
+                                curr_tasks.append(supp_tasks[idx % len(supp_tasks)])
+                                idx += 1
+                            result_json[lvl]["tasks"] = curr_tasks[:task_count]
+
             if isinstance(result_json, dict) and "title" in result_json:
                 try:
                     from h5p_generator import clean_student_title
