@@ -26,21 +26,43 @@ class RotatedFlowable(Flowable):
 
 from h5p_generator import H5PGenerator
 
+def clean_reportlab_html(text: str) -> str:
+    """
+    Sanitizes HTML for ReportLab Platypus Paragraphs:
+    - Normalizes newlines
+    - Converts all <br>, <br >, </br> variations into valid self-closing <br/>
+    - Escapes loose '&' characters that are not valid XML entities
+    - Replaces <strong> and <em> with ReportLab <b> and <i>
+    - Strips unsupported HTML tags while preserving line breaks
+    """
+    if not text:
+        return ""
+    s = str(text)
+    s = s.replace("\r\n", "\n").replace("\r", "\n")
+    s = re.sub(r'</?br\s*/?>', '\n', s, flags=re.IGNORECASE)
+    s = re.sub(r'&(?!(?:amp|nbsp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)', '&amp;', s)
+    s = re.sub(r'</?strong>', lambda m: '<b>' if '<strong>' in m.group().lower() else '</b>', s, flags=re.IGNORECASE)
+    s = re.sub(r'</?em>', lambda m: '<i>' if 'em' in m.group().lower() else '</i>', s, flags=re.IGNORECASE)
+    s = re.sub(r'</?(?:div|p|span|section|article|header|table|tr|td|tbody|thead|ul|ol|li|h[1-6]|small|blockquote|hr)\b[^>]*>', '\n', s, flags=re.IGNORECASE)
+    s = re.sub(r'\n{3,}', '\n\n', s)
+    s = s.replace('\n', '<br/>')
+    return s.strip()
+
 class PDFGenerator:
     @staticmethod
     def parse_blanks_for_student(text):
         def repl(match):
             return "______________________"
-        clean_text = text.replace("&nbsp;", " ").replace("&nbsp", " ").replace("<u>", "").replace("</u>", "")
-        return re.sub(r"\*([^*]+)\*", repl, clean_text).replace("\n", "<br/>")
+        clean_text = clean_reportlab_html(text).replace("<u>", "").replace("</u>", "")
+        return re.sub(r"\*([^*]+)\*", repl, clean_text)
 
     @staticmethod
     def parse_blanks_for_teacher(text):
         def repl(match):
             word = match.group(1)
             return f'<b><font color="#1b5e20">{word}</font></b>'
-        clean_text = text.replace("&nbsp;", " ").replace("&nbsp", " ").replace("<u>", "").replace("</u>", "")
-        return re.sub(r"\*([^*]+)\*", repl, clean_text).replace("\n", "<br/>")
+        clean_text = clean_reportlab_html(text).replace("<u>", "").replace("</u>", "")
+        return re.sub(r"\*([^*]+)\*", repl, clean_text)
 
     @staticmethod
     def generate_level_content_elements(raw_text, target_format, is_teacher, styles, body_style):
@@ -111,9 +133,9 @@ class PDFGenerator:
         title = clean_title
 
         target_format = data.get("target_format", "Lückentext")
-        questions = data.get("diagnostic", {}).get("questions", [])
-        level_a = data.get("level_a", {})
-        level_b = data.get("level_b", {})
+        questions = (data.get("diagnostic") or {}).get("questions", [])
+        level_a = data.get("level_a") or {}
+        level_b = data.get("level_b") or {}
 
         # Get customization parameters
         class_name = data.get("pdf_class_name", "")
@@ -384,10 +406,11 @@ class PDFGenerator:
         if hefteintrag and (hefteintrag.get("level_a_notes") or hefteintrag.get("level_b_notes") or hefteintrag.get("summary")):
             story.append(Paragraph("✍️ <b>Aufgabe für dein Heft:</b> Übertrage diesen Merkkasten sauber in dein Schulheft!", hint_style))
             story.append(Paragraph("📌 Merkkasten / Hefteintrag", section_style))
-            notes_text = hefteintrag.get("level_a_notes") or hefteintrag.get("summary") or ""
-            notes_text = notes_text.replace("\n", "<br/>")
+            raw_notes = hefteintrag.get("level_a_notes") or hefteintrag.get("summary") or ""
+            notes_text = clean_reportlab_html(raw_notes)
+            heft_t = clean_reportlab_html(hefteintrag.get('title', 'Hefteintrag'))
             
-            box_data = [[Paragraph(f"<b>{hefteintrag.get('title', 'Hefteintrag')}</b><br/><br/>{notes_text}", body_style)]]
+            box_data = [[Paragraph(f"<b>{heft_t}</b><br/><br/>{notes_text}", body_style)]]
             box_table = Table(box_data, colWidths=[inch*6.5])
             box_table.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f5f7ff")),
@@ -565,8 +588,9 @@ class PDFGenerator:
 
         if hefteintrag and hefteintrag.get("level_b_notes"):
             story.append(Paragraph("📌 Merkkasten / Hefteintrag (Level B - Mitschrift)", section_style))
-            b_notes = hefteintrag.get("level_b_notes", "").replace("\n", "<br/>")
-            b_box = Table([[Paragraph(f"<b>{hefteintrag.get('title', 'Vollständiger Hefteintrag')}</b><br/><br/>{b_notes}", body_style)]], colWidths=[inch*6.5])
+            b_notes = clean_reportlab_html(hefteintrag.get("level_b_notes", ""))
+            heft_t = clean_reportlab_html(hefteintrag.get('title', 'Vollständiger Hefteintrag'))
+            b_box = Table([[Paragraph(f"<b>{heft_t}</b><br/><br/>{b_notes}", body_style)]], colWidths=[inch*6.5])
             b_box.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f0fdf4")),
                 ('BOX', (0,0), (-1,-1), 1.5, accent_color),
@@ -746,7 +770,7 @@ class PDFGenerator:
                     lines.append(f"<b>{idx}.</b> {inter.get('title', 'Punkt')}: {exp if exp else q}")
                 hefteintrag_text = "<br/><br/>".join(lines)
 
-        clean_heft_html = hefteintrag_text.replace("\r\n", "<br/>").replace("\n", "<br/>")
+        clean_heft_html = clean_reportlab_html(hefteintrag_text)
 
         hefteintrag_box_data = [[
             Paragraph(f"<font size=11 color='#0284c7'><b>📌 Tafelbild (Ergebnissicherung zum Übertragen ins Heft)</b></font><br/><br/>{clean_heft_html}", box_style)

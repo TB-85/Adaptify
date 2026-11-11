@@ -91,13 +91,13 @@ class Zusatzaufgabe(BaseModel):
     task: str
 
 class ExportData(BaseModel):
-    title: str
+    title: str = "Adaptify Übung"
     target_format: str = "Lückentext"
-    diagnostic: DiagnosticQuiz
+    diagnostic: Optional[DiagnosticQuiz] = None
     hefteintrag: Optional[Hefteintrag] = None
     zusatzaufgaben: Optional[List[Zusatzaufgabe]] = []
-    level_a: LevelContent
-    level_b: LevelContent
+    level_a: Optional[LevelContent] = None
+    level_b: Optional[LevelContent] = None
     level_c: Optional[dict] = None
     lehrplan_code: Optional[str] = ""
     lehrplan_competency: Optional[str] = ""
@@ -113,6 +113,9 @@ class ExportData(BaseModel):
     include_level_c: Optional[bool] = False
     video_mode: Optional[str] = None
     interactions: Optional[List[dict]] = None
+    full_hefteintrag: Optional[str] = None
+    youtube_url: Optional[str] = None
+    video_filename: Optional[str] = None
 
 class EssayEvaluationRequest(BaseModel):
     task_title: str
