@@ -1,4 +1,4 @@
-const CACHE_NAME = 'adaptify-cache-v55';
+const CACHE_NAME = 'adaptify-cache-v56';
 
 // Immediately take over active clients without waiting
 self.addEventListener('install', (event) => {
