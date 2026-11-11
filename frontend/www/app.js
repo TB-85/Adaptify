@@ -704,34 +704,34 @@ window.setWorksheetMode = function(mode) {
     
     if (mode === 'direct') {
         if (btnDirect) {
-            btnDirect.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all bg-white text-emerald-800 shadow-sm cursor-pointer flex items-center justify-center gap-1";
+            btnDirect.className = "py-1.5 rounded-lg transition-all bg-white text-slate-900 shadow-xs cursor-pointer flex items-center justify-center gap-1.5 font-bold";
         }
         if (btnDiff) {
-            btnDiff.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1";
+            btnDiff.className = "py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1.5 font-semibold";
         }
         if (badge) {
-            badge.textContent = "1:1 Digitalisiert";
-            badge.className = "text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800";
+            badge.textContent = "1:1 Einheitlich";
+            badge.className = "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200";
         }
         if (desc) {
-            desc.textContent = "Jede Originalaufgabe auf dem Arbeitsblatt wird exakt 1:1 als interaktive H5P-Aufgabe umgesetzt – ohne künstliche Verzweigungen.";
+            desc.textContent = "Jede Originalaufgabe wird als einheitliche H5P- & PDF-Aufgabe umgesetzt – ohne künstliche Verzweigungen.";
         }
         if (btnGenerate) {
             btnGenerate.innerHTML = `<i class="fa-solid fa-file-circle-check"></i> <span>Arbeitsblatt 1:1 digitalisieren &rarr;</span>`;
         }
     } else {
         if (btnDiff) {
-            btnDiff.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all bg-white text-slate-900 shadow-sm cursor-pointer flex items-center justify-center gap-1";
+            btnDiff.className = "py-1.5 rounded-lg transition-all bg-white text-slate-900 shadow-xs cursor-pointer flex items-center justify-center gap-1.5 font-bold";
         }
         if (btnDirect) {
-            btnDirect.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1";
+            btnDirect.className = "py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1.5 font-semibold";
         }
         if (badge) {
             badge.textContent = "Binnendifferenziert";
-            badge.className = "text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-brand-100 text-brand-800";
+            badge.className = "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200";
         }
         if (desc) {
-            desc.textContent = "Binnendifferenzierung: Fördern (Level A), Fordern (Level B), Inklusion (Level C) mit vorgeschaltetem Diagnose-Quiz.";
+            desc.textContent = "Binnendifferenzierung: Fördern (Level A), Fordern (Level B) und Inklusion (Level C) mit Einstufungs-Quiz.";
         }
         if (btnGenerate) {
             btnGenerate.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> <span>Differenzierte Lernpfade erstellen &rarr;</span>`;
@@ -748,10 +748,10 @@ function switchBranchingSourceMode(mode) {
 
     if (mode === 'prompt') {
         if (tabPrompt) {
-            tabPrompt.className = "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 bg-white text-brand-700 shadow-sm cursor-pointer";
+            tabPrompt.className = "flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 bg-white text-slate-900 shadow-xs border border-slate-200 cursor-pointer";
         }
         if (tabFile) {
-            tabFile.className = "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer";
+            tabFile.className = "flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer";
         }
         if (panelFile) panelFile.classList.add('hidden');
         if (panelPrompt) {
@@ -761,10 +761,10 @@ function switchBranchingSourceMode(mode) {
         }
     } else {
         if (tabFile) {
-            tabFile.className = "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 bg-white text-brand-700 shadow-sm cursor-pointer";
+            tabFile.className = "flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 bg-white text-slate-900 shadow-xs border border-slate-200 cursor-pointer";
         }
         if (tabPrompt) {
-            tabPrompt.className = "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer";
+            tabPrompt.className = "flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer";
         }
         if (panelFile) panelFile.classList.remove('hidden');
         if (panelPrompt) panelPrompt.classList.add('hidden');
@@ -866,11 +866,11 @@ function renderSubjectChips() {
     subjectChipsContainer.innerHTML = availableSubjects.map(sub => {
         const isSelected = selectedSubjects.includes(sub);
         const activeClass = isSelected
-            ? "bg-brand-600 text-white font-bold border-brand-600 shadow-sm ring-2 ring-brand-200"
-            : "bg-white text-slate-700 font-semibold border-slate-200 hover:border-slate-300 hover:bg-slate-50";
-        const checkIcon = isSelected ? '<i class="fa-solid fa-check ml-1.5 text-[10px]"></i>' : '';
+            ? "bg-slate-900 text-white font-semibold border-slate-900 shadow-xs"
+            : "bg-white text-slate-700 font-medium border-slate-200 hover:border-slate-300 hover:bg-slate-50";
+        const checkIcon = isSelected ? '<i class="fa-solid fa-check ml-1.5 text-[9px]"></i>' : '';
         return `
-            <button type="button" onclick="toggleSubjectChip('${sub}')" class="px-3 py-1.5 rounded-xl border text-xs transition-all flex items-center gap-1 select-none ${activeClass}">
+            <button type="button" onclick="toggleSubjectChip('${sub}')" class="px-2.5 py-1.5 rounded-lg border text-xs transition-all flex items-center gap-1 select-none cursor-pointer ${activeClass}">
                 <span>${sub}</span>
                 ${checkIcon}
             </button>
@@ -1127,6 +1127,23 @@ window.adjustTotalTasks = function(delta) {
 
     if (Array.isArray(dynamicTopics) && dynamicTopics.length > 0) {
         dynamicTopics[0].count = newTotal;
+    }
+    const container = document.getElementById('topic-rows-list');
+    if (container) {
+        renderDynamicTopicRows();
+    } else {
+        updateTopicSummary();
+    }
+};
+
+window.setSpecificTaskCount = function(count) {
+    const totalDisplay = document.getElementById('display-total-tasks');
+    const hiddenTaskCountInput = document.getElementById('input-task-count');
+    const num = Math.min(30, Math.max(1, parseInt(count) || 5));
+    if (totalDisplay) totalDisplay.textContent = num;
+    if (hiddenTaskCountInput) hiddenTaskCountInput.value = num;
+    if (Array.isArray(dynamicTopics) && dynamicTopics.length > 0) {
+        dynamicTopics[0].count = num;
     }
     const container = document.getElementById('topic-rows-list');
     if (container) {
@@ -2720,31 +2737,31 @@ function setH5PStructureMode(mode) {
 
     if (mode === 'two_files') {
         if (btnTwo) {
-            btnTwo.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all bg-white text-slate-900 shadow-sm cursor-pointer flex items-center justify-center gap-1";
+            btnTwo.className = "py-1.5 rounded-md transition-all bg-white text-slate-900 shadow-xs cursor-pointer flex items-center justify-center gap-1 font-bold";
         }
         if (btnBranching) {
-            btnBranching.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1";
+            btnBranching.className = "py-1.5 rounded-md transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1 font-semibold";
         }
         if (badge) {
             badge.textContent = "2 Getrennte Dateien";
-            badge.className = "text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800";
+            badge.className = "text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200";
         }
         if (desc) {
-            desc.innerHTML = "<b>Empfohlen für ByCS / mebis:</b> Erzeugt zwei saubere Course Presentation H5P-Dateien (ohne Einstufungsquiz) – einmal Basic und einmal Profi.";
+            desc.innerHTML = "<b>Empfohlen für ByCS &amp; mebis:</b> Erzeugt zwei saubere Course Presentation Pakete (ohne Einstufungsquiz).";
         }
     } else {
         if (btnTwo) {
-            btnTwo.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1";
+            btnTwo.className = "py-1.5 rounded-md transition-all text-slate-600 hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1 font-semibold";
         }
         if (btnBranching) {
-            btnBranching.className = "px-2.5 py-1.5 rounded-lg text-xxs sm:text-xs font-black transition-all bg-white text-slate-900 shadow-sm cursor-pointer flex items-center justify-center gap-1";
+            btnBranching.className = "py-1.5 rounded-md transition-all bg-white text-slate-900 shadow-xs cursor-pointer flex items-center justify-center gap-1 font-bold";
         }
         if (badge) {
             badge.textContent = "1 Branching-Paket";
-            badge.className = "text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800";
+            badge.className = "text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200";
         }
         if (desc) {
-            desc.innerHTML = "<b>Klassisches Branching Scenario:</b> Schüler bearbeiten zuerst Einstiegs-Diagnosefragen und werden automatisch auf Pfad A oder B geleitet.";
+            desc.innerHTML = "<b>Branching-Szenario:</b> Verzweigt nach dem Einstufungsquiz automatisch in Level A oder Level B.";
         }
     }
 }
