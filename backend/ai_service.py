@@ -728,6 +728,12 @@ class AIService:
             for f in (files or [])
         )
 
+        req_text = f"{focus_topic} {context}".lower()
+        explicit_reading = any(w in req_text for w in [
+            "textverst", "leseverst", "reading comprehension", "lesetext", "sachtext", 
+            "leseverstehen", "fragen zum text", "textinhalt", "handlung", "leseverständnis"
+        ])
+
         if differentiation_mode == "direct":
             role_description = (
                 f"Du bist eine didaktisch herausragende Lehrkraft an einer {school_type}.\n"
@@ -744,36 +750,64 @@ class AIService:
                 "   - Gib für jede Aufgabe eine verständliche Erklärung ('explanation') und einen ermutigenden Tipp ('hint') an.\n"
                 "   - Das Feld 'diagnostic.questions' MUSS zwingend eine leere Liste [] sein."
             )
-        else:
+            text_basis_instruction = "4. STRIKTE ANLEHNUNG AN DEN ORIGINALTEXT:\n   - Alle Aufgaben basieren auf dem extrahierten Originaltext."
+        elif has_media:
             role_description = (
                 f"Du bist eine didaktisch herausragende Lehrkraft an einer {school_type} und ein Experte für differenzierten Unterricht nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau für digitalen Content.\n"
                 f"Deine Aufgabe ist es, das hochgeladene Dokument (Buchseite, Arbeitsblatt, PDF) zu lesen (OCR) und darauf basierend ein qualitätsgeprüftes, differenziertes Lernpaket im JSON-Format für die Schulart '{school_type}' zu generieren."
-            ) if has_media else (
-                f"Du bist eine didaktisch herausragende Lehrkraft an einer {school_type} und ein Experte für kompetenzorientierten Unterricht nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau für digitalen Content.\n"
-                f"Die Lehrkraft plant eine komplette, lebensnahe Unterrichtseinheit (z. B. 2x 45 min) und hat kein Buchseiten-Foto hochgeladen, sondern ein Thema/eine Anforderung vorgegeben: '{focus_topic or context}'.\n"
-                f"Deine didaktische Kernaufgabe ist es, im Feld 'extracted_text' ZWINGEND einen packenden, zusammenhängenden, altersgerechten Basistext (ca. 180 bis 300 Wörter) aus dem Schüleralltag ({school_type}) passend zu Fach '{subject}' und Thema '{focus_topic or context}' zu verfassen. "
-                f"Alle nachfolgenden differenzierten Aufgaben (Diagnose, Level A, Level B, Level C, Zusatzaufgaben und Tafelbild) MÜSSEN sich zwingend auf diesen situativen Basistext beziehen!"
             )
-
-            source_instruction = (
-                "1. BILDVORLAGE & OCR: Extrahiere den Kerninhalt des Textes aus dem Bild/PDF getreu im Feld 'extracted_text'."
-            ) if has_media else (
-                "1. ISB-QUALITÄTSTABLEAU & SITUIERTER BASISTEXT (OHNE BILDVORLAGE):\n"
-                "   - Da kein Buchseiten-Scan hochgeladen wurde, formulierst du im Feld 'extracted_text' ZWINGEND einen packenden, zusammenhängenden und altersgerechten Basistext (180 bis 300 Wörter) aus dem Schüleralltag (z. B. Schulalltag, Pause, Sportfest, Klassenfahrt, Jugendthemen).\n"
-                "   - Dieser Text dient als thematische und sprachliche Grundlage für die gesamte Einheit (situierter Kontext, ISB-Kriterium Lebensweltbezug).\n"
-                "   - Alle nachfolgenden Aufgaben (Diagnose, Level A, Level B, Level C, Zusatzaufgaben) MÜSSEN sich direkt auf die Wörter, Sätze, Daten oder Figuren dieses Textes beziehen!"
+            source_instruction = "1. BILDVORLAGE & OCR: Extrahiere den Kerninhalt des Textes aus dem Bild/PDF getreu im Feld 'extracted_text'."
+            text_basis_instruction = (
+                "4. STRIKTE ANLEHNUNG AN DEN ORIGINALTEXT:\n"
+                "   - Alle Aufgaben, Fragen, Merkkästen und Erklärungen MÜSSEN auf dem extrahierten Originaltext und den darin enthaltenen Zahlen, Definitionen und Beispielen basieren.\n"
+                "   - Nimm mathematische Bezeichnungen, Variablen (z. B. 'U' oder 'Uk', Pi-Symbol 'π' oder Wert '3,14') exakt so an, wie sie in der Vorlage stehen. Verändere keine fachlichen Bezeichnungen aus dem Ausgangstext!\n"
+                "   - Erfinde keine zusätzlichen, nicht behandelten Themen."
             )
-
-        text_basis_instruction = (
-            "4. STRIKTE ANLEHNUNG AN DEN ORIGINALTEXT:\n"
-            "   - Alle Aufgaben, Fragen, Merkkästen und Erklärungen MÜSSEN auf dem extrahierten Originaltext und den darin enthaltenen Zahlen, Definitionen und Beispielen basieren.\n"
-            "   - Nimm mathematische Bezeichnungen, Variablen (z. B. 'U' oder 'Uk', Pi-Symbol 'π' oder Wert '3,14') exakt so an, wie sie in der Vorlage stehen. Verändere keine fachlichen Bezeichnungen aus dem Ausgangstext!\n"
-            "   - Erfinde keine zusätzlichen, nicht behandelten Themen."
-        ) if has_media else (
-            "4. STRIKTE ANLEHNUNG AN DEN ERSTELLTEN BASISTEXT (ISB-LEBENSWELTBEZUG):\n"
-            "   - Alle Aufgaben, Fragen, Merkkästen und Erklärungen MÜSSEN sich zwingend auf den im Feld 'extracted_text' generierten Basistext beziehen!\n"
-            "   - Bei Grammatik/Wortarten: Verwende konkrete Sätze und Wörter aus dem Basistext für die Aufgaben!"
-        )
+        else:
+            # NO MEDIA (Prompt / Topic-only Mode)
+            if not explicit_reading:
+                role_description = (
+                    f"Du bist eine didaktisch herausragende Fachlehrkraft an einer {school_type} nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau.\n"
+                    f"Die Lehrkraft plant eine gezielte Übungs- und Trainingseinheit und hat KEIN Dokument hochgeladen, sondern ein konkretes Thema / Grammatikthema vorgegeben: '{focus_topic or context}'.\n\n"
+                    f"🚨 WICHTIGSTE DIDAKTISCHE VORGABE – STRIKTES TEXTVERSTÄNDNIS-VERBOT:\n"
+                    f"- Die Lehrkraft hat KEIN Textverständnis und KEIN Leseverstehen angefordert!\n"
+                    f"- Es ist STRENGSTENS UNTERSAGT, Textverständnisfragen, Fragen zum Sinn oder zur Handlung eines fiktiven Textes zu stellen!\n"
+                    f"- ALLE {task_count} Aufgaben in 'level_a.tasks' und ALLE {task_count} Aufgaben in 'level_b.tasks' MÜSSEN ZU 100% DIREKTE FACHÜBUNGEN ZU DEN GEFORDERTEN SCHWERPUNKTEN SEIN ({focus_topic or context})!\n"
+                    f"- Beispiele:\n"
+                    f"  * Wenn 'Wortarten' gefordert ist: Jede einzelne der {task_count} Aufgaben trainiert Wortarten (Nomen erkennen, Verben beugen, Adjektive steigern, Wortarten bestimmen, Tabelle nach Wortarten sortieren, Wörter markieren)!\n"
+                    f"  * Wenn 'If clauses' (Type 1, Type 2 etc.) gefordert ist: Jede einzelne der {task_count} Aufgaben trainiert Bedingungssätze (Verbformen in if-Satz und Hauptsatz einsetzen, Zeitenfolge prüfen, Halbsätze verbinden)!\n"
+                    f"  * Wenn 'Simple Past' gefordert ist: Jede Aufgabe trainiert Simple Past (unregelmäßige Verben, Signalwörter, Verneinung, Fragen)!\n"
+                    f"  * Wenn 'Vokabeln und If-clauses' gefordert ist: Die Aufgaben verteilen sich gleichmäßig auf Vokabeln und If-clauses!"
+                )
+                source_instruction = (
+                    "1. BEISPIELSÄTZE / KURZE THEMENEINFÜHRUNG IM FELD 'extracted_text':\n"
+                    f"   - Formuliere im Feld 'extracted_text' eine kurze thematische Übersicht und didaktische Beispielsätze passend zu '{focus_topic or context}' (ca. 60-120 Wörter).\n"
+                    "   - Dieser Text dient als anschauliches Sprach- und Beispielmaterial.\n"
+                    "   - WICHTIG: Stelle KEINE Textverständnisfragen zu diesem Text! Die Aufgaben trainieren das geforderte Regelwerk / den Wortschatz!"
+                )
+                text_basis_instruction = (
+                    f"4. STRIKTER FOKUS AUF DAS GEFORDERTE THEMA ({focus_topic or context}):\n"
+                    f"   - Alle Aufgaben, Diagnosefragen, Merkkästen und Erklärungen MÜSSEN sich zu 100% auf das geforderte Thema '{focus_topic or context}' konzentrieren!\n"
+                    f"   - Keine Textverständnisfragen oder Fragen zu Personen/Handlungen.\n"
+                    f"   - Jede Aufgabe muss eine konkrete, didaktisch abwechslungsreiche Übung zum Thema sein."
+                )
+            else:
+                role_description = (
+                    f"Du bist eine didaktisch herausragende Lehrkraft an einer {school_type} und ein Experte für kompetenzorientierten Unterricht nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau für digitalen Content.\n"
+                    f"Die Lehrkraft plant eine Unterrichtseinheit mit Schwerpunkt Leseverstehen/Textverständnis und hat ein Thema vorgegeben: '{focus_topic or context}'.\n"
+                    f"Deine didaktische Kernaufgabe ist es, im Feld 'extracted_text' einen packenden, zusammenhängenden Basistext (ca. 180 bis 300 Wörter) aus dem Schüleralltag ({school_type}) passend zu Fach '{subject}' und Thema '{focus_topic or context}' zu verfassen. "
+                    f"Die nachfolgenden Aufgaben überprüfen das Textverständnis und vertiefen den Inhalt."
+                )
+                source_instruction = (
+                    "1. ISB-QUALITÄTSTABLEAU & SITUIERTER BASISTEXT (OHNE BILDVORLAGE):\n"
+                    "   - Da kein Buchseiten-Scan hochgeladen wurde, formulierst du im Feld 'extracted_text' ZWINGEND einen packenden, zusammenhängenden und altersgerechten Basistext (180 bis 300 Wörter) aus dem Schüleralltag.\n"
+                    "   - Dieser Text dient als thematische und sprachliche Grundlage für die gesamte Einheit (situierter Kontext, ISB-Kriterium Lebensweltbezug).\n"
+                    "   - Alle nachfolgenden Aufgaben beziehen sich direkt auf die Wörter, Sätze, Daten oder Figuren dieses Textes!"
+                )
+                text_basis_instruction = (
+                    "4. STRIKTE ANLEHNUNG AN DEN ERSTELLTEN BASISTEXT (ISB-LEBENSWELTBEZUG):\n"
+                    "   - Alle Aufgaben, Fragen, Merkkästen und Erklärungen MÜSSEN sich zwingend auf den im Feld 'extracted_text' generierten Basistext beziehen!"
+                )
 
         isb_rubric_instruction = """
 - ISB-QUALITÄTSSTANDARDS (Automatisch im Hintergrund aktiv):
@@ -783,80 +817,117 @@ class AIService:
   • LehrplanPLUS Bayern: Exakte Ausrichtung auf die bayerischen Bildungsstandards mit offiziellem Lehrplancode.
 """
 
-        prompt = f"""
-{role_description}
+        # Diagnostic questions guidance
+        if explicit_reading or has_media:
+            diag_q1_desc = "Einstiegsfrage 1 zur Diagnose (WICHTIG: Glasklare Textverständnisfrage zum Thema/Inhalt des Textes wie 'Wo befindet sich...?'. Niemals Grammatik- oder Metafragen!)"
+            diag_q2_desc = "Einstiegsfrage 2 zur Diagnose (Konkrete themenbezogene Inhaltsfrage zum Text)"
+            reading_guideline = (
+                "STRIKTE VORGABE FÜR DEN SCHWERPUNKT 'TEXTVERSTÄNDNIS' / 'LESEVERSTEHEN':\n"
+                "- Nimm den extrahierten Text ganz genau als Grundlage!\n"
+                "- Generiere ECHTE INHALTLICHE VERSTÄNDNISFRAGEN zum Sinn, zu Details, Fakten, Zahlen, Ursachen und Folgen des Textes.\n"
+                "- Erstelle NIEMALS Grammatik-Aufgaben, wenn Textverständnis / Reading verlangt wird!"
+            )
+            extracted_text_desc = (
+                "Der erkannte Text des Originaldokumentes sowie detaillierte Bildbeschreibungen von eventuell vorhandenen Illustrationen/Grafiken/Bildern zur Vorschau für die Lehrkraft" 
+                if has_media else 
+                "Der vollständige, packende und lebensnahe Basistext (180-300 Wörter) aus dem Schüleralltag, der als Arbeits- und Lesegrundlage für alle Aufgaben dient"
+            )
+            structure_instruction = (
+                "6. DIDAKTISCHE STRUKTUR & REIHENFOLGE DER AUFGABEN:\n"
+                "   - Ordne die Aufgaben ZWINGEND in logische Themenblöcke!\n"
+                "   - BLOCK 1 (Zuerst): Textverständnis & Inhalt (Fragen zur Handlung, Aussagen zum Text).\n"
+                "   - BLOCK 2 (Danach): Vertiefung & sprachliche Aspekte (unter Verwendung des Textes).\n"
+                "   - Verhindere ein wildes Durcheinanderwürfeln der Themen, um die kognitive Belastung gering zu halten."
+            )
+        else:
+            diag_q1_desc = f"Einstiegsfrage 1 zur Diagnose (Prüft das grundlegende Regelverständnis oder die Basiserkennung zu '{focus_topic or context}', z. B. Erkennungsmerkmal, Bildung oder Signalwort. STRENGSTENS VERBOTEN: Fragen zu einem fiktiven Text oder einer Handlung!)"
+            diag_q2_desc = f"Einstiegsfrage 2 zur Diagnose (Zweite konkrete Fach-/Regelfrage zu '{focus_topic or context}', z. B. Unterscheidung zweier Formen, Zeiten oder Fälle. Keine Textverständnisfrage!)"
+            reading_guideline = (
+                f"STRIKTES TEXTVERSTÄNDNIS-VERBOT (GEZIELTE TRAININGSEINHEIT ZU '{focus_topic or context}'):\n"
+                f"- Die Lehrkraft trainiert das gezielte Fach-/Grammatikthema '{focus_topic or context}'!\n"
+                f"- Es dürfen KEINERLEI Textverständnisfragen gestellt werden!\n"
+                f"- Alle Aufgaben, Lückentexte, Multiple-Choice-Fragen, Drag-the-Words-Übungen und Zuordnungen müssen zu 100% reine Fach- und Anwendungsübungen zu '{focus_topic or context}' sein!"
+            )
+            extracted_text_desc = f"Didaktische Einführung und anschauliche Beispielsätze (ca. 60-120 Wörter) passend zu '{focus_topic or context}', die den Schülern als Vorlage dienen. KEIN fiktiver Geschichtentext mit Handlung!"
+            structure_instruction = (
+                f"6. DIDAKTISCHE STRUKTUR & REIHENFOLGE DER AUFGABEN ({focus_topic or context}):\n"
+                f"   - Strikter didaktischer Aufbau ohne Textverständnisfragen!\n"
+                f"   - Falls mehrere Schwerpunkte gefordert sind (z. B. 'Vokabeln und If-clauses'): Teile die Aufgaben sauber in Blöcke auf (z. B. zuerst Block 1 Vokabeln, danach Block 2 If-clauses).\n"
+                f"   - Falls ein Thema gefordert ist (z. B. 'Wortarten' oder 'Simple Past'): Gestalte eine didaktische Progression (Level A: Wiedererkennen, Zuordnen, Markieren -> Level B: Korrigieren, Einsetzen, Transformieren, Formulieren)."
+            )
+
+        prompt = f"""{role_description}
 
 Schulart: {school_type}
-{subject_instruction}
-{focus_instruction}
-{hefteintrag_instruction}
-Zusätzlicher Kontext (Klasse/Thema/Zeitvorgabe): {context}
-Gewünschtes Standard-Aufgabenformat: {target_format}
-Anzahl der zu generierenden Aufgaben pro Niveau: {task_count}
+Fach: {subject}
+Differenzierungs-Modus: {differentiation_mode}
 
-VORGABEN FÜR SPEZIELLE AUFGABENFORMATE:
-- 'Wörter markieren' (H5P.MarkTheWords):
-  -> Im Text klickt der Schüler gesuchte Wörter an (z. B. Wortarten, Fehler, Signalwörter).
-  -> Alle korrekten Zielwörter MÜSSEN mit *Sternchen* umschlossen sein!
+DIDAKTISCHER FOKUS:
+{reading_guideline}
+
+ZUGELASSENE INTERAKTIVE AUFGABENFORMATE (H5P-Kompatibel nach ISB-Standard):
+{allowed_formats_str}
+
+FORMAT-RICHTLINIEN:
+- 'Lückentext' (Fill-in-the-Blanks):
+  -> Text mit Lückenwörtern, die mit *Sternchen* markiert sind.
+  -> Beispiel: 'Ein Rechteck hat vier *Ecken* und vier *Seiten*.'
+- 'Multiple Choice' (Einfachauswahl):
+  -> Frage mit genau einer richtigen Option [X] und plausiblen Distraktoren [ ].
+  -> Format:
+     Frage: [Fragetext]
+     [ ] [Falsche Option]
+     [X] [Richtige Option]
+     [ ] [Falsche Option]
+- 'Wahr/Falsch' (True/False):
+  -> Zwingend im Format:
+     Aussage: [Behauptung]
+     Antwort: [Wahr oder Falsch]
+- 'Drag the Words' (Wortspeicher / Zuordnung per Drag & Drop):
+  -> Text mit Lücken in *Sternchen*.
+  -> Beispiel: 'Der *Nenner* steht unten, der *Zähler* oben.'
+- 'Wörter markieren' (Mark the Words):
+  -> Text, in dem gesuchte Wörter mit *Sternchen* markiert sind.
   -> Beispiel: 'Klicke alle Präpositionen an:\nDie Kinder lernen *mit* Freunden und gehen *in* die Schule.'
 - 'Tabellen-Zuordnung' (Drag & Drop in Tabellenspalten / Kategorien):
   -> Begriffe werden Spalten/Kategorien einer Tabelle zugeordnet.
   -> Erstelle eine Markdown-Tabelle mit Spaltenüberschriften, wobei die zu ziehenden Begriffe mit *Sternchen* in den Zellen stehen.
-  -> Beispiel:
-     Ordne die Wortarten den passenden Spalten zu:
-     | Flektierbare Wortarten | Unveränderliche Wortarten |
-     | *Nomen* | *Präposition* |
-     | *Verb* | *Konjunktion* |
-     | *Adjektiv* | *Adverb* |
-     Distraktoren: Banane, Baumhaus
-
 - 'Freies Schreiben' / 'Essay' (KI-Schreibcoach mit semantischer Textkorrektur):
   -> Für freie Textproduktion, kreatives Schreiben, Argumentationen, Zusammenfassungen oder Beschreibungen.
-  -> In 'text' formulierst du die Schreibaufgabe mit klaren, überprüfbaren Kriterien (z. B. Umfang in Sätzen/Wörtern, zu verwendende sprachliche Elemente wie Wortarten, Satzanfänge, Argumente).
-  -> In 'hint' gibst du hilfreiche Formulierungshilfen oder Wortschatz-Impulse.
-  -> In 'explanation' gibst du ein inspirierendes Musterbeispiel.
-
-STRIKTE VORGABE FÜR DEN SCHWERPUNKT 'TEXTVERSTÄNDNIS' / 'LESEVERSTEHEN' / 'READING':
-- Wenn ein Schwerpunkt 'Textverständnis', 'Leseverstehen', 'Reading' oder 'Sachtext' lautet:
-  -> Nimm den extrahierten Text (bzw. Basistext) ganz genau als Grundlage!
-  -> Generiere ECHTE INHALTLICHE VERSTÄNDNISFRAGEN zum Sinn, zu Details, Fakten, Zahlen, Ursachen und Folgen des Textes (z. B. 'Warum...?', 'Welche zwei Ursachen...?', 'Wo...?', 'Welche Folge hat...?').
-  -> Erstelle NIEMALS Grammatik-Aufgaben (wie Simple Past, Wortarten, Verben), wenn Textverständnis / Reading verlangt wird!
-  -> Multiple Choice Fragen MÜSSEN ZWINGEND so aufgebaut sein:
-     Frage: [Konkrete inhaltliche Textfrage mit Fragezeichen]
-     [X] [Die richtige inhaltliche Aussage zum Text]
-     [ ] [Plausibler Distraktor / falsche Aussage zum Text]
-     [ ] [Zweiter plausibler Distraktor]
+  -> In 'text' formulierst du die Schreibaufgabe mit klaren Kriterien.
+  -> In 'hint' gibst du Formulierungshilfen.
+  -> In 'explanation' gibst du ein Musterbeispiel.
 
 Generiere genau folgendes JSON-Schema:
 {{
   "title": "Prägnanter Titel der Übung/des Themas für Schüler ZWINGEND OHNE Schulart und OHNE Fach (z. B. '{focus_topic if focus_topic else 'Wortarten und ihre Verwendung'}') - nur das reine Thema!",
   "lehrplan_code": "Offizieller LehrplanPlus Bayern Code (z.B. 'M6 EG 2', 'D5 L1' oder 'E6 G1')",
   "lehrplan_competency": "Kurzbezeichnung der Kompetenz im Lehrplan (z. B. 'Anteile und Brüche im Alltag darstellen')",
-  "extracted_text": "{'Der erkannte Text des Originaldokumentes sowie detaillierte Bildbeschreibungen von eventuell vorhandenen Illustrationen/Grafiken/Bildern zur Vorschau für die Lehrkraft' if has_media else 'Der vollständige, packende und lebensnahe Basistext (180-300 Wörter) aus dem Schüleralltag, der als Arbeits- und Lesegrundlage für alle Aufgaben dient'}",
+  "extracted_text": "{extracted_text_desc}",
   "diagnostic": {{
     "questions": [
       {{
-        "question": "Einstiegsfrage 1 zur Diagnose (WICHTIG: Bei Sachtexten/Inhalten ZWINGEND eine glasklare Textverständnisfrage zum Thema/Inhalt wie 'Wo befindet sich das Great Barrier Reef?'. Niemals Grammatik oder Meta-Fragen bei einem Sachtext!)",
-        "options": ["Konkrete, inhaltlich richtige Antwort", "Plausible Falschantwort"],
+        "question": "{diag_q1_desc}",
+        "options": ["Konkrete fachlich richtige Antwort", "Plausible Falschantwort"],
         "correct": 0
       }},
       {{
-        "question": "Einstiegsfrage 2 zur Diagnose (konkrete, themenbezogene Inhaltsfrage zum Text)",
-        "options": ["Plausible Falschantwort", "Konkrete richtige Textantwort"],
+        "question": "{diag_q2_desc}",
+        "options": ["Plausible Falschantwort", "Konkrete fachlich richtige Antwort"],
         "correct": 1
       }}
     ]
   }},
   "hefteintrag": {{
-    "title": "Prägnante Überschrift (bei Methoden als W-Frage z.B. 'Wie berechne ich...', bei Sachtexten das Fachthema wie 'The Great Barrier Reef – Key Facts' oder 'Das Great Barrier Reef – Kernaussagen')",
-    "summary": "Einheitlicher Klassen-Hefteintrag im sauberen HTML-Format (WICHTIG!). Bei Sachtexten: Gliedere in 1. Kernaussage / Überblick, 2. Wichtige Fakten & Zusammenhänge (neue Punkte zwingend mit <br> trennen), 3. Zusammenfassender Merksatz. Bei Methoden/Regeln: 1. Merke, 2. Schritte/Erklärung, 3. Beispiel. Wichtige Fachbegriffe mit <strong>fett</strong> hervorheben.",
+    "title": "Prägnante Überschrift (bei Methoden als W-Frage z.B. 'Wie wende ich...', bei Sachtexten das Fachthema)",
+    "summary": "Einheitlicher Klassen-Hefteintrag im sauberen HTML-Format (WICHTIG!). Bei Methoden/Regeln: 1. Merke, 2. Schritte/Erklärung, 3. Beispiel. Wichtige Fachbegriffe mit <strong>fett</strong> hervorheben. Bei Sachtexten: 1. Überblick, 2. Fakten & Zusammenhänge (neue Punkte mit <br> trennen), 3. Zusammenfassender Merksatz.",
     "level_a_notes": "",
     "level_b_notes": ""
   }},
   "zusatzaufgaben": [
     {{
       "title": "Experten-Aufgabe 1 (Transfer)",
-      "task": "Weiterführende Knobel-, Reflexions- oder Kreativaufgabe für Schnellarbeiter"
+      "task": "Weiterführende Knobel-, Reflexions- oder Transferaufgabe für Schnellarbeiter"
     }},
     {{
       "title": "Experten-Aufgabe 2 (Erweiterung)",
@@ -882,7 +953,7 @@ Generiere genau folgendes JSON-Schema:
         "title": "Titel der Aufgabe (Verweise hier explizit auf einen der geforderten Übungsschwerpunkte)",
         "text": "Aufgabentext. WICHTIG FÜR LÜCKENTEXT / DRAG THE WORDS: Erstelle einen SUBSTANTIELLEN, ZUSAMMENHÄNGENDEN FLIESSTEXT aus 4 bis 6 Sätzen mit 4 bis 6 Lücken (*Lücke/Synonym1/Synonym2*). Bei Multiple-Choice: Frage\\n[ ] Falsch\\n[X] Richtig. Bei Wahr/Falsch zwingend exakt so: Aussage: [Behauptung]\\nAntwort: [Wahr/Falsch]",
         "format": "{ 'Drag the Words' if target_format == 'KI-Mix' else target_format }",
-        "hint": "Hilfreicher Vorab-Tipp für Level A (z. B. 'Tipp: Schau in Zeile 2 nach Wörtern mit -ung')",
+        "hint": "Hilfreicher Vorab-Tipp für Level A",
         "explanation": "Erklärung der richtigen Lösung bei einer falschen Antwort"
       }}
     ]
@@ -892,7 +963,7 @@ Generiere genau folgendes JSON-Schema:
     "tasks": [
       {{
         "title": "Titel der Aufgabe (Verweise hier explizit auf einen der geforderten Übungsschwerpunkte)",
-        "text": "Anspruchsvollerer Aufgabentext. WICHTIG FÜR LÜCKENTEXT / DRAG THE WORDS: Erstelle einen SUBSTANTIELLEN, ZUSAMMENHÄNGENDEN FLIESSTEXT aus 4 bis 6 Sätzen mit 4 bis 6 Lücken (*Lücke/Synonym1/Synonym2*). Format-Regeln exakt wie bei Level A beachten! Zwingend: Aussage: [Behauptung]\\nAntwort: [Wahr/Falsch]",
+        "text": "Anspruchsvollerer Aufgabentext. Format-Regeln exakt wie bei Level A beachten! Zwingend: Aussage: [Behauptung]\\nAntwort: [Wahr/Falsch]",
         "format": "{ 'Lückentext' if target_format == 'KI-Mix' else target_format }",
         "hint": "",
         "explanation": "Fachlicher Denkanstoß / Regelhinweis bei falscher Antwort"
@@ -906,15 +977,13 @@ WICHTIGE ANWEISUNGEN:
 2. WICHTIG: Falls mehrere Übungsschwerpunkte angegeben sind ({focus_topic}), erstelle Aufgaben, die ALLE diese Schwerpunkte abdecken!
 3. LÜCKENTEXT-REGELN, SYNONYME & EXAKTHEIT:
    - Erstelle bei 'Lückentext' und 'Drag the Words' KEINE Einzelsätze, sondern ZWINGEND zusammenhängende Fließtexte aus 4 bis 6 Sätzen mit mindestens 4 bis 6 Lücken.
-   - SYNONYME: Um Frust bei Schülern zu vermeiden, MÜSSEN inhaltlich oder mathematisch mehrdeutige Lücken alle gängigen Synonyme und Schreibweisen enthalten, getrennt durch einen Schrägstrich `/` (z.B. `*teilen/dividieren*`, `*3,14/3.14*`, `*verdoppeln/mal zwei nehmen/multiplizieren*`, `*Zahl/Konstante/Kreiszahl*`).
-   - MAL-ZEICHEN: Verwende in mathematischen Formeln und Texten NIEMALS das Sternchen '*' als Multiplikationszeichen (Malzeichen), da dies Lücken-Parser irritiert. Benutze stattdessen ZWINGEND das offizielle Multiplikationszeichen '·' (Mittelpunkt / Malpunkt).
-   - FACHLICHE RICHTIGKEIT: Alle mathematischen Formeln, Berechnungen und logischen Aussagen MÜSSEN zu 100% fachlich korrekt und präzise sein. Prüfe deine Aufgaben vor der Ausgabe kritisch auf inhaltliche Fehler!
-   - ERSETZUNGS-AUFGABEN (z. B. 'Ersetze die Wörter in Klammern durch passende Pronomen'): Das zu ersetzende Ausgangswort MUSS ZWINGEND in Klammern direkt neben der Lücke stehen bleiben (z. B. 'Wie *sie* (die Regeln) gestaltet werden...'). Niemals die Klammern löschen!
+   - SYNONYME: Um Frust bei Schülern zu vermeiden, MÜSSEN mehrdeutige Lücken alle gängigen Synonyme und Schreibweisen enthalten, getrennt durch einen Schrägstrich `/` (z.B. `*teilen/dividieren*`, `*3,14/3.14*`).
+   - MAL-ZEICHEN: Verwende NIEMALS '*' als Malzeichen. Benutze ZWINGEND '·' (Mittelpunkt).
+   - FACHLICHE RICHTIGKEIT: Alle Aufgaben, Regeln und Formeln MÜSSEN zu 100% fachlich korrekt sein.
 {text_basis_instruction}
 {isb_rubric_instruction}
 5. STRIKTE AUFGABEN-FORMATIERUNGSREGELN FÜR DEN FELDINHALT 'text':
    - DRAG THE WORDS: Markiere alle Lückenwörter im Fließtext mit *Sternchen*.
-     WICHTIG FÜR WÖRTSPEICHER & DISTRAKTOREN: Wenn das Arbeitsblatt im Wortspeicher zusätzliche falsche Wörter enthält oder zur Erhöhung des Anspruchs Distraktoren nötig sind, gib diese im Aufgaben-Feld 'distractors' an (z. B. "distractors": ["falschesWort1", "falschesWort2"]).
    - MULTIPLE CHOICE: Jede Aufgabe MUSS zwingend die vollständige Aufgabenstellung UND den konkreten Beispielsatz / die Angabe enthalten!
      Format des Feldes 'text':
      [Aufgabenstellung / Frage]
@@ -922,24 +991,18 @@ WICHTIGE ANWEISUNGEN:
      [ ] [Eine falsche Option]
      [X] [Die richtige Option]
      [ ] [Eine andere falsche Option]
-     WICHTIG: Wenn die Aufgabe nach 'dem unterstrichenen Wort' oder 'im folgenden Satz' fragt, MUSS der vollständige Beispielsatz zwingend direkt im Text angegeben werden! Niemals die Frage isoliert ohne den Beispielsatz generieren!
-   - WAHR/FALSCH: Der Feldinhalt 'text' MUSS zwingend im folgenden Format sein:
+   - WAHR/FALSCH:
      Aussage: [Hier steht die Behauptung]
      Antwort: [Wahr oder Falsch]
-   - VOKABELKARTEN: Der Feldinhalt 'text' MUSS zwingend im folgenden Format sein:
+   - VOKABELKARTEN:
      Vorderseite: [Begriff oder Frage]
      Rückseite: [Erklärung oder Antwort]
-6. DIDAKTISCHE STRUKTUR & REIHENFOLGE DER AUFGABEN:
-   - Ordne die Aufgaben ZWINGEND in logische Themenblöcke!
-   - BLOCK 1 (Zuerst): Textverständnis & Inhalt (Fragen zur Handlung, Aussagen zum Text).
-   - BLOCK 2 (Danach): Grammatik, Wortarten, Rechtschreibung & Sprache (unter Verwendung der Wörter/Sätze aus dem Text).
-   - Verhindere ein wildes Durcheinanderwürfeln der Themen, um die kognitive Belastung gering zu halten.
+{structure_instruction}
 7. DIDAKTISCHE TIPPS- & FEEDBACK-REGEL:
    - Level A erhält für JEDE Aufgabe einen ermutigenden Vorab-Tipp (`hint`) UND eine einfache Erklärung bei Fehlern (`explanation`).
    - Level B erhält ZWINGEND KEINEN Vorab-Tipp (`hint` bleibt leer), aber ein anspruchsvolles Fehler-Feedback (`explanation`).
 8. TRANSFERAUFGABE IN LEVEL B:
    - Formuliere die LETZTE Aufgabe von Level B (Vertiefung) zwingend als 'Transferaufgabe' (Titel z.B. 'Transfer & Anwendung - [Thema]').
-   - Hier sollen die Schüler das erworbene Wissen/Regelwerk auf ein neues, bisher unbekanntes Beispiel anwenden oder kritisch hinterfragen.
 9. Formuliere 2 Diagnosefragen, die das Verständnis prüfen.
 10. Formuliere 2 motivierende Zusatzaufgaben für Schnellarbeiter (Experten-Aufgaben).
 {format_instruction}
@@ -1115,25 +1178,33 @@ Generiere genau dieses JSON:
 
     def _get_mock_data(self, context: str = "", target_format: str = "KI-Mix", task_count: int = 2, subject: str = "Deutsch", school_type: str = "Grundschule", focus_topic: str = "", hefteintrag_topic: str = "", error_message: str = None, differentiation_mode: str = "differentiated") -> dict:
         """Returns beautiful default mock data in case API key is missing or fails."""
-        parsed_str = focus_topic.strip() if focus_topic and focus_topic.strip() else (context.strip() if context and context.strip() else "")
-        if not parsed_str:
-            parsed_str = "Textverständnis, Fremdwörter, Wortarten" if subject == "Deutsch" else ("Bruchrechnen" if subject == "Mathematik" else "Simple Past")
-        topic_str = parsed_str
-
-        _d = parse_teacher_context_directives(context, focus_topic, task_count)
-        topics_list, actual_count, topic_dist = _d["expanded_topics"], _d["total_task_count"], _d["distribution"]
-        heft_str = hefteintrag_topic if (hefteintrag_topic and not any(p in hefteintrag_topic.lower() for p in ["ki wählt", "automatisch"])) else (focus_topic if (focus_topic and not any(p in focus_topic.lower() for p in ["ki wählt", "automatisch"])) else clean_title_topic)
-        lower_heft = (heft_str or "").lower()
-        
         import re
+
+        def _clean(s: str) -> str:
+            if not s:
+                return ""
+            if any(p in s.lower() for p in ["ki wählt schwerpunkte", "automatisch aus dem", "ki wählt"]):
+                return ""
+            return s.strip()
+
+        focus_topic = _clean(focus_topic)
+        context = _clean(context)
+        hefteintrag_topic = _clean(hefteintrag_topic)
+
+        parsed_str = focus_topic if focus_topic else (context if context else "")
         # Only strip leading counts at the start of the string, preserving numbers inside titles (e.g. 'Konjunktiv 1 und 2')
         clean_title_topic = re.sub(r'^\s*\d+\s*x?\s*(?:zu|für)?\s*', '', parsed_str).strip()
         clean_title_topic = re.sub(r'^\s*,\s*|\s*,\s*$', '', clean_title_topic)
-        if clean_title_topic and any(p in clean_title_topic.lower() for p in ["ki wählt schwerpunkte", "automatisch aus dem"]):
+        if any(p in clean_title_topic.lower() for p in ["ki wählt", "automatisch"]):
             clean_title_topic = ""
         if not clean_title_topic or len(clean_title_topic) < 3:
-            clean_title_topic = "Müll im Ozean - Der achte Kontinent" if subject == "Deutsch" else ("Bruchrechnen" if subject == "Mathematik" else "Grammar & Reading")
+            clean_title_topic = "Wortarten bestimmen" if subject == "Deutsch" else ("Bruchrechnen" if subject == "Mathematik" else "Conditional Sentences (If-clauses)")
 
+        topic_str = parsed_str if parsed_str else clean_title_topic
+        _d = parse_teacher_context_directives(context, focus_topic, task_count)
+        topics_list, actual_count, topic_dist = _d["expanded_topics"], _d["total_task_count"], _d["distribution"]
+        heft_str = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else clean_title_topic)
+        lower_heft = (heft_str or "").lower()
         title = clean_title_topic
         
         extracted = f"[DEMO-MODUS] Hier steht der extrahierte Text der Buchseite für {subject}.\n\n"
@@ -1352,11 +1423,28 @@ Generiere genau dieses JSON:
             "geschichte", "erdkunde", "geografie", "biologie", "gpg", "pcb", "landeskunde",
             "tier", "pflanz", "kontinent", "australi", "deutschland", "europa", "stadt", "land"
         ]
-        method_indicators = ["wie ", "methode", "regel", "strategie", "formel", "rechen", "grammatik", "entnehme ich", "schritte", "anleitung"]
-        is_factual = any(w in lower_heft for w in factual_indicators) or (subject in ["Englisch", "GPG", "PCB", "Biologie", "Geografie", "Geschichte"] and not any(w in lower_heft for w in method_indicators))
-        is_english = (subject == "Englisch") or any(w in lower_heft for w in ["reef", "barrier", "great barrier", "information about", "past", "present", "english"])
+        skill_indicators = [
+            "wie ", "methode", "regel", "strategie", "formel", "rechen", "grammatik", "entnehme ich",
+            "schritte", "anleitung", "if ", "clause", "conditional", "tense", "past", "present",
+            "future", "perfect", "vokabel", "vocabulary", "wortart", "nomen", "verb", "adjektiv",
+            "konjunktiv", "satzbau", "syntax", "komma", "rechtschreibung", "orthographie", "pronomen"
+        ]
+        is_skill = any(w in lower_heft for w in skill_indicators)
+        is_factual = (any(w in lower_heft for w in factual_indicators) or (subject in ["GPG", "PCB", "Biologie", "Geografie", "Geschichte"])) and not is_skill
+        is_english = (subject == "Englisch") or any(w in lower_heft for w in ["reef", "barrier", "great barrier", "information about", "past", "present", "english", "clause", "if "])
 
-        if is_factual:
+        if not is_factual and is_english:
+            mock_heft_title = f"Grammar Rule: {heft_str}"
+            mock_heft_summary = (
+                f"📌 {heft_str.upper()} – GRAMMAR & USAGE\n\n"
+                f"1. STRUCTURE & RULE:\n"
+                f"• If-clause: Simple Present (e.g., 'If it rains...')\n"
+                f"• Main clause: will + infinitive (e.g., '...we will stay at home.')\n\n"
+                f"2. IMPORTANT TO REMEMBER:\n"
+                f"• Never use 'will' directly in the if-clause!\n"
+                f"• If the if-clause comes first, use a comma before the main clause."
+            )
+        elif is_factual:
             if is_english:
                 mock_heft_title = f"{heft_str} – Key Facts & Summary"
                 if "reef" in lower_heft or "barrier" in lower_heft:
@@ -1467,20 +1555,97 @@ Generiere genau dieses JSON:
                         ]
                     }
             else:
-                mock_diagnostic = {
-                    "questions": [
-                        {
-                            "question": f"Welches Grundprinzip gilt beim Thema '{clean_title_topic}'?",
-                            "options": [f"Die grundlegende Regel zu {clean_title_topic} schrittweise anwenden", "Regeln und Rechenschritte beliebig vertauschen"],
-                            "correct": 0
-                        },
-                        {
-                            "question": f"Wie gehst du bei einer kniffligeren Aufgabe zu '{clean_title_topic}' vor?",
-                            "options": ["Sofort aufgeben", "Die Aufgabenstellung genau analysieren und den passenden Lösungsweg wählen"],
-                            "correct": 1
-                        }
-                    ]
-                }
+                lower_ct = clean_title_topic.lower()
+                if "if" in lower_ct or "clause" in lower_ct or "conditional" in lower_ct:
+                    mock_diagnostic = {
+                        "questions": [
+                            {
+                                "question": "Welche Zeitform steht im if-Satz bei Conditional Sentences Type 1?",
+                                "options": ["Simple Present (Gegenwart)", "will-future (Zukunft)"],
+                                "correct": 0
+                            },
+                            {
+                                "question": "Welche Form vervollständigt den Satz: 'If the weather is good, we ... to the park'?",
+                                "options": ["went", "will go"],
+                                "correct": 1
+                            }
+                        ]
+                    }
+                elif "wortart" in lower_ct or "nomen" in lower_ct or "verb" in lower_ct:
+                    mock_diagnostic = {
+                        "questions": [
+                            {
+                                "question": "Woran erkennt man Nomen (Substantive) im Deutschen auf einen Blick?",
+                                "options": ["Sie werden immer großgeschrieben und haben einen Begleiter (Artikel)", "Sie enden immer auf -en"],
+                                "correct": 0
+                            },
+                            {
+                                "question": "Welche Wortart beschreibt, wie jemand etwas tut oder wie ein Gegenstand ist?",
+                                "options": ["Das Verb", "Das Adjektiv (Wie-Wort)"],
+                                "correct": 1
+                            }
+                        ]
+                    }
+                elif "konjunktiv" in lower_ct:
+                    mock_diagnostic = {
+                        "questions": [
+                            {
+                                "question": "Wofür wird der Konjunktiv I im Deutschen vor allem verwendet?",
+                                "options": ["Für die indirekte Rede in Berichten und Nachrichten", "Für reale Tatsachen in der Vergangenheit"],
+                                "correct": 0
+                            },
+                            {
+                                "question": "Wofür nutzt man den Konjunktiv II?",
+                                "options": ["Für reale Befehle", "Für Wünsche, Träume und irreale Bedingungen"],
+                                "correct": 1
+                            }
+                        ]
+                    }
+                elif subject == "Mathematik" or "bruch" in lower_ct:
+                    mock_diagnostic = {
+                        "questions": [
+                            {
+                                "question": "Was gibt der Nenner (die Zahl unter dem Bruchstrich) an?",
+                                "options": ["In wie viele gleich große Teile das Ganze unterteilt ist", "Wie viele Teile man davon nimmt"],
+                                "correct": 0
+                            },
+                            {
+                                "question": "Wie werden zwei gleichnamige Brüche (gleicher Nenner) addiert?",
+                                "options": ["Man addiert nur die Zähler; der Nenner bleibt unverändert", "Man addiert Zähler und Nenner"],
+                                "correct": 0
+                            }
+                        ]
+                    }
+                elif subject == "Englisch" or "past" in lower_ct:
+                    mock_diagnostic = {
+                        "questions": [
+                            {
+                                "question": "Which of these is a typical signal word for the Simple Past?",
+                                "options": ["yesterday", "tomorrow"],
+                                "correct": 0
+                            },
+                            {
+                                "question": "What is the past form of the irregular verb 'go'?",
+                                "options": ["goed", "went"],
+                                "correct": 1
+                            }
+                        ]
+                    }
+                else:
+                    mock_diagnostic = {
+                        "questions": [
+                            {
+                                "question": f"Welche zentrale Fachregel steht beim Thema '{clean_title_topic}' im Mittelpunkt?",
+                                "options": [f"Die grundlegenden Merkmale und Fachregeln zu {clean_title_topic} anwenden", "Rechenschritte und Definitionen willkürlich vertauschen"],
+                                "correct": 0
+                            },
+                            {
+                                "question": f"Wie gehst du bei einer Übung zu '{clean_title_topic}' vor?",
+                                "options": ["Die Aufgabenstellung nach Signalwörtern prüfen und die passende Regel anwenden", "Ohne Regelprüfung raten"],
+                                "correct": 0
+                            }
+                        ]
+                    }
 
         return {
             "title": title,
