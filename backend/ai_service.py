@@ -600,7 +600,10 @@ class AIService:
 
         # Check SQLite Generation Cache first
         try:
-            from database import compute_cache_hash, get_cached_generation, set_cached_generation
+            try:
+                from database import compute_cache_hash, get_cached_generation, set_cached_generation
+            except ImportError:
+                from backend.database import compute_cache_hash, get_cached_generation, set_cached_generation
             combined_content = b"".join([f.get('content') or b"" for f in files])
             cache_hash = compute_cache_hash(combined_content, subject, school_type, focus_topic, task_count, target_format, f"{hefteintrag_topic}|{differentiation_mode}")
             cached_res = get_cached_generation(cache_hash)
@@ -855,6 +858,17 @@ class AIService:
                 f"   - Falls mehrere Schwerpunkte gefordert sind (z. B. 'Vokabeln und If-clauses'): Teile die Aufgaben sauber in Blöcke auf (z. B. zuerst Block 1 Vokabeln, danach Block 2 If-clauses).\n"
                 f"   - Falls ein Thema gefordert ist (z. B. 'Wortarten' oder 'Simple Past'): Gestalte eine didaktische Progression (Level A: Wiedererkennen, Zuordnen, Markieren -> Level B: Korrigieren, Einsetzen, Transformieren, Formulieren)."
             )
+
+        allowed_formats_str = (
+            "- 'Lückentext' (Fill-in-the-Blanks)\n"
+            "- 'Multiple Choice' (Einfachauswahl)\n"
+            "- 'Wahr/Falsch' (True/False)\n"
+            "- 'Drag the Words' (Wortspeicher / Zuordnung)\n"
+            "- 'Wörter markieren' (Mark the Words)\n"
+            "- 'Tabellen-Zuordnung' (Drag & Drop in Tabellenspalten)\n"
+            "- 'Freies Schreiben' / 'Essay' (KI-Schreibcoach mit semantischer Textkorrektur)\n"
+            "- 'Vokabelkarten' (Lernkartei mit Vorder- und Rückseite)"
+        )
 
         prompt = f"""{role_description}
 
