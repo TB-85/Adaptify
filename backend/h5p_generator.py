@@ -330,7 +330,7 @@ class H5PGenerator:
                 },
                 "showContentTitle": False,
                 "proceedButtonText": "Weiter",
-                "forceContentFinished": "enabled",
+                "forceContentFinished": "disabled",
                 "feedback": {"title": "", "subtitle": ""},
                 "contentBehaviour": "useBehavioural"
             }
@@ -428,6 +428,35 @@ class H5PGenerator:
 
         # Build Task Slides
         slides_data = []
+
+        # 0. Slide 1: Reading Text if requested or available as a substantial reading text
+        wants_reading = bool(
+            data.get("wants_reading_slide") or 
+            any(k in (str(data.get("context", "")) + " " + str(data.get("title", "")) + " " + str(data.get("focus_topic", ""))).lower() for k in ["erste folie", "ersten folie", "text zum lesen", "lesetext", "basistext", "ausgangstext"])
+        )
+        ext_text = (data.get("extracted_text") or "").strip()
+        ext_text = re.sub(r'\[DEMO-MODUS\]\s*', '', ext_text).strip()
+        ext_text = re.sub(r'\n*Bildbeschreibung:.*$', '', ext_text, flags=re.IGNORECASE).strip()
+        has_reading_content = len(ext_text) > 80 and not ext_text.startswith("Hier steht der extrahierte Text")
+
+        if (wants_reading and has_reading_content) or (has_reading_content and data.get("explicit_reading")):
+            clean_title = H5PGenerator.clean_student_title(data.get("title", "Thema"))
+            paragraphs = [p.strip() for p in ext_text.split("\n\n") if p.strip()]
+            formatted_reading = "".join(f"<p style='margin-bottom:12px; line-height:1.7;'>{p.replace(chr(10), '<br/>')}</p>" for p in paragraphs)
+            slides_data.append({
+                "library": "H5P.AdvancedText 1.1",
+                "params": {
+                    "text": (
+                        f"<div style='background-color:#f0f9ff; border:1px solid #bae6fd; border-left:4px solid #0284c7; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:13.5px; font-weight:700; color:#0369a1;'>"
+                        f"📖 <strong>Lesetext &amp; Ausgangslage:</strong> Lies diesen Text aufmerksam durch. Er dient als Grundlage für alle nachfolgenden Aufgaben!"
+                        f"</div>"
+                        f"<h3 style='color:#0f172a; margin-top:0; font-size:17px; font-weight:800;'>📖 {clean_title}</h3>"
+                        f"<div style='background-color:#ffffff; border:1px solid #e2e8f0; padding:14px 16px; border-radius:8px; font-size:14px; color:#334155;'>{formatted_reading}</div>"
+                    )
+                },
+                "title": f"📖 Text: {clean_title}"
+            })
+
         hefteintrag = data.get("hefteintrag", {})
         notes = hefteintrag.get("summary") or hefteintrag.get("level_a_notes")
         if notes and notes.strip():
@@ -739,7 +768,7 @@ class H5PGenerator:
                 },
                 "behaviour": {
                     "enableBackwardsNavigation": True,
-                    "forceContentFinished": True,
+                    "forceContentFinished": False,
                     "randomizeBranchingQuestions": False
                 },
                 "l10n": {
@@ -797,7 +826,7 @@ class H5PGenerator:
                 },
                 "showContentTitle": False,
                 "proceedButtonText": "Weiter",
-                "forceContentFinished": "enabled",
+                "forceContentFinished": "disabled",
                 "feedback": {"title": "", "subtitle": ""},
                 "contentBehaviour": "useBehavioural"
             }
@@ -1184,6 +1213,16 @@ class H5PGenerator:
         has_experts = len(zusatzaufgaben) > 0
         expert_node_id = (level_a_id + 1) if has_experts else -1
 
+        # Determine if reading slide is requested
+        wants_reading = bool(
+            data.get("wants_reading_slide") or 
+            any(k in (str(data.get("context", "")) + " " + str(data.get("title", "")) + " " + str(data.get("focus_topic", ""))).lower() for k in ["erste folie", "ersten folie", "text zum lesen", "lesetext", "basistext", "ausgangstext"])
+        )
+        ext_text = (data.get("extracted_text") or "").strip()
+        ext_text = re.sub(r'\[DEMO-MODUS\]\s*', '', ext_text).strip()
+        ext_text = re.sub(r'\n*Bildbeschreibung:.*$', '', ext_text, flags=re.IGNORECASE).strip()
+        has_reading_content = len(ext_text) > 80 and not ext_text.startswith("Hier steht der extrahierte Text")
+
         # 2. Build Level A and Level B content nodes based on tasks
         for node_id, level_data, node_title in [
             (level_b_id, level_b, "Level B - Vertiefung"),
@@ -1195,8 +1234,27 @@ class H5PGenerator:
                 tasks = [{"title": level_data.get("title", node_title), "text": level_data.get("text", ""), "format": target_format}]
             
             slides_data = []
+
+            # Add Optional Slide 1: Lesetext & Ausgangslage
+            if (wants_reading and has_reading_content) or (has_reading_content and data.get("explicit_reading")):
+                clean_title = H5PGenerator.clean_student_title(data.get("title", "Thema"))
+                paragraphs = [p.strip() for p in ext_text.split("\n\n") if p.strip()]
+                formatted_reading = "".join(f"<p style='margin-bottom:12px; line-height:1.7;'>{p.replace(chr(10), '<br/>')}</p>" for p in paragraphs)
+                slides_data.append({
+                    "library": "H5P.AdvancedText 1.1",
+                    "params": {
+                        "text": (
+                            f"<div style='background-color:#f0f9ff; border:1px solid #bae6fd; border-left:4px solid #0284c7; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:13.5px; font-weight:700; color:#0369a1;'>"
+                            f"📖 <strong>Lesetext &amp; Ausgangslage:</strong> Lies diesen Text aufmerksam durch. Er dient als Grundlage für alle nachfolgenden Aufgaben!"
+                            f"</div>"
+                            f"<h3 style='color:#0f172a; margin-top:0; font-size:17px; font-weight:800;'>📖 {clean_title}</h3>"
+                            f"<div style='background-color:#ffffff; border:1px solid #e2e8f0; padding:14px 16px; border-radius:8px; font-size:14px; color:#334155;'>{formatted_reading}</div>"
+                        )
+                    },
+                    "title": f"📖 Text: {clean_title}"
+                })
             
-            # Add Slide 1: Merkkasten / Hefteintrag if available
+            # Add Slide: Merkkasten / Hefteintrag if available
             hefteintrag = data.get("hefteintrag", {})
             notes = hefteintrag.get("level_a_notes" if "Level A" in node_title else "level_b_notes") or hefteintrag.get("summary")
             if notes and notes.strip():
@@ -1215,22 +1273,22 @@ class H5PGenerator:
                 task_title = task.get("title", node_title)
                 task_hint = task.get("hint", "").strip()
                 task_exp = task.get("explanation", "").strip()
-            # Auto-heal: Check if content is actually a table or category sorting task
-            is_table_content = bool(
-                ("<table" in raw_text.lower()) or 
-                (len([l for l in raw_text.strip().split("\n") if l.strip().startswith("|") and l.strip().endswith("|")]) >= 2) or
-                ("kategorie:" in raw_text.lower() and "spalte:" in raw_text.lower()) or
-                (re.search(r'(in\s+(?:die\s+)?tabellen?\s+zuordnen|spalten\s+zuordnen|kategorien\s+zuordnen)', task_title + " " + raw_text, re.IGNORECASE) and "*" in raw_text)
-            )
+                # Auto-heal: Check if content is actually a table or category sorting task
+                is_table_content = bool(
+                    ("<table" in raw_text.lower()) or 
+                    (len([l for l in raw_text.strip().split("\n") if l.strip().startswith("|") and l.strip().endswith("|")]) >= 2) or
+                    ("kategorie:" in raw_text.lower() and "spalte:" in raw_text.lower()) or
+                    (re.search(r'(in\s+(?:die\s+)?tabellen?\s+zuordnen|spalten\s+zuordnen|kategorien\s+zuordnen)', task_title + " " + raw_text, re.IGNORECASE) and "*" in raw_text)
+                )
 
-            if is_table_content and task_format in ["Lückentext", "Lueckentext"]:
-                task_format = "Tabellen-Zuordnung"
+                if is_table_content and task_format in ["Lückentext", "Lueckentext"]:
+                    task_format = "Tabellen-Zuordnung"
 
-            if task_format in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"] and not is_table_content:
-                if "ordne" in raw_text.lower() or "ziehe" in raw_text.lower():
-                    task_format = "Drag the Words"
-                else:
-                    task_format = "Lückentext"
+                if task_format in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"] and not is_table_content:
+                    if "ordne" in raw_text.lower() or "ziehe" in raw_text.lower():
+                        task_format = "Drag the Words"
+                    else:
+                        task_format = "Lückentext"
                 
                 # Format text with embedded gap hint for Level A if hint exists
                 formatted_blanks_text = raw_text
@@ -1536,7 +1594,7 @@ class H5PGenerator:
                 },
                 "behaviour": {
                     "enableBackwardsNavigation": True,
-                    "forceContentFinished": True,
+                    "forceContentFinished": False,
                     "randomizeBranchingQuestions": False
                 },
                 "l10n": {
@@ -2132,6 +2190,34 @@ class H5PGenerator:
         target_format = target_format or data.get("target_format", "Lückentext")
         used_formats = set()
         raw_slides = []
+
+        # 0. Slide 0: Reading Text if requested or available as a substantial reading text
+        wants_reading = bool(
+            data.get("wants_reading_slide") or 
+            any(k in (str(data.get("context", "")) + " " + str(data.get("title", "")) + " " + str(data.get("focus_topic", ""))).lower() for k in ["erste folie", "ersten folie", "text zum lesen", "lesetext", "basistext", "ausgangstext"])
+        )
+        ext_text = (data.get("extracted_text") or "").strip()
+        ext_text = re.sub(r'\[DEMO-MODUS\]\s*', '', ext_text).strip()
+        ext_text = re.sub(r'\n*Bildbeschreibung:.*$', '', ext_text, flags=re.IGNORECASE).strip()
+        has_reading_content = len(ext_text) > 80 and not ext_text.startswith("Hier steht der extrahierte Text")
+
+        if (wants_reading and has_reading_content) or (has_reading_content and data.get("explicit_reading")):
+            clean_title = H5PGenerator.clean_student_title(data.get("title", "Thema"))
+            paragraphs = [p.strip() for p in ext_text.split("\n\n") if p.strip()]
+            formatted_reading = "".join(f"<p style='margin-bottom:12px; line-height:1.7;'>{p.replace(chr(10), '<br/>')}</p>" for p in paragraphs)
+            raw_slides.append({
+                "library": "H5P.AdvancedText 1.1",
+                "params": {
+                    "text": (
+                        f"<div style='background-color:#f0f9ff; border:1px solid #bae6fd; border-left:4px solid #0284c7; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:13.5px; font-weight:700; color:#0369a1;'>"
+                        f"📖 <strong>Lesetext &amp; Ausgangslage:</strong> Lies diesen Text aufmerksam durch. Er dient als Grundlage für alle nachfolgenden Aufgaben!"
+                        f"</div>"
+                        f"<h3 style='color:#0f172a; margin-top:0; font-size:17px; font-weight:800;'>📖 {clean_title}</h3>"
+                        f"<div style='background-color:#ffffff; border:1px solid #e2e8f0; padding:14px 16px; border-radius:8px; font-size:14px; color:#334155;'>{formatted_reading}</div>"
+                    )
+                },
+                "title": f"📖 Text: {clean_title}"
+            })
 
         # 1. Slide 1: Merkkasten / Hefteintrag if available
         hefteintrag = data.get("hefteintrag", {})

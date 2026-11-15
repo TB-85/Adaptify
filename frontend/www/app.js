@@ -2510,6 +2510,7 @@ function populateEditor(data) {
         (tasks || []).forEach((t, i) => {
             const card = document.createElement('div');
             card.className = 'task-card p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-3';
+            card._origDistractors = t.distractors || [];
             
             const isLevelA = (prefix === 'A');
             const isLevelC = (prefix === 'C');
@@ -2522,10 +2523,19 @@ function populateEditor(data) {
                 <input type="hidden" class="task-hint" value="">
             `;
 
+            const isDragOrTable = (t.format === 'Drag the Words' || t.format === 'Tabellen-Zuordnung' || t.format === 'Kategorie-Zuordnung');
+            const disList = Array.isArray(t.distractors) ? t.distractors.join(', ') : (t.distractors || '');
+            const distractorsHtml = `
+                <div class="task-distractors-container ${isDragOrTable ? '' : 'hidden'}">
+                    <label class="block text-xxs font-bold text-indigo-700 uppercase tracking-wider mb-0.5">🎯 Distraktoren (Wortspeicher-Zusatz, kommagetrennt)</label>
+                    <input type="text" class="task-distractors w-full px-3 py-1.5 bg-indigo-50/40 border border-indigo-200 rounded-lg text-xs text-indigo-900 focus:outline-none focus:ring-1 focus:ring-indigo-500" value="${escapeHtml(disList)}" placeholder="z. B. 48 Stunden, 10 Stunden täglich, Sonntagsarbeit">
+                </div>
+            `;
+
             card.innerHTML = `
                 <div class="flex items-center gap-2">
                     <input type="text" class="task-title flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500" value="${t.title}">
-                    <select class="task-format w-1/3 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500">
+                    <select class="task-format w-1/3 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-500" onchange="const c = this.closest('.task-card'); if (c) { const dc = c.querySelector('.task-distractors-container'); if (dc) dc.classList.toggle('hidden', !['Drag the Words', 'Tabellen-Zuordnung', 'Kategorie-Zuordnung'].includes(this.value)); }">
                         <option value="Lückentext" ${t.format === 'Lückentext' ? 'selected' : ''}>Lückentext</option>
                         <option value="Drag the Words" ${t.format === 'Drag the Words' ? 'selected' : ''}>Drag the Words</option>
                         <option value="Wahr/Falsch" ${t.format === 'Wahr/Falsch' ? 'selected' : ''}>Wahr/Falsch</option>
@@ -2543,6 +2553,7 @@ function populateEditor(data) {
                 </div>
                 <textarea class="task-text w-full p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 font-sans" rows="3">${t.text}</textarea>
                 ${hintHtml}
+                ${distractorsHtml}
                 <div>
                     <label class="block text-xxs font-bold text-teal-700 uppercase tracking-wider mb-0.5">💬 Erklärung bei Fehler (Feedback)</label>
                     <input type="text" class="task-explanation w-full px-3 py-1.5 bg-teal-50/50 border border-teal-200 rounded-lg text-xs text-teal-900 focus:outline-none focus:ring-1 focus:ring-teal-500" value="${t.explanation || ''}" placeholder="Erklärung der richtigen Lösung...">
@@ -2663,12 +2674,20 @@ function getEditedData() {
         container.querySelectorAll('.task-card').forEach(card => {
             const hintInput = card.querySelector('.task-hint');
             const expInput = card.querySelector('.task-explanation');
+            const disInput = card.querySelector('.task-distractors');
+            let distractors = [];
+            if (disInput && disInput.value.trim()) {
+                distractors = disInput.value.split(',').map(s => s.trim()).filter(Boolean);
+            } else if (card._origDistractors && Array.isArray(card._origDistractors)) {
+                distractors = card._origDistractors;
+            }
             tasks.push({
                 title: card.querySelector('.task-title').value,
                 text: card.querySelector('.task-text').value,
                 format: card.querySelector('.task-format').value,
                 hint: hintInput ? hintInput.value : '',
-                explanation: expInput ? expInput.value : ''
+                explanation: expInput ? expInput.value : '',
+                distractors: distractors
             });
         });
         return tasks;

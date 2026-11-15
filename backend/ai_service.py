@@ -40,6 +40,7 @@ class Task(BaseModel):
     format: str
     hint: Optional[str] = ""
     explanation: Optional[str] = ""
+    distractors: Optional[List[str]] = Field(default_factory=list, description="Plausible Distraktoren (falsche Zusatzwörter für den Wortspeicher / Drag the Words)")
 
 class LevelContent(BaseModel):
     title: str
@@ -128,7 +129,10 @@ def parse_teacher_context_directives(context: str = "", focus_topic: str = "", d
     elif any(p in norm_text for p in ["nur wörter markieren", "nur mark the words"]):
         forced_format = "Wörter markieren"
 
-    # Helper to clean meta phrases from topic strings
+    wants_distractors = bool(re.search(r'\b(?:distraktor\w*|zusatzw[öo]rter|zusatzwoerter|ablenker|falsche\s+w[öo]rter)\b', norm_text))
+    wants_reading_slide = bool(re.search(r'\b(?:erste[nr]?\s+folie|folie\s+1|text\s+zum\s+lesen|lesetext|ausgangstext|basistext|einstiegstext|text\s+lesen|zuerst\s+ein\s+text)\b', norm_text))
+
+    # Helper to clean meta phrases and instructional commands from topic strings
     def clean_topic_str(t: str) -> str:
         s = t.strip()
         meta_sub = [
@@ -137,6 +141,9 @@ def parse_teacher_context_directives(context: str = "", focus_topic: str = "", d
             r'nur\s+drag[\s\-]+and[\s\-]+drop', r'nur\s+wahr[\s\-]+falsch',
             r'daz\s+einfache\s+sprache', r'einfache\s+sprache', r'leichte\s+sprache',
             r'kurze\s+sätze', r'keine\s+schachtelsätze',
+            r'baue\s+distraktor\w*(?:\s+mit)?\s+ein\b', r'mit\s+distraktor\w*\b', r'distraktor\w*\s+einbauen\b',
+            r'zeige\s+als\s+erste[nr]?\s+folie.*', r'als\s+erste[nr]?\s+folie.*', r'erste[nr]?\s+folie\s+ein.*',
+            r'text\s+zum\s+lesen.*', r'oder\s+so\s+etwas\b', r'oder\s+[äa]hnliches\b', r'oder\s+so\b',
             r'fokus\s+auf\s+', r'schwerpunkt\s+auf\s+', r'fragen\s+zu[mr]?\s+', r'aufgaben\s+zu[mr]?\s+',
             r'^(?:zu[mr]?|zm|für|über|an|in|den|dem|die|das)\s+',
             r'^(?:nur\s+fragen\s+zu[mr]?\s+|nur\s+aufgaben\s+zu[mr]?\s+)'
@@ -144,6 +151,23 @@ def parse_teacher_context_directives(context: str = "", focus_topic: str = "", d
         for pat in meta_sub:
             s = re.sub(pat, '', s, flags=re.IGNORECASE).strip()
         return s.strip('.:,; -')
+
+    def is_meta_directive(p: str) -> bool:
+        lp = p.lower().strip()
+        if not lp or len(lp) < 2:
+            return True
+        if any(k in lp for k in [
+            "distraktor", "zusatzwörter", "zusatzwoerter", "falsche wörter",
+            "erste folie", "ersten folie", "folie 1", "text zum lesen", "lesetext",
+            "oder so etwas", "oder ähnliches", "oder so", "ohne dateiupload",
+            "multiple choice", "lückentext", "drag the words", "wahr falsch",
+            "keine schachtelsätze", "einfache sprache", "leichte sprache",
+            "schreibaufgabe", "vokabelkarten"
+        ]):
+            return True
+        if re.match(r'^(?:baue|zeige|erstelle|mache|nutze|verwende|achte|füge|setze)\b', lp):
+            return True
+        return False
 
     # Total task count detection from context
     m_tot = re.search(r'(?:insgesamt|gesamt|insg\.?|zusammen|alle)?\s*(\d+)\s*(?:fragen?|aufgaben?|übungen?|tasks?)', norm_text)
@@ -199,10 +223,12 @@ def parse_teacher_context_directives(context: str = "", focus_topic: str = "", d
         for part in raw_parts:
             # Restore protected _UND_
             part_restored = part.replace('_UND_', ' und ')
+            if is_meta_directive(part_restored):
+                continue
             p_clean = clean_topic_str(part_restored)
             
             # If after cleaning nothing is left, or it's a pure constraint phrase with no numbers, skip
-            if not p_clean or (len(p_clean) < 2 and not re.search(r'\d+', part_restored)):
+            if not p_clean or is_meta_directive(p_clean) or (len(p_clean) < 2 and not re.search(r'\d+', part_restored)):
                 continue
 
             # Pattern A: "5 fragen zum Textverständnis" or "5x Wortarten"
@@ -222,8 +248,8 @@ def parse_teacher_context_directives(context: str = "", focus_topic: str = "", d
             if m_a:
                 count = int(m_a.group(1))
                 clean_topic = clean_topic_str(m_a.group(2))
-                if not clean_topic or len(clean_topic) < 2:
-                    clean_topic = foc if foc else "Aufgabe"
+                if not clean_topic or is_meta_directive(clean_topic) or len(clean_topic) < 2:
+                    clean_topic = clean_topic_str(foc) if clean_topic_str(foc) else "Aufgabe"
                 has_explicit_counts = True
                 distribution[clean_topic] = distribution.get(clean_topic, 0) + count
                 for _ in range(count):
@@ -231,13 +257,13 @@ def parse_teacher_context_directives(context: str = "", focus_topic: str = "", d
             elif m_b:
                 count = int(m_b.group(2))
                 clean_topic = clean_topic_str(m_b.group(1))
-                if clean_topic:
+                if clean_topic and not is_meta_directive(clean_topic):
                     has_explicit_counts = True
                     distribution[clean_topic] = distribution.get(clean_topic, 0) + count
                     for _ in range(count):
                         expanded_topics.append(clean_topic)
             else:
-                if p_clean and len(p_clean) > 2 and not any(meta in p_clean.lower() for meta in ["multiple choice", "lückentext", "daz", "sprache"]):
+                if p_clean and len(p_clean) > 2 and not is_meta_directive(p_clean):
                     distribution[p_clean] = distribution.get(p_clean, 0) + 1
                     expanded_topics.append(p_clean)
 
@@ -252,6 +278,20 @@ def parse_teacher_context_directives(context: str = "", focus_topic: str = "", d
 
     # 3. Content source targeting directives
     content_directives = []
+    if wants_distractors:
+        content_directives.append(
+            "LEHRKRAFT-VORGABE DISTRAKTOREN: Die Lehrkraft fordert ausdrücklich Distraktoren! "
+            "Baue bei allen Aufgaben mit Wortspeicher ('Drag the Words', 'Tabellen-Zuordnung') im Aufgaben-Feld 'distractors' "
+            "eine Liste von mindestens 2 bis 4 plausiblen, falschen Zusatzwörtern/Zahlen ein (z. B. beim Jugendarbeitsschutzgesetz: '45 Stunden', '10 Stunden täglich', 'Sonntagsarbeit'). "
+            "Bei 'Multiple Choice' müssen zwingend 3 bis 4 herausfordernde, plausible Falschantworten [ ] generiert werden!"
+        )
+    if wants_reading_slide:
+        content_directives.append(
+            "LEHRKRAFT-VORGABE ERSTE FOLIE / LESETEXT: Die Lehrkraft wünscht ausdrücklich als erste Folie der interaktiven Einheit einen anschaulichen, "
+            "altersgerechten Informationstext / Lesetext / Fallbeispiel zum Thema (ca. 180 bis 300 Wörter). "
+            "Formuliere diesen Text vollständig im Feld 'extracted_text'. "
+            "Alle nachfolgenden Aufgaben müssen sich inhaltlich oder anwendungsbezogen auf diesen Ausgangstext stützen!"
+        )
     if any(w in norm_text for w in ["unterstrichen", "unterstreichung"]):
         content_directives.append("Arbeite zwingend mit den im Originaltext UNTERSTRICHENEN Wörtern bzw. Sätzen. Zitiere den jeweiligen Satz vollständig und hebe das Zielwort hervor (z. B. <u>Wort</u>).")
     if any(w in norm_text for w in ["gelb markiert", "grün markiert", "rot markiert", "farbig markiert", "markierten wörtern"]):
@@ -283,7 +323,9 @@ def parse_teacher_context_directives(context: str = "", focus_topic: str = "", d
         "forbidden_formats": forbidden_formats,
         "forced_format": forced_format,
         "content_directives": content_directives,
-        "pedagogical_directives": pedagogical_directives
+        "pedagogical_directives": pedagogical_directives,
+        "wants_distractors": wants_distractors,
+        "wants_reading_slide": wants_reading_slide
     }
 
 
@@ -734,8 +776,10 @@ class AIService:
         req_text = f"{focus_topic} {context}".lower()
         explicit_reading = any(w in req_text for w in [
             "textverst", "leseverst", "reading comprehension", "lesetext", "sachtext", 
-            "leseverstehen", "fragen zum text", "textinhalt", "handlung", "leseverständnis"
-        ])
+            "leseverstehen", "fragen zum text", "textinhalt", "handlung", "leseverständnis",
+            "text zum lesen", "text lesen", "lese-text", "ausgangstext", "basistext",
+            "einstiegstext", "fallbeispiel", "fallstudie", "quellentext", "erste folie", "folie 1"
+        ]) or directives.get("wants_reading_slide", False)
 
         if differentiation_mode == "direct":
             role_description = (
@@ -821,7 +865,7 @@ class AIService:
 """
 
         # Diagnostic questions guidance
-        if explicit_reading or has_media:
+        if explicit_reading:
             diag_q1_desc = "Einstiegsfrage 1 zur Diagnose (WICHTIG: Glasklare Textverständnisfrage zum Thema/Inhalt des Textes wie 'Wo befindet sich...?'. Niemals Grammatik- oder Metafragen!)"
             diag_q2_desc = "Einstiegsfrage 2 zur Diagnose (Konkrete themenbezogene Inhaltsfrage zum Text)"
             reading_guideline = (
@@ -841,6 +885,22 @@ class AIService:
                 "   - BLOCK 1 (Zuerst): Textverständnis & Inhalt (Fragen zur Handlung, Aussagen zum Text).\n"
                 "   - BLOCK 2 (Danach): Vertiefung & sprachliche Aspekte (unter Verwendung des Textes).\n"
                 "   - Verhindere ein wildes Durcheinanderwürfeln der Themen, um die kognitive Belastung gering zu halten."
+            )
+        elif has_media:
+            diag_q1_desc = "Einstiegsfrage 1 zur Diagnose (Prüft das grundlegende Verständnis der Kernbegriffe oder Basisregeln aus der Buchseite)"
+            diag_q2_desc = "Einstiegsfrage 2 zur Diagnose (Konkrete fachliche Anwendungs- oder Unterscheidungsfrage zum Thema der Buchseite)"
+            reading_guideline = (
+                "DIDAKTISCHER FOKUS FÜR DIE BUCHSEITE / DAS ARBEITSBLATT:\n"
+                "- Analysiere den fachlichen Inhalt der Buchseite (Fachbegriffe, Regeln, Beispiele, Formeln, Aufgaben) und erstelle passgenaue, abwechslungsreiche interaktive Übungen.\n"
+                "- Falls die Buchseite ein Grammatik-, Rechen- oder Fachbegriffsthema behandelt: Erstelle konkrete Übungen (Lückentext, Drag the Words, Tabellen-Zuordnung, Multiple Choice) direkt zu diesen Regeln, Rechenschritten und Fachbegriffen!\n"
+                "- Falls die Buchseite einen Sachtext oder eine Erzählung behandelt: Verbinde Textverständnis mit Fachwortschatz und Vertiefungsfragen.\n"
+                "- Alle Aufgaben müssen eigenständig, motivierend und klar formuliert sein."
+            )
+            extracted_text_desc = "Der erkannte Text des Originaldokumentes sowie detaillierte Bildbeschreibungen von eventuell vorhandenen Illustrationen/Grafiken/Bildern zur Vorschau für die Lehrkraft"
+            structure_instruction = (
+                "6. DIDAKTISCHE STRUKTUR & REIHENFOLGE DER AUFGABEN:\n"
+                "   - Ordne die Aufgaben in eine didaktische Progression (zuerst Grundlagen & Wiedererkennen, danach Vertiefung & Anwendung).\n"
+                "   - Jede Aufgabe muss eine eigenständige, didaktisch abwechslungsreiche Übung sein."
             )
         else:
             diag_q1_desc = f"Einstiegsfrage 1 zur Diagnose (Prüft das grundlegende Regelverständnis oder die Basiserkennung zu '{focus_topic or context}', z. B. Erkennungsmerkmal, Bildung oder Signalwort. STRENGSTENS VERBOTEN: Fragen zu einem fiktiven Text oder einer Handlung!)"
@@ -978,7 +1038,8 @@ Generiere genau folgendes JSON-Schema:
       {{
         "title": "Titel der Aufgabe (Verweise hier explizit auf einen der geforderten Übungsschwerpunkte)",
         "text": "Anspruchsvollerer Aufgabentext. Format-Regeln exakt wie bei Level A beachten! Zwingend: Aussage: [Behauptung]\\nAntwort: [Wahr/Falsch]",
-        "format": "{ 'Lückentext' if target_format == 'KI-Mix' else target_format }",
+        "format": "{ 'Drag the Words' if target_format == 'KI-Mix' else target_format }",
+        "distractors": ["Plausibles falsches Zusatzwort 1", "Plausibles falsches Zusatzwort 2", "Plausibles falsches Zusatzwort 3"],
         "hint": "",
         "explanation": "Fachlicher Denkanstoß / Regelhinweis bei falscher Antwort"
       }}
@@ -1015,7 +1076,9 @@ WICHTIGE ANWEISUNGEN:
 7. DIDAKTISCHE TIPPS- & FEEDBACK-REGEL:
    - Level A erhält für JEDE Aufgabe einen ermutigenden Vorab-Tipp (`hint`) UND eine einfache Erklärung bei Fehlern (`explanation`).
    - Level B erhält ZWINGEND KEINEN Vorab-Tipp (`hint` bleibt leer), aber ein anspruchsvolles Fehler-Feedback (`explanation`).
-8. TRANSFERAUFGABE IN LEVEL B:
+8. LEVEL B (FORDERN) & DISTRAKTOREN-PFLICHT:
+   - Bei Level B (höheres Niveau / Fordern) MÜSSEN bei JEDER Aufgabe im Format 'Drag the Words' und 'Tabellen-Zuordnung' ZWINGEND im Feld 'distractors' mindestens 2 bis 4 plausible Distraktoren (falsche Zusatzbegriffe, Zahlen oder unzutreffende Optionen) angegeben werden (z. B. 'distractors': ['48 Stunden', '10 Stunden täglich', 'Sonntagsarbeit'])!
+   - Bei 'Multiple Choice' müssen stets 3 bis 4 anspruchsvolle Falschantworten [ ] generiert werden!
    - Formuliere die LETZTE Aufgabe von Level B (Vertiefung) zwingend als 'Transferaufgabe' (Titel z.B. 'Transfer & Anwendung - [Thema]').
 9. Formuliere 2 Diagnosefragen, die das Verständnis prüfen.
 10. Formuliere 2 motivierende Zusatzaufgaben für Schnellarbeiter (Experten-Aufgaben).
@@ -1106,6 +1169,19 @@ WICHTIGE ANWEISUNGEN:
                                 idx += 1
                             result_json[lvl]["tasks"] = curr_tasks[:task_count]
 
+                # Ensure Level B (higher level / Fordern) ALWAYS has distractors for Drag the Words & Tabellen-Zuordnung
+                for lvl in ["level_b", "level_a"]:
+                    if lvl in result_json and isinstance(result_json[lvl], dict):
+                        for t in result_json[lvl].get("tasks", []):
+                            fmt = t.get("format", "")
+                            needs_distractors = (lvl == "level_b") or directives.get("wants_distractors", False)
+                            if needs_distractors and fmt in ["Drag the Words", "Tabellen-Zuordnung", "Kategorie-Zuordnung"]:
+                                dis = t.get("distractors")
+                                if not dis or (isinstance(dis, list) and len(dis) == 0):
+                                    t["distractors"] = AIService._generate_fallback_distractors(
+                                        t.get("text", ""), subject, focus_topic or context
+                                    )
+
             if isinstance(result_json, dict) and "title" in result_json:
                 try:
                     from h5p_generator import clean_student_title
@@ -1120,6 +1196,9 @@ WICHTIGE ANWEISUNGEN:
                     result_json["level_b"] = result_json["level_a"]
                 if "diagnostic" in result_json:
                     result_json["diagnostic"]["questions"] = []
+
+            if isinstance(result_json, dict):
+                result_json["wants_reading_slide"] = directives.get("wants_reading_slide", False)
 
             if cache_hash and result_json:
                 try:
@@ -1190,6 +1269,34 @@ Generiere genau dieses JSON:
             "explanation": task_data.get("explanation", "")
         }
 
+    @staticmethod
+    def _generate_fallback_distractors(text: str = "", subject: str = "", topic: str = "") -> list:
+        combined = f"{text} {topic} {subject}".lower()
+        if any(w in combined for w in ["jugendarbeitsschutz", "jarbschg", "arbeitszeit", "ausbildung", "praktik", "berufsausbildung", "jugendliche"]):
+            return ["48 Stunden wöchentlich", "10 Stunden täglich", "Sonntagsarbeit", "15 Minuten Pause", "Keine Pausenpflicht"]
+        if any(w in combined for w in ["wortart", "nomen", "verb", "adjektiv", "deutsch"]):
+            return ["Pronomen", "Präposition", "Konjunktion", "Adverb"]
+        if any(w in combined for w in ["if clause", "conditional", "simple past", "english", "englisch"]):
+            return ["would have went", "will be", "had gone", "didn't went"]
+        if any(w in combined for w in ["zins", "prozent", "kapital", "mathematik", "mathe", "bruch"]):
+            return ["365 Tage", "12 %", "100 €", "Zähler und Nenner vertauschen"]
+        
+        import re
+        gaps = re.findall(r'\*([^*:]+)(?::[^*]*)?\*', text)
+        clean_gaps = [g.split('/')[0].strip() for g in gaps if g.strip()]
+        if len(clean_gaps) >= 2:
+            mutated = []
+            for g in clean_gaps:
+                if g.isdigit():
+                    val = int(g)
+                    mutated.extend([str(val * 2), str(max(1, val - 2)), str(val + 5)])
+                elif len(g) > 3:
+                    mutated.append(f"Un-{g.lower()}" if not g.lower().startswith("un") else g[2:])
+            if mutated:
+                return mutated[:4]
+
+        return ["Unzutreffende Option", "Ausnahme-Regel", "Zusatzklausel"]
+
     def _get_mock_data(self, context: str = "", target_format: str = "KI-Mix", task_count: int = 2, subject: str = "Deutsch", school_type: str = "Grundschule", focus_topic: str = "", hefteintrag_topic: str = "", error_message: str = None, differentiation_mode: str = "differentiated") -> dict:
         """Returns beautiful default mock data in case API key is missing or fails."""
         import re
@@ -1217,12 +1324,28 @@ Generiere genau dieses JSON:
         topic_str = parsed_str if parsed_str else clean_title_topic
         _d = parse_teacher_context_directives(context, focus_topic, task_count)
         topics_list, actual_count, topic_dist = _d["expanded_topics"], _d["total_task_count"], _d["distribution"]
-        heft_str = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else clean_title_topic)
+        if topics_list and len(topics_list) > 0 and len(topics_list[0]) > 2:
+            clean_title_topic = topics_list[0]
+        heft_str = hefteintrag_topic if hefteintrag_topic else (clean_title_topic if clean_title_topic else "Hauptthema")
         lower_heft = (heft_str or "").lower()
         title = clean_title_topic
+
+        is_jasg = "jugendarbeitsschutz" in (clean_title_topic + " " + lower_heft).lower()
         
         extracted = f"[DEMO-MODUS] Hier steht der extrahierte Text der Buchseite für {subject}.\n\n"
-        if subject == "Mathematik":
+        if is_jasg:
+            title = "Jugendarbeitsschutzgesetz (JArbSchG)"
+            clean_title_topic = "Jugendarbeitsschutzgesetz (JArbSchG)"
+            heft_str = "Jugendarbeitsschutzgesetz (JArbSchG)"
+            extracted = (
+                "Lukas (15 Jahre) möchte in den Sommerferien sein Taschengeld aufbessern und macht ein zweiwöchiges Schülerpraktikum in einer Werkstatt. "
+                "Seine Ausbilderin erklärt ihm am ersten Tag die gesetzlichen Schutzvorschriften nach dem Jugendarbeitsschutzgesetz (JArbSchG):\n\n"
+                "1. Tägliche und wöchentliche Arbeitszeit: Jugendliche dürfen höchstens 8 Stunden täglich und maximal 40 Stunden in der Woche arbeiten. Die Arbeitszeit ist auf eine 5-Tage-Woche (Montag bis Freitag) beschränkt.\n\n"
+                "2. Ruhepausen: Jugendlichen stehen bei einer Arbeitszeit von 4,5 bis 6 Stunden mindestens 30 Minuten Ruhepause zu. Bei mehr als 6 Stunden Arbeit müssen es mindestens 60 Minuten Pause sein. Eine Pause muss mindestens 15 Minuten dauern.\n\n"
+                "3. Freizeit und Nachtruhe: Nach der täglichen Arbeit müssen mindestens 12 Stunden ununterbrochene Freizeit liegen. Arbeit vor 6:00 Uhr morgens und nach 20:00 Uhr abends ist verboten.\n\n"
+                "4. Wochenende: Samstags- und Sonntagsarbeit ist für Jugendliche grundsätzlich verboten, außer in gesetzlichen Ausnahmen wie Gastronomie oder Pflege."
+            )
+        elif subject == "Mathematik":
             extracted += "Beispiel: 'Ein Kuchen wird in 8 gleiche Teile geschnitten. Anna isst 2 Teile, Ben isst 3 Teile. Welcher Anteil bleibt übrig?'\n"
         elif subject == "Deutsch":
             extracted += "Kinder brauchen im Familienleben feste Regeln. Wie sie gestaltet werden, hängt von den Eltern ab.\nWenn Eltern eher großzügig sind, gehen sie oft lockerer mit den Regeln um.\nMerkt das Kind, dass Regeln nur manchmal gelten, wird es sich nicht unbedingt an ihnen orientieren, sondern am Verhalten seiner Eltern.\n"
@@ -1386,6 +1509,49 @@ Generiere genau dieses JSON:
         reading_counter = 0
         grammar_counter = 0
 
+        jasg_pool = [
+            {
+                "format": "Drag the Words", "suffix": "Arbeitszeit & Ruhepausen einsetzen",
+                "a_text": "Jugendliche dürfen höchstens *8* Stunden täglich und maximal *40* Stunden in der Woche arbeiten. Bei mehr als 6 Stunden Arbeit stehen ihnen mindestens *60* Minuten Pause zu.\n\nDistraktoren: 10, 48, 15",
+                "b_text": "Laut Jugendarbeitsschutzgesetz beträgt die tägliche Höchstarbeitszeit *8* Stunden bei einer *5-Tage-Woche*. Nach Arbeitsende müssen mindestens *12* Stunden ununterbrochene Freizeit folgen.\n\nDistraktoren: 10, 6-Tage-Woche, 8",
+                "distractors": ["10", "48", "15", "24"],
+                "hint": "💡 Tipp: Achte auf die Zahlen im Gesetz: 8 Stunden am Tag, 40 Stunden in der Woche.",
+                "exp": "Die Höchstarbeitszeit beträgt 8 Stunden pro Tag und 40 Stunden in der Woche."
+            },
+            {
+                "format": "Multiple Choice", "suffix": "Regelungen zur Wochenendarbeit",
+                "a_text": "Frage: Dürfen Jugendliche laut Jugendarbeitsschutzgesetz am Samstag oder Sonntag arbeiten?\n[X] Samstags- und Sonntagsarbeit ist grundsätzlich verboten (außer in gesetzlichen Ausnahmen wie Gastronomie oder Pflege).\n[ ] Jugendliche dürfen jeden Samstag regulär wie Erwachsene arbeiten.\n[ ] Wochenendarbeit ist immer erlaubt, wenn die Eltern zustimmen.\n[ ] Sonntagsarbeit ist ohne jede Einschränkung gestattet.",
+                "b_text": "Frage: Lukas soll in den Ferien samstags im Betrieb aushelfen. Ist das nach dem Jugendarbeitsschutzgesetz zulässig?\n[X] Nein, in Betrieben und Werkstätten gilt die 5-Tage-Woche (Montag bis Freitag) mit Samstagsruhe.\n[ ] Ja, samstags dürfen Jugendliche bis zu 10 Stunden arbeiten.\n[ ] Ja, wenn der Arbeitgeber Überstundenzuschlag bezahlt.\n[ ] Das Gesetz enthält keinerlei Vorschriften zum Wochenende.",
+                "distractors": ["Jugendliche dürfen jeden Samstag arbeiten", "Samstagsarbeit bis 10 Stunden"],
+                "hint": "💡 Tipp: Überlege, für welche Branchen es seltene Ausnahmen gibt und was der Grundsatz ist.",
+                "exp": "Samstags- und Sonntagsarbeit ist grundsätzlich verboten (§§ 16, 17 JArbSchG)."
+            },
+            {
+                "format": "Wahr/Falsch", "suffix": "Nachtruhe und Arbeitszeiten prüfen",
+                "a_text": "Aussage: Jugendliche dürfen grundsätzlich nicht vor 6:00 Uhr morgens und nicht nach 20:00 Uhr abends beschäftigt werden.\nAntwort: Wahr",
+                "b_text": "Aussage: Nach Beendigung der täglichen Arbeitszeit müssen Jugendliche mindestens 12 Stunden ununterbrochene Freizeit haben.\nAntwort: Wahr",
+                "distractors": [],
+                "hint": "💡 Tipp: Prüfe die Uhrzeiten für die gesetzliche Nachtruhe.",
+                "exp": "Die Nachtruhe gilt grundsätzlich von 20:00 bis 06:00 Uhr (§ 14 JArbSchG)."
+            },
+            {
+                "format": "Tabellen-Zuordnung", "suffix": "Schutzbestimmungen den Bereichen zuordnen",
+                "a_text": "Ordne die Bestimmungen den richtigen Schutzbereichen zu:\n\n| Arbeitszeit & Ruhezeit | Ruhepausen |\n| *Maximal 8 Stunden täglich* | *30 Minuten bei 4,5 bis 6 Std.* |\n| *Mindestens 12 Stunden Freizeit* | *60 Minuten bei über 6 Std.* |\n\nDistraktoren: 48 Stunden wöchentlich, Keine Pausenpflicht",
+                "b_text": "Ordne die Regelungen den gesetzlichen Vorgaben zu:\n\n| Erlaubt | Grundsätzlich verboten |\n| *5-Tage-Woche* | *Samstagsarbeit* |\n| *Arbeit zwischen 6 und 20 Uhr* | *Schwere gefährliche Arbeiten* |\n\nDistraktoren: Nachtarbeit ab 22 Uhr, 50 Stunden Woche",
+                "distractors": ["48 Stunden wöchentlich", "Keine Pausenpflicht"],
+                "hint": "💡 Tipp: Trenne zwischen erlaubten Arbeitszeiten und strikten Verboten.",
+                "exp": "Das Jugendarbeitsschutzgesetz schützt vor Überlastung und Gefährdungen."
+            },
+            {
+                "format": "Lückentext", "suffix": "Kernaussagen des Gesetzes",
+                "a_text": "Das Jugendarbeitsschutzgesetz schützt junge Menschen vor *Überlastung*. Die maximale wöchentliche Arbeitszeit beträgt *40* Stunden. Pausen müssen mindestens *15* Minuten lang sein.",
+                "b_text": "Gefährliche Arbeiten mit Chemikalien oder schweren Maschinen sind für Jugendliche *verboten*. Der Arbeitgeber muss vor Beginn der Beschäftigung eine *Unterweisung* über Unfallgefahren durchführen.",
+                "distractors": ["Überstunden", "60 Stunden", "5 Minuten"],
+                "hint": "💡 Tipp: Achte auf den Schutzzweck des Gesetzes.",
+                "exp": "Der Schutz der Gesundheit und Sicherheit steht im Mittelpunkt des JArbSchG."
+            }
+        ]
+
         for i in range(actual_count):
             t_focus = topics_list[i % len(topics_list)]
             lower_focus = (t_focus or "").lower()
@@ -1395,7 +1561,9 @@ Generiere genau dieses JSON:
             ])
             is_last = (i == actual_count - 1)
 
-            if is_reading_focus:
+            if is_jasg:
+                pool_item = jasg_pool[i % len(jasg_pool)]
+            elif is_reading_focus:
                 pool_item = reading_pool_de[reading_counter % len(reading_pool_de)]
                 reading_counter += 1
             else:
@@ -1409,25 +1577,32 @@ Generiere genau dieses JSON:
             # Level C (Inklusion & DaZ)
             tasks_c.append({
                 "title": f"Inklusion/DaZ - {t_focus} (Aufgabe {i+1})",
-                "text": f"Leichte Sprache ({subject}):\nDer Text gibt wichtige *Regeln*.\nWir lesen den Text *genau*.",
+                "text": f"Leichte Sprache ({subject}):\nDas Gesetz schützt Jugendliche bei der *Arbeit*.\nJugendliche machen regelmäßig *Pausen*.",
                 "format": "Drag the Words",
                 "hint": "💡 Sprachhilfe: Konzentriere dich auf die Schlüsselbegriffe im Text.",
-                "explanation": "Sehr einfache Sprache unterstützt das Textverständnis."
+                "explanation": "Sehr einfache Sprache unterstützt das Textverständnis.",
+                "distractors": ["Überstunden", "Nachtschicht"]
             })
+
+            b_distractors = list(pool_item.get("distractors", []))
+            if fmt in ["Drag the Words", "Tabellen-Zuordnung", "Kategorie-Zuordnung"] and not b_distractors:
+                b_distractors = AIService._generate_fallback_distractors(pool_item["b_text"], subject, clean_title_topic)
 
             tasks_a.append({
                 "title": a_title,
                 "text": pool_item["a_text"],
                 "format": fmt,
                 "hint": pool_item["hint"],
-                "explanation": pool_item["exp"]
+                "explanation": pool_item["exp"],
+                "distractors": pool_item.get("distractors", [])
             })
             tasks_b.append({
                 "title": b_title,
                 "text": pool_item["b_text"],
                 "format": fmt,
                 "hint": "",
-                "explanation": pool_item["exp"]
+                "explanation": pool_item["exp"],
+                "distractors": b_distractors
             })
 
         # Determine whether Hefteintrag is content/fact-focused vs. method/rule-focused
@@ -1447,7 +1622,20 @@ Generiere genau dieses JSON:
         is_factual = (any(w in lower_heft for w in factual_indicators) or (subject in ["GPG", "PCB", "Biologie", "Geografie", "Geschichte"])) and not is_skill
         is_english = (subject == "Englisch") or any(w in lower_heft for w in ["reef", "barrier", "great barrier", "information about", "past", "present", "english", "clause", "if "])
 
-        if not is_factual and is_english:
+        if is_jasg:
+            mock_heft_title = "Das Jugendarbeitsschutzgesetz (JArbSchG) im Überblick"
+            mock_heft_summary = (
+                "📌 JUGENDARBEITSSCHUTZGESETZ (JArbSchG) – KERNREGELN\n\n"
+                "1. ARBEITSZEIT:\n"
+                "• Höchstens 8 Stunden täglich, maximal 40 Stunden in der Woche (5-Tage-Woche, Mo–Fr).\n\n"
+                "2. RUHEPAUSEN:\n"
+                "• 30 Minuten bei 4,5 bis 6 Stunden Arbeit; 60 Minuten bei mehr als 6 Stunden Arbeit (Pausen mind. 15 Minuten lang).\n\n"
+                "3. FREIZEIT & NACHTRUHE:\n"
+                "• Mindestens 12 Stunden ununterbrochene Freizeit nach Arbeitsende; Arbeitsverbot von 20:00 bis 06:00 Uhr.\n\n"
+                "4. WOCHENENDE & VERBOTE:\n"
+                "• Samstags- und Sonntagsarbeit sowie gefährliche Arbeiten sind für Jugendliche grundsätzlich verboten."
+            )
+        elif not is_factual and is_english:
             mock_heft_title = f"Grammar Rule: {heft_str}"
             mock_heft_summary = (
                 f"📌 {heft_str.upper()} – GRAMMAR & USAGE\n\n"
@@ -1585,6 +1773,21 @@ Generiere genau dieses JSON:
                             }
                         ]
                     }
+                elif is_jasg:
+                    mock_diagnostic = {
+                        "questions": [
+                            {
+                                "question": "Wie viele Stunden darf ein Jugendlicher laut Jugendarbeitsschutzgesetz täglich maximal arbeiten?",
+                                "options": ["Höchstens 8 Stunden", "Maximal 10 Stunden"],
+                                "correct": 0
+                            },
+                            {
+                                "question": "Wie viel Ruhepause steht einem Jugendlichen bei über 6 Stunden Arbeitszeit gesetzlich zu?",
+                                "options": ["Mindestens 60 Minuten", "15 Minuten"],
+                                "correct": 0
+                            }
+                        ]
+                    }
                 elif "wortart" in lower_ct or "nomen" in lower_ct or "verb" in lower_ct:
                     mock_diagnostic = {
                         "questions": [
@@ -1663,6 +1866,7 @@ Generiere genau dieses JSON:
 
         return {
             "title": title,
+            "wants_reading_slide": _d.get("wants_reading_slide", False) or is_jasg,
             "lehrplan_code": f"{'M6 EG 2' if subject == 'Mathematik' else ('D5 L1' if subject == 'Deutsch' else 'E6 G1')}",
             "lehrplan_competency": f"LehrplanPlus Bayern ({subject}): Kompetenzen im Bereich '{topic_str}' anwenden und reflektieren",
             "extracted_text": extracted,
