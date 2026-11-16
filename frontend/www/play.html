@@ -8,6 +8,9 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Adaptify - Schüleransicht</title>
+    <!-- Favicon & Touch Icons -->
+    <link rel="icon" type="image/png" href="logo_icon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -57,8 +60,8 @@
 
     <!-- Connection / PIN Screen -->
     <div id="screen-connect" class="w-full max-w-md glass-card rounded-3xl p-8 shadow-2xl space-y-6 text-center">
-        <div class="h-16 w-16 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-3xl mx-auto shadow-md">
-            <i class="fa-solid fa-pen-to-square"></i>
+        <div class="mb-3 flex justify-center">
+            <img src="logo_full.png" alt="Adaptify" class="h-14 w-auto object-contain">
         </div>
         <div class="space-y-2">
             <h2 class="text-2xl font-black text-slate-800">Adaptify Aufgaben</h2>
@@ -93,8 +96,8 @@
 
     <!-- Name Screen -->
     <div id="screen-name" class="hidden w-full max-w-md glass-card rounded-3xl p-8 shadow-2xl space-y-6 text-center">
-        <div class="h-16 w-16 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-3xl mx-auto shadow-md">
-            <i class="fa-solid fa-user-astronaut"></i>
+        <div class="mb-3 flex justify-center">
+            <img src="logo_full.png" alt="Adaptify" class="h-12 w-auto object-contain">
         </div>
         <div class="space-y-2">
             <h2 class="text-2xl font-black text-slate-800" id="name-package-title">Übung geladen!</h2>
@@ -539,20 +542,23 @@ window.cleanStudentTitle = cleanStudentTitle;
                     }
                     if (brandLabel) brandLabel.textContent = label || "Übung";
                     
-                    if (sessionData.logo_base64 && brandLogo) {
-                        brandLogo.src = sessionData.logo_base64;
+                    if (brandLogo) {
+                        brandLogo.src = sessionData.logo_base64 || 'logo_icon.png';
                         brandLogo.classList.remove('hidden');
-                    } else if (brandLogo) {
-                        brandLogo.classList.add('hidden');
                     }
                     if (brandPanel) {
                         brandPanel.classList.remove('hidden');
                         brandPanel.classList.add('flex');
                     }
                 } else {
+                    if (brandLabel) brandLabel.textContent = "Adaptify Lernpfad";
+                    if (brandLogo) {
+                        brandLogo.src = 'logo_icon.png';
+                        brandLogo.classList.remove('hidden');
+                    }
                     if (brandPanel) {
-                        brandPanel.classList.remove('flex');
-                        brandPanel.classList.add('hidden');
+                        brandPanel.classList.remove('hidden');
+                        brandPanel.classList.add('flex');
                     }
                 }
                 

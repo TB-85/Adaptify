@@ -551,7 +551,7 @@ class PDFGenerator:
         ]))
         
         logo_img_sol = None
-        if logo_data and logo_io:
+        if logo_io:
             try:
                 logo_io.seek(0)
                 logo_img_sol = Image(logo_io, width=1.0*inch, height=0.55*inch)

@@ -25,13 +25,14 @@
     <!-- PWA Support -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0284c7">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=7">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png?v=7">
-    <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png?v=7">
-    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png?v=7">
-    <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png?v=7">
-    <link rel="icon" type="image/png" sizes="192x192" href="/apple-touch-icon-192x192.png?v=7">
-    <link rel="shortcut icon" href="/apple-touch-icon.png?v=7">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=7">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180x180.png?v=7">
+    <link rel="apple-touch-icon" sizes="167x167" href="apple-touch-icon-167x167.png?v=7">
+    <link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon-152x152.png?v=7">
+    <link rel="apple-touch-icon-precomposed" href="apple-touch-icon-precomposed.png?v=7">
+    <link rel="icon" type="image/png" sizes="192x192" href="apple-touch-icon-192x192.png?v=7">
+    <link rel="icon" type="image/png" href="logo_icon.png">
+    <link rel="shortcut icon" href="logo_icon.png">
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -711,7 +712,7 @@
             <div id="loader" class="hidden glass-panel fixed inset-0 z-50 bg-slate-900/60 flex flex-col justify-center items-center gap-4 text-white">
                 <div class="relative flex items-center justify-center">
                     <div class="animate-spin rounded-full h-16 w-16 border-4 border-white/20 border-t-brand-500"></div>
-                    <i class="fa-solid fa-wand-magic-sparkles text-xl absolute text-brand-400 pulse-soft"></i>
+                    <img src="logo_icon.png" alt="Adaptify" class="w-8 h-8 object-contain absolute pulse-soft">
                 </div>
                 <div class="text-center space-y-1">
                     <p class="font-bold text-lg">Analysiere Dokument...</p>
@@ -1486,7 +1487,7 @@
     <footer class="w-full bg-slate-950 text-slate-400 text-center py-6 text-xs font-medium border-t border-slate-800/80">
         <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-2 text-left">
-                <span class="font-bold text-slate-200">Adaptify</span>
+                <img src="logo_full.png" alt="Adaptify" class="h-6 w-auto object-contain opacity-90 inline-block align-middle mr-1.5"> <span class="font-bold text-slate-200">Adaptify</span>
                 <span class="text-slate-600">|</span>
                 <p class="text-slate-400">&copy; 2026. Entwickelt für modernen, barrierefreien &amp; differenzierten Unterricht.</p>
             </div>
@@ -1508,7 +1509,7 @@
             <!-- Modal Header -->
             <div class="px-6 py-4 bg-brand-600 text-white flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-lg"></i>
+                    <img src="logo_icon.png" alt="Adaptify" class="h-6 w-6 object-contain">
                     <div>
                         <h3 class="font-bold text-sm">Branding-Zentrale</h3>
                         <p class="text-[8px] text-brand-100 font-medium">Personalisiere deine PDFs und Schüler-Tablets</p>
@@ -2015,9 +2016,7 @@
             <!-- Modal Header -->
             <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
                 <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 bg-brand-500/20 text-brand-400 rounded-xl flex items-center justify-center text-lg">
-                        <i class="fa-solid fa-gear"></i>
-                    </div>
+                    <img src="logo_icon.png" alt="Adaptify" class="h-9 w-9 object-contain">
                     <div>
                         <h3 class="font-bold text-base text-white">Einstellungen &amp; Schlüssel</h3>
                         <p class="text-xs text-slate-400 font-medium">Promo-Code, API-Key &amp; Systemkonfiguration</p>
@@ -2100,6 +2099,6 @@
     </div>
 
     <!-- App JavaScript -->
-    <script src="app.js?v=60"></script>
+    <script src="app.js?v=61"></script>
 </body>
 </html>

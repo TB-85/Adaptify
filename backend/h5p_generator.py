@@ -388,7 +388,7 @@ class H5PGenerator:
                     "activeSurface": False, "hideSummarySlide": True, "showSolutionButton": "off", "retryButton": "on"
                 }
             }
-            node = make_node("H5P.CoursePresentation 1.25", cp_params, "Course Presentation", title_str, next_content_id)
+            node = make_node("H5P.CoursePresentation 1.25", cp_params, "Course Presentation", title_str, next_content_id, proceed_btn_text)
             node["feedback"] = {"title": "", "subtitle": ""}
             return node
 
@@ -452,6 +452,9 @@ class H5PGenerator:
                         f"</div>"
                         f"<h3 style='color:#0f172a; margin-top:0; font-size:17px; font-weight:800;'>📖 {clean_title}</h3>"
                         f"<div style='background-color:#ffffff; border:1px solid #e2e8f0; padding:14px 16px; border-radius:8px; font-size:14px; color:#334155;'>{formatted_reading}</div>"
+                        f"<div style='margin-top:14px; padding:10px 14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px;'>"
+                        f"<span style='color:#1e40af; font-weight:700; font-size:13px;'>📖 <strong>Text fertig gelesen?</strong> Blättere unten mit <strong>[ ❯ ]</strong> weiter zum Merkkasten &amp; zu den Aufgaben!</span>"
+                        f"</div>"
                     )
                 },
                 "title": f"📖 Text: {clean_title}"
@@ -811,7 +814,7 @@ class H5PGenerator:
             level_a_id = 2 + offset
 
         # Helper for creating node compliant with ByCS BranchingScenario
-        def make_node(library_str, params_dict, content_type_title, title_str, next_content_id=None):
+        def make_node(library_str, params_dict, content_type_title, title_str, next_content_id=None, proceed_btn_text="Weiter"):
             node = {
                 "contentId": len(content_nodes),
                 "type": {
@@ -825,7 +828,7 @@ class H5PGenerator:
                     }
                 },
                 "showContentTitle": False,
-                "proceedButtonText": "Weiter",
+                "proceedButtonText": proceed_btn_text,
                 "forceContentFinished": "disabled",
                 "feedback": {"title": "", "subtitle": ""},
                 "contentBehaviour": "useBehavioural"
@@ -834,7 +837,7 @@ class H5PGenerator:
                 node["nextContentId"] = next_content_id
             return node
 
-        def wrap_in_course_presentation(slides_data, title_str, next_content_id=None):
+        def wrap_in_course_presentation(slides_data, title_str, next_content_id=None, proceed_btn_text="Weiter"):
             slides_list = []
             for slide in slides_data:
                 slides_list.append({
@@ -950,7 +953,7 @@ class H5PGenerator:
                     }
                 }
             }
-            node = make_node("H5P.CoursePresentation 1.25", cp_params, "Course Presentation", title_str, next_content_id)
+            node = make_node("H5P.CoursePresentation 1.25", cp_params, "Course Presentation", title_str, next_content_id, proceed_btn_text)
             node["feedback"] = {
                 "title": "",
                 "subtitle": ""
@@ -1249,6 +1252,9 @@ class H5PGenerator:
                             f"</div>"
                             f"<h3 style='color:#0f172a; margin-top:0; font-size:17px; font-weight:800;'>📖 {clean_title}</h3>"
                             f"<div style='background-color:#ffffff; border:1px solid #e2e8f0; padding:14px 16px; border-radius:8px; font-size:14px; color:#334155;'>{formatted_reading}</div>"
+                            f"<div style='margin-top:14px; padding:10px 14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px;'>"
+                            f"<span style='color:#1e40af; font-weight:700; font-size:13px;'>📖 <strong>Text fertig gelesen?</strong> Blättere unten mit <strong>[ ❯ ]</strong> weiter zum Merkkasten &amp; zu den Aufgaben!</span>"
+                            f"</div>"
                         )
                     },
                     "title": f"📖 Text: {clean_title}"
@@ -1262,7 +1268,7 @@ class H5PGenerator:
                 slides_data.append({
                     "library": "H5P.AdvancedText 1.1",
                     "params": {
-                        "text": f"<div style='background-color:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid #2563eb; padding:9px 13px; border-radius:8px; margin-bottom:12px; font-size:13.5px; font-weight:700; color:#1e40af;'>✍️ <strong>Aufgabe für dein Heft:</strong> Übertrage diesen Merkkasten jetzt sauber in dein Schulheft!</div><h3 style='color:#0f766e; margin-top:0;'>📌 Merkkasten / Hefteintrag</h3><div style='background-color:#fef3c7; border-left:4px solid #f59e0b; padding:12px 14px; border-radius:8px; font-size:14px; line-height:1.6; color:#78350f;'>{formatted_notes}</div>"
+                        "text": f"<div style='background-color:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid #2563eb; padding:9px 13px; border-radius:8px; margin-bottom:12px; font-size:13.5px; font-weight:700; color:#1e40af;'>✍️ <strong>Aufgabe für dein Heft:</strong> Übertrage diesen Merkkasten jetzt sauber in dein Schulheft!</div><h3 style='color:#0f766e; margin-top:0;'>📌 Merkkasten / Hefteintrag</h3><div style='background-color:#fef3c7; border-left:4px solid #f59e0b; padding:12px 14px; border-radius:8px; font-size:14px; line-height:1.6; color:#78350f;'>{formatted_notes}</div><div style='margin-top:14px; padding:10px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;'><span style='color:#166534; font-weight:700; font-size:13px;'>✍️ <strong>Merkkasten ins Heft übertragen?</strong> Blättere unten mit <strong>[ ❯ ]</strong> weiter direkt zu Aufgabe 1!</span></div>"
                     },
                     "title": "📌 Merkkasten / Hefteintrag"
                 })
@@ -1539,10 +1545,12 @@ class H5PGenerator:
                     })
 
             # Append the completed Course Presentation node for this level, linking to expert_node_id
+            btn_txt = "Zur Experten-Zone (Transfer) »" if has_experts else "Lerneinheit abschließen »"
             content_nodes.append(wrap_in_course_presentation(
                 slides_data=slides_data, 
                 title_str=node_title, 
-                next_content_id=expert_node_id
+                next_content_id=expert_node_id,
+                proceed_btn_text=btn_txt
             ))
 
         # 3. Append Experten-Zone (Bonus Level) node if present
@@ -1569,7 +1577,8 @@ class H5PGenerator:
             content_nodes.append(wrap_in_course_presentation(
                 slides_data=expert_slides,
                 title_str="🚀 Experten-Zone (Bonus-Level)",
-                next_content_id=-1
+                next_content_id=-1,
+                proceed_btn_text="Lerneinheit abschließen »"
             ))
 
         content_json_data = {
@@ -2214,6 +2223,9 @@ class H5PGenerator:
                         f"</div>"
                         f"<h3 style='color:#0f172a; margin-top:0; font-size:17px; font-weight:800;'>📖 {clean_title}</h3>"
                         f"<div style='background-color:#ffffff; border:1px solid #e2e8f0; padding:14px 16px; border-radius:8px; font-size:14px; color:#334155;'>{formatted_reading}</div>"
+                        f"<div style='margin-top:14px; padding:10px 14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px;'>"
+                        f"<span style='color:#1e40af; font-weight:700; font-size:13px;'>📖 <strong>Text fertig gelesen?</strong> Blättere unten mit <strong>[ ❯ ]</strong> weiter zum Merkkasten &amp; zu den Aufgaben!</span>"
+                        f"</div>"
                     )
                 },
                 "title": f"📖 Text: {clean_title}"
@@ -2234,6 +2246,9 @@ class H5PGenerator:
                         f"</div>"
                         f"<h3 style='color:#0f766e; margin-top:0;'>📌 Zusammenfassung / Merkkasten</h3>"
                         f"<div style='background-color:#fef3c7; border-left:4px solid #f59e0b; padding:12px 14px; border-radius:8px; font-size:14px; line-height:1.6; color:#78350f;'>{formatted_notes}</div>"
+                        f"<div style='margin-top:14px; padding:10px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;'>"
+                        f"<span style='color:#166534; font-weight:700; font-size:13px;'>✍️ <strong>Merkkasten ins Heft übertragen?</strong> Blättere unten mit <strong>[ ❯ ]</strong> weiter direkt zu Aufgabe 1!</span>"
+                        f"</div>"
                     )
                 },
                 "title": "📌 Zusammenfassung / Merkkasten"
