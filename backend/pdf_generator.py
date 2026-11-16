@@ -248,59 +248,68 @@ class PDFGenerator:
         if logo_bytes:
             logo_img = _make_proportional_logo(logo_bytes, max_w=1.5*inch, max_h=0.75*inch)
         
-        # Build QR-Code for Student Self-Check Solution
-        solution_url = data.get("solution_url")
-        if not solution_url or not str(solution_url).strip():
-            pin_code = data.get("session_pin") or data.get("pin") or "DEMO123"
-            solution_url = f"http://localhost:8080/play.html?pin={pin_code}"
+        # Build QR-Code for Student Self-Check Solution (High-Readability, Standard Scanner Compliant)
+        solution_url = (data.get("solution_url") or "").strip()
+        pin_code = data.get("session_pin") or data.get("pin") or "DEMO123"
+        # Always ensure a valid public URL for scanning (never localhost on printed worksheets)
+        if not solution_url or "localhost" in solution_url or "127.0.0.1" in solution_url or "file:" in solution_url:
+            solution_url = f"https://adaptify-xpym.onrender.com/solution.html?pin={pin_code}"
+        elif "play.html" in solution_url:
+            solution_url = solution_url.replace("play.html", "solution.html")
 
         qr_card = None
         try:
-            from reportlab.graphics.shapes import Drawing
+            from reportlab.graphics.shapes import Drawing, Rect
             from reportlab.graphics.barcode.qr import QrCodeWidget
             
+            # 68pt size (approx 24mm) with Error Correction 'M' and clear 3-module quiet zone
+            qr_size = 68
             qr_w = QrCodeWidget(solution_url)
-            qr_w.barWidth = 48
-            qr_w.barHeight = 48
-            qr_w.qrVersion = 1
+            qr_w.barWidth = qr_size
+            qr_w.barHeight = qr_size
+            qr_w.barLevel = 'M'
+            qr_w.barBorder = 3
+            # NEVER set qrVersion=1, let encoder auto-select version for URL length
             
-            qr_draw = Drawing(48, 48)
+            qr_draw = Drawing(qr_size, qr_size)
+            # Pure white backing rectangle for 100% optical contrast on all papers
+            qr_draw.add(Rect(0, 0, qr_size, qr_size, fillColor=colors.white, strokeColor=None))
             qr_draw.add(qr_w)
             
             qr_title_style = ParagraphStyle(
                 'QRTitleStyle',
                 fontName='Helvetica-Bold',
-                fontSize=6.5,
-                leading=8,
+                fontSize=7,
+                leading=8.5,
                 textColor=colors.HexColor("#0f172a"),
                 alignment=1
             )
             qr_sub_style = ParagraphStyle(
                 'QRSubStyle',
                 fontName='Helvetica',
-                fontSize=5.5,
-                leading=7,
-                textColor=colors.HexColor("#334155"),
+                fontSize=6,
+                leading=7.5,
+                textColor=colors.HexColor("#475569"),
                 alignment=1
             )
             
             qr_card = Table([
                 [qr_draw],
-                [Paragraph("📱 <b>Lösungs-QR</b>", qr_title_style)],
+                [Paragraph("📱 <b>Lösungs-Check</b>", qr_title_style)],
                 [Paragraph("Selbstkontrolle", qr_sub_style)]
-            ], colWidths=[inch*1.1])
+            ], colWidths=[inch*1.3])
             qr_card.setStyle(TableStyle([
                 ('ALIGN', (0,0), (-1,-1), 'CENTER'),
                 ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                ('BOX', (0,0), (-1,-1), 1.2, colors.HexColor("#0f172a")),
-                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
-                ('TOPPADDING', (0,0), (-1,-1), 2),
-                ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-                ('LEFTPADDING', (0,0), (-1,-1), 2),
-                ('RIGHTPADDING', (0,0), (-1,-1), 2),
+                ('BACKGROUND', (0,0), (-1,-1), colors.white),
+                ('BOX', (0,0), (-1,-1), 1.0, colors.HexColor("#cbd5e1")),
+                ('TOPPADDING', (0,0), (-1,-1), 4),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+                ('LEFTPADDING', (0,0), (-1,-1), 4),
+                ('RIGHTPADDING', (0,0), (-1,-1), 4),
             ]))
         except Exception as qr_err:
-            pass
+            logger.warning(f"Failed to generate QR code: {qr_err}")
 
         # Calculate School Year
         import datetime
@@ -398,7 +407,7 @@ class PDFGenerator:
             qr_wrapper = Table([[
                 Paragraph("<b>📱 Digitale Selbstkontrolle &amp; Lösungen:</b><br/><font size=8 color='#334155'>Scanne diesen QR-Code mit dem Smartphone/Tablet für die interaktive Lösungskontrolle.</font>", body_style),
                 qr_card
-            ]], colWidths=[inch*5.3, inch*1.2])
+            ]], colWidths=[inch*5.1, inch*1.4])
             qr_wrapper.setStyle(TableStyle([
                 ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                 ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),

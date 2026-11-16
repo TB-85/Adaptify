@@ -2964,7 +2964,10 @@ if (btnDownloadPDF) {
                 if (sessRes.ok) {
                     const sessData = await sessRes.json();
                     payload.session_pin = sessData.pin;
-                    payload.solution_url = `${window.location.origin}/play.html?pin=${sessData.pin}`;
+                    const baseOrigin = (window.location.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1') && window.location.protocol.startsWith('http')) 
+                        ? window.location.origin 
+                        : 'https://adaptify-xpym.onrender.com';
+                    payload.solution_url = `${baseOrigin}/solution.html?pin=${sessData.pin}`;
                 }
             } catch (e) {
                 console.warn("Could not register live session for QR-Code:", e);
