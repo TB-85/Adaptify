@@ -196,10 +196,10 @@ class PDFGenerator:
             textColor=colors.HexColor("#64748b")
         )
 
-        # Build Logo image if provided or load default Adaptify logo
+        # Build Logo image if provided or load default Adaptify logo (strictly preserving native aspect ratio)
         logo_img = None
+        logo_bytes = None
         logo_data = data.get("pdf_logo_base64")
-        logo_io = None
         if not logo_data:
             import os
             default_logo_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "www", "logo_full.png")
@@ -207,10 +207,6 @@ class PDFGenerator:
                 try:
                     with open(default_logo_path, "rb") as f:
                         logo_bytes = f.read()
-                        logo_io = io.BytesIO(logo_bytes)
-                        from reportlab.platypus import Image
-                        logo_img = Image(logo_io, width=1.1*inch, height=0.6*inch)
-                        logo_img.hAlign = 'RIGHT'
                 except Exception:
                     pass
         else:
@@ -219,12 +215,38 @@ class PDFGenerator:
                 if "," in logo_data:
                     logo_data = logo_data.split(",", 1)[1]
                 logo_bytes = base64.b64decode(logo_data)
-                logo_io = io.BytesIO(logo_bytes)
-                from reportlab.platypus import Image
-                logo_img = Image(logo_io, width=1.0*inch, height=0.55*inch)
-                logo_img.hAlign = 'RIGHT'
             except Exception:
                 pass
+
+        def _make_proportional_logo(raw_bytes, max_w=1.5*inch, max_h=0.75*inch):
+            if not raw_bytes:
+                return None
+            try:
+                from PIL import Image as PILImage
+                from reportlab.platypus import Image as RLImage
+                bio = io.BytesIO(raw_bytes)
+                pil_im = PILImage.open(bio)
+                orig_w, orig_h = pil_im.size
+                if orig_w <= 0 or orig_h <= 0:
+                    return None
+                aspect = float(orig_w) / float(orig_h)
+                # Fit proportionally inside bounding box
+                if aspect > (max_w / max_h):
+                    draw_w = max_w
+                    draw_h = max_w / aspect
+                else:
+                    draw_h = max_h
+                    draw_w = max_h * aspect
+                bio.seek(0)
+                rl_img = RLImage(bio, width=draw_w, height=draw_h)
+                rl_img.hAlign = 'RIGHT'
+                return rl_img
+            except Exception as e:
+                logger.warning(f"Failed to create proportional logo: {e}")
+                return None
+
+        if logo_bytes:
+            logo_img = _make_proportional_logo(logo_bytes, max_w=1.5*inch, max_h=0.75*inch)
         
         # Build QR-Code for Student Self-Check Solution
         solution_url = data.get("solution_url")
@@ -551,13 +573,8 @@ class PDFGenerator:
         ]))
         
         logo_img_sol = None
-        if logo_io:
-            try:
-                logo_io.seek(0)
-                logo_img_sol = Image(logo_io, width=1.0*inch, height=0.55*inch)
-                logo_img_sol.hAlign = 'RIGHT'
-            except Exception:
-                pass
+        if logo_bytes:
+            logo_img_sol = _make_proportional_logo(logo_bytes, max_w=1.5*inch, max_h=0.75*inch)
                 
         right_flow_sol = []
         if logo_img_sol:
