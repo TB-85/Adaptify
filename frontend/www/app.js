@@ -79,7 +79,7 @@ function switchAppMode(mode) {
         if (viewInteractive) viewInteractive.classList.remove('hidden');
         if (viewBranching) viewBranching.classList.add('hidden');
         if (subtitle) {
-            subtitle.textContent = "Interaktive H5P-Videolektionen mit Haltepunkten und Verständnisfragen für mebis, ByCS und Moodle.";
+            subtitle.textContent = "Interaktive H5P-Videolektionen mit Haltepunkten und Verständnisfragen für ByCS und Moodle.";
         }
         if (btnSubmitLabel) btnSubmitLabel.textContent = "Interaktives Video generieren";
     } else {
@@ -2766,7 +2766,7 @@ function setH5PStructureMode(mode) {
             badge.className = "text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200";
         }
         if (desc) {
-            desc.innerHTML = "<b>Empfohlen für ByCS &amp; mebis:</b> Erzeugt zwei saubere Course Presentation Pakete (ohne Einstufungsquiz).";
+            desc.innerHTML = "<b>Empfohlen für ByCS:</b> Erzeugt zwei saubere Course Presentation Pakete für den Inhaltsspeicher (ohne Einstufungsquiz).";
         }
     } else {
         if (btnTwo) {
@@ -2927,16 +2927,16 @@ window.copyIframeEmbedCode = async function() {
     const embedUrl = `${window.location.origin}/play.html?pin=${pin}&embed=true`;
     const iframeCode = `<iframe src="${embedUrl}" width="100%" height="700" frameborder="0" style="border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 14px rgba(0,0,0,0.06); width:100%; min-height:650px;" allow="clipboard-write; fullscreen"></iframe>`;
     
-    const msg = `📋 BayernCloud Schule & mebis iFrame-Einbettungscode (PIN: ${pin}) kopiert!\n\nSo bindest du ihn in mebis ein:\n1. In deinem mebis-Kurs 'Bearbeiten einschalten'\n2. 'Aktivität anlegen' ➔ 'Text- und Medienbereich' wählen\n3. Im Editor auf HTML (< >) klicken und diesen Code einfügen. Fertig!\n\nDeine Schüler schreiben und üben direkt in mebis und erhalten semantisches Echtzeit-Feedback.`;
+    const msg = `📋 ByCS iFrame-Einbettungscode (PIN: ${pin}) kopiert!\n\nSo bindest du ihn in die ByCS-Lernplattform ein:\n1. In deinem ByCS-Kurs 'Bearbeiten einschalten'\n2. 'Aktivität anlegen' ➔ 'Text- und Medienbereich' wählen\n3. Im Editor auf HTML (< >) klicken und diesen Code einfügen. Fertig!\n\nDeine Schüler schreiben und üben direkt in ByCS und erhalten semantisches Echtzeit-Feedback.`;
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(iframeCode).then(() => {
             alert(msg);
         }).catch(() => {
-            prompt("Kopiere diesen iFrame-Code für mebis / ByCS:", iframeCode);
+            prompt("Kopiere diesen iFrame-Code für ByCS:", iframeCode);
         });
     } else {
-        prompt("Kopiere diesen iFrame-Code für mebis / ByCS:", iframeCode);
+        prompt("Kopiere diesen iFrame-Code für ByCS:", iframeCode);
     }
 };
 

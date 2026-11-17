@@ -630,7 +630,7 @@ class H5PGenerator:
                     f"<div style='background:linear-gradient(135deg, #f8fafc 0%, #ede9fe 100%); border:2px solid #8b5cf6; border-radius:14px; padding:18px; box-shadow:0 4px 12px rgba(139,92,246,0.12); font-family:sans-serif; text-align:left;'>"
                     f"<div style='display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #ddd6fe; padding-bottom:8px;'>"
                     f"  <span style='background-color:#7c3aed; color:#ffffff; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; padding:4px 10px; border-radius:20px;'>✍️ KI-Schreibcoach (Web-Modul)</span>"
-                    f"  <span style='color:#6d28d9; font-size:11px; font-weight:700;'>BayernCloud Schule & mebis integriert</span>"
+                    f"  <span style='color:#6d28d9; font-size:11px; font-weight:700;'>BayernCloud Schule (ByCS) integriert</span>"
                     f"</div>"
                     f"<h3 style='color:#4c1d95; margin:0 0 8px 0; font-size:17px; font-weight:800;'>{task_title}</h3>"
                     f"<div style='background-color:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:13.5px; line-height:1.6; color:#334155;'>{clean_instruction}</div>"
@@ -1464,7 +1464,7 @@ class H5PGenerator:
                         f"<div style='background:linear-gradient(135deg, #f8fafc 0%, #ede9fe 100%); border:2px solid #8b5cf6; border-radius:14px; padding:18px; box-shadow:0 4px 12px rgba(139,92,246,0.12); font-family:sans-serif; text-align:left;'>"
                         f"<div style='display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #ddd6fe; padding-bottom:8px;'>"
                         f"  <span style='background-color:#7c3aed; color:#ffffff; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; padding:4px 10px; border-radius:20px;'>✍️ KI-Schreibcoach (Web-Modul)</span>"
-                        f"  <span style='color:#6d28d9; font-size:11px; font-weight:700;'>BayernCloud Schule & mebis integriert</span>"
+                        f"  <span style='color:#6d28d9; font-size:11px; font-weight:700;'>BayernCloud Schule (ByCS) integriert</span>"
                         f"</div>"
                         f"<h3 style='color:#4c1d95; margin:0 0 8px 0; font-size:17px; font-weight:800;'>{task_title}</h3>"
                         f"<div style='background-color:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:13.5px; line-height:1.6; color:#334155;'>{clean_instruction}</div>"
@@ -2412,7 +2412,7 @@ class H5PGenerator:
                     f"<div style='background:linear-gradient(135deg, #f8fafc 0%, #ede9fe 100%); border:2px solid #8b5cf6; border-radius:14px; padding:18px; box-shadow:0 4px 12px rgba(139,92,246,0.12); font-family:sans-serif; text-align:left;'>"
                     f"<div style='display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #ddd6fe; padding-bottom:8px;'>"
                     f"  <span style='background-color:#7c3aed; color:#ffffff; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; padding:4px 10px; border-radius:20px;'>✍️ KI-Schreibcoach (Web-Modul)</span>"
-                    f"  <span style='color:#6d28d9; font-size:11px; font-weight:700;'>BayernCloud Schule & mebis integriert</span>"
+                    f"  <span style='color:#6d28d9; font-size:11px; font-weight:700;'>BayernCloud Schule (ByCS) integriert</span>"
                     f"</div>"
                     f"<h3 style='color:#4c1d95; margin:0 0 8px 0; font-size:17px; font-weight:800;'>{task_title}</h3>"
                     f"<div style='background-color:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:13.5px; line-height:1.6; color:#334155;'>{clean_instruction}</div>"
@@ -2546,7 +2546,7 @@ class H5PGenerator:
     def create_single_course_presentation_h5p_zip(data, level="A"):
         """
         Creates a standalone, clean H5P.CoursePresentation .h5p package for a single level (A = Basic, B = Profi).
-        Contains no branching questions or scenario wrappers. 100% ByCS and mebis compliant.
+        Contains no branching questions or scenario wrappers. 100% ByCS compliant.
         """
         level_char = level.upper() if level else "A"
         clean_title = H5PGenerator.clean_student_title(data.get("title", "Lerneinheit"))
