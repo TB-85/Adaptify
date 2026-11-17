@@ -3141,7 +3141,63 @@ const SimParsers = {
     },
 
     formatTableDragText(text) {
-        if (!text || text.includes('<table')) return text;
+        if (!text) return "";
+
+        // 1. Handle HTML table if present (strip raw HTML tags and convert to clean sections)
+        if (text.toLowerCase().includes("<table")) {
+            const intro = text.split(/<table/i)[0].replace(/<[^>]+>/g, '').trim();
+            const headers = [];
+            const thRegex = /<th[^>]*>(.*?)<\/th>/gi;
+            let m;
+            while ((m = thRegex.exec(text)) !== null) {
+                const h = m[1].replace(/<[^>]+>/g, '').trim();
+                if (h) headers.push(h);
+            }
+            if (!headers.length) {
+                const trMatch = text.match(/<tr[^>]*>(.*?)<\/tr>/i);
+                if (trMatch) {
+                    const tdRegex = /<td[^>]*>(.*?)<\/td>/gi;
+                    let tdm;
+                    while ((tdm = tdRegex.exec(trMatch[1])) !== null) {
+                        const h = tdm[1].replace(/<[^>]+>/g, '').trim();
+                        if (h) headers.push(h);
+                    }
+                }
+            }
+            const rows = [];
+            const trRegex = /<tr[^>]*>(.*?)<\/tr>/gi;
+            while ((m = trRegex.exec(text)) !== null) {
+                if (m[1].toLowerCase().includes('<th') && !m[1].toLowerCase().includes('<td')) continue;
+                const cells = [];
+                const tdRegex = /<td[^>]*>(.*?)<\/td>/gi;
+                let tdm;
+                while ((tdm = tdRegex.exec(m[1])) !== null) {
+                    cells.push(tdm[1].replace(/<[^>]+>/g, '').trim());
+                }
+                if (cells.length) rows.push(cells);
+            }
+            const cols = headers.map(() => []);
+            rows.forEach(r => {
+                r.forEach((cell, idx) => {
+                    if (idx < cols.length && cell) cols[idx].push(cell);
+                });
+            });
+            const out = [];
+            if (intro) { out.push(intro); out.push(""); }
+            headers.forEach((h, idx) => {
+                out.push(`[ ${h} ]`);
+                (cols[idx] || []).forEach(it => {
+                    const cleanIt = it.replace(/^[-*•\s]+|[-*•\s]+$/g, '').trim();
+                    if (cleanIt) out.push(`• *${cleanIt}*`);
+                });
+                out.push("");
+            });
+            const disMatch = text.match(/(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)/i);
+            if (disMatch) out.push(disMatch[0].trim());
+            return out.join("\n").trim();
+        }
+
+        // 2. Check for Category format (Kategorie: / Spalte: / Gruppe: )
         const catRegex = /(?:^|\n)(?:Kategorie|Gruppe|Spalte|Category):\s*([^\n]+)/gi;
         let match;
         const catMatches = [];
@@ -3149,77 +3205,59 @@ const SimParsers = {
             catMatches.push({ name: match[1].trim(), index: match.index, end: catRegex.lastIndex });
         }
         if (catMatches.length >= 2) {
-            const categories = [];
+            const intro = text.substring(0, catMatches[0].index).trim();
+            const out = [];
+            if (intro) { out.push(intro); out.push(""); }
             for (let i = 0; i < catMatches.length; i++) {
                 const start = catMatches[i].end;
                 const end = (i + 1 < catMatches.length) ? catMatches[i + 1].index : text.length;
                 let chunk = text.substring(start, end);
                 const disMatch = chunk.match(/(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)/i);
                 if (disMatch) chunk = chunk.substring(0, disMatch.index);
-                const items = [];
+                out.push(`[ ${catMatches[i].name} ]`);
                 chunk.split('\n').forEach(l => {
-                    let clean = l.trim().replace(/^[-*•]\s*/, '').trim();
-                    if (clean) {
-                        if (!clean.startsWith('*') || !clean.endsWith('*')) clean = `*${clean}*`;
-                        items.push(clean);
-                    }
+                    const clean = l.replace(/^[-*•\s]+|[-*•\s]+$/g, '').trim();
+                    if (clean) out.push(`• *${clean}*`);
                 });
-                categories.push({ name: catMatches[i].name, items });
+                out.push("");
             }
-            const maxItems = Math.max(...categories.map(c => c.items.length), 0);
-            if (maxItems > 0) {
-                let html = '<table class="w-full border-collapse my-3 text-xs bg-white rounded-xl overflow-hidden border border-slate-200 shadow-xs"><thead><tr class="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">';
-                categories.forEach(c => {
-                    html += `<th class="p-2.5 text-center border-r last:border-r-0 border-slate-200">${c.name}</th>`;
-                });
-                html += '</tr></thead><tbody>';
-                for (let r = 0; r < maxItems; r++) {
-                    html += `<tr class="${r % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} border-b last:border-b-0 border-slate-200">`;
-                    categories.forEach(c => {
-                        const item = c.items[r] || '';
-                        html += `<td class="p-3 text-center border-r last:border-r-0 border-slate-200">${item}</td>`;
-                    });
-                    html += '</tr>';
-                }
-                html += '</tbody></table>';
-                const intro = text.substring(0, catMatches[0].index).trim();
-                const disMatchAll = text.match(/(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)/i);
-                const disStr = disMatchAll ? `\n\n${disMatchAll[0]}` : '';
-                return `${intro}\n\n${html}${disStr}`.trim();
-            }
+            const disMatchAll = text.match(/(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)/i);
+            if (disMatchAll) out.push(disMatchAll[0].trim());
+            return out.join("\n").trim();
         }
+
+        // 3. Check for Markdown table
         const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
         const tableLines = lines.filter(l => l.startsWith('|') && l.endsWith('|'));
         if (tableLines.length >= 2) {
             const nonTableBefore = [];
-            const nonTableAfter = [];
             let isTable = false;
             lines.forEach(l => {
                 if (l.startsWith('|') && l.endsWith('|')) isTable = true;
                 else if (!isTable) nonTableBefore.push(l);
-                else nonTableAfter.push(l);
             });
             const headers = tableLines[0].replace(/^\||\|$/g, '').split('|').map(c => c.trim());
             const dataStart = (tableLines.length > 1 && /^\|[\s\-:|]+\|$/.test(tableLines[1])) ? 2 : 1;
-            let html = '<table class="w-full border-collapse my-3 text-xs bg-white rounded-xl overflow-hidden border border-slate-200 shadow-xs"><thead><tr class="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">';
-            headers.forEach(h => {
-                html += `<th class="p-2.5 text-center border-r last:border-r-0 border-slate-200">${h}</th>`;
-            });
-            html += '</tr></thead><tbody>';
-            tableLines.slice(dataStart).forEach((rowLine, rIdx) => {
+            const cols = headers.map(() => []);
+            tableLines.slice(dataStart).forEach(rowLine => {
                 const cells = rowLine.replace(/^\||\|$/g, '').split('|').map(c => c.trim());
-                html += `<tr class="${rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} border-b last:border-b-0 border-slate-200">`;
-                cells.forEach(c => {
-                    html += `<td class="p-3 text-center border-r last:border-r-0 border-slate-200">${c}</td>`;
+                cells.forEach((c, idx) => {
+                    const cleanC = c.replace(/^[-*•\s]+|[-*•\s]+$/g, '').trim();
+                    if (idx < cols.length && cleanC) cols[idx].push(cleanC);
                 });
-                html += '</tr>';
             });
-            html += '</tbody></table>';
-            const parts = [];
-            if (nonTableBefore.length) parts.push(nonTableBefore.join('\n'));
-            parts.push(html);
-            if (nonTableAfter.length) parts.push(nonTableAfter.join('\n'));
-            return parts.join('\n\n');
+            const out = [];
+            if (nonTableBefore.length) { out.push(nonTableBefore.join('\n')); out.push(""); }
+            headers.forEach((h, idx) => {
+                out.push(`[ ${h} ]`);
+                (cols[idx] || []).forEach(it => {
+                    out.push(`• *${it}*`);
+                });
+                out.push("");
+            });
+            const disMatchAll = text.match(/(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)/i);
+            if (disMatchAll) out.push(disMatchAll[0].trim());
+            return out.join("\n").trim();
         }
         return text;
     },

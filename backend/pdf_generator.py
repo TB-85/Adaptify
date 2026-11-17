@@ -216,24 +216,83 @@ class PDFGenerator:
         is_table = bool(
             ("<table" in raw_text.lower()) or 
             (len([l for l in raw_text.strip().split("\n") if l.strip().startswith("|") and l.strip().endswith("|")]) >= 2) or
+            bool(re.search(r'\[\s*[^\]]+\s*\]', raw_text)) or
             target_format in ["Tabellen-Zuordnung", "Kategorie-Zuordnung"]
         )
         if is_table:
-            md_lines = [l.strip() for l in raw_text.strip().split("\n") if l.strip().startswith("|") and l.strip().endswith("|")]
-            if len(md_lines) >= 2:
-                headers = [c.strip() for c in md_lines[0].strip('|').split('|')]
-                start_row = 2 if (len(md_lines) > 1 and re.match(r'^[|\-:\s]+$', md_lines[1])) else 1
-                header_p = [Paragraph(f"<b>{clean_reportlab_html(h)}</b>", ParagraphStyle('TH', parent=body_style, fontName='Helvetica-Bold', fontSize=9, textColor=colors.white, alignment=1)) for h in headers]
-                table_data = [header_p]
+            headers = []
+            cols_data = []
+
+            # Case A: HTML table
+            if "<table" in raw_text.lower():
+                th_list = re.findall(r'<th[^>]*>(.*?)</th>', raw_text, re.IGNORECASE | re.DOTALL)
+                if not th_list:
+                    first_tr = re.search(r'<tr[^>]*>(.*?)</tr>', raw_text, re.IGNORECASE | re.DOTALL)
+                    if first_tr:
+                        th_list = re.findall(r'<td[^>]*>(.*?)</td>', first_tr.group(1), re.IGNORECASE | re.DOTALL)
+                headers = [clean_reportlab_html(re.sub(r'<[^>]+>', '', h).strip()) for h in th_list if re.sub(r'<[^>]+>', '', h).strip()]
                 
-                for r_line in md_lines[start_row:]:
-                    cols = [c.strip() for c in r_line.strip('|').split('|')]
+                rows = re.findall(r'<tr[^>]*>(.*?)</tr>', raw_text, re.IGNORECASE | re.DOTALL)
+                cols_dict = {i: [] for i in range(len(headers))}
+                for r in rows:
+                    if "<th" in r.lower() and "<td" not in r.lower():
+                        continue
+                    tds = re.findall(r'<td[^>]*>(.*?)</td>', r, re.IGNORECASE | re.DOTALL)
+                    if tds:
+                        for i, td in enumerate(tds):
+                            clean_td = clean_reportlab_html(re.sub(r'<[^>]+>', '', td).strip())
+                            if clean_td and i in cols_dict:
+                                cols_dict[i].append(clean_td)
+                cols_data = [cols_dict.get(i, []) for i in range(len(headers))]
+
+            # Case B: Markdown table
+            elif any(l.strip().startswith("|") and l.strip().endswith("|") for l in raw_text.split("\n")):
+                md_lines = [l.strip() for l in raw_text.strip().split("\n") if l.strip().startswith("|") and l.strip().endswith("|")]
+                if len(md_lines) >= 2:
+                    headers = [clean_reportlab_html(c.strip()) for c in md_lines[0].strip('|').split('|')]
+                    start_row = 2 if (len(md_lines) > 1 and re.match(r'^[|\-:\s]+$', md_lines[1])) else 1
+                    cols_dict = {i: [] for i in range(len(headers))}
+                    for r_line in md_lines[start_row:]:
+                        cols = [clean_reportlab_html(c.strip()) for c in r_line.strip('|').split('|')]
+                        for i, c_val in enumerate(cols):
+                            if i in cols_dict:
+                                cols_dict[i].append(c_val)
+                    cols_data = [cols_dict.get(i, []) for i in range(len(headers))]
+
+            # Case C: Bracket categories [ Category ] or Kategorie: ...
+            elif re.search(r'(?:\[\s*([^\]]+)\s*\]|(?:Kategorie|Spalte):\s*([^\n]+))', raw_text):
+                cat_matches = list(re.finditer(r'(?:\[\s*([^\]]+)\s*\]|(?:^|\n)(?:Kategorie|Spalte):\s*([^\n]+))', raw_text))
+                for i, m in enumerate(cat_matches):
+                    c_name = (m.group(1) or m.group(2) or "").strip()
+                    headers.append(clean_reportlab_html(c_name))
+                    start = m.end()
+                    end = cat_matches[i+1].start() if i + 1 < len(cat_matches) else len(raw_text)
+                    chunk = raw_text[start:end]
+                    dis_m = re.search(r'(?:Distraktoren|Zusatzwörter|Falsche Optionen):', chunk, re.IGNORECASE)
+                    if dis_m:
+                        chunk = chunk[:dis_m.start()]
+                    items = []
+                    for line in chunk.split("\n"):
+                        clean_l = line.strip().lstrip("-*•").strip()
+                        if clean_l and not clean_l.startswith("["):
+                            items.append(clean_reportlab_html(clean_l))
+                    cols_data.append(items)
+
+            if headers and cols_data:
+                header_p = [Paragraph(f"<b>{h}</b>", ParagraphStyle('TH', parent=body_style, fontName='Helvetica-Bold', fontSize=9, textColor=colors.white, alignment=1)) for h in headers]
+                table_data = [header_p]
+                max_r = max(len(c) for c in cols_data) if cols_data else 0
+                for r_idx in range(max_r):
                     row_cells = []
-                    for c_val in cols:
-                        cell_text = PDFGenerator.parse_blanks_for_teacher(c_val) if is_teacher else PDFGenerator.parse_blanks_for_student(c_val)
+                    for c_idx in range(len(headers)):
+                        c_val = cols_data[c_idx][r_idx] if r_idx < len(cols_data[c_idx]) else ""
+                        if c_val:
+                            cell_text = PDFGenerator.parse_blanks_for_teacher(c_val) if is_teacher else PDFGenerator.parse_blanks_for_student(c_val)
+                        else:
+                            cell_text = ""
                         row_cells.append(Paragraph(cell_text, ParagraphStyle('TD', parent=body_style, fontSize=8.5, leading=11, alignment=1)))
                     table_data.append(row_cells)
-                
+
                 col_w = (7.1 * inch) / max(1, len(headers))
                 col_widths = [col_w] * len(headers)
                 t_widget = Table(table_data, colWidths=col_widths)

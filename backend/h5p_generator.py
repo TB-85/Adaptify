@@ -163,15 +163,65 @@ class H5PGenerator:
 
     @staticmethod
     def format_table_drag_text(text):
+        """
+        Converts category lists, Markdown tables, or accidental HTML tables
+        into clean, pedagogical H5P.DragText compatible format with section
+        brackets and bullet points. Never outputs raw HTML tags like <table>,
+        which H5P.DragText cannot render and would leak as code on the slide.
+        """
         if not text:
             return ""
-        if "<table" in text.lower():
-            return text
 
-        # Check for Category format
+        # 1. Handle HTML table if present (e.g. from cache or model output)
+        if "<table" in text.lower():
+            intro = re.split(r'<table', text, flags=re.IGNORECASE)[0].strip()
+            intro = re.sub(r'<[^>]+>', '', intro).strip()
+            
+            headers = re.findall(r'<th[^>]*>(.*?)</th>', text, re.IGNORECASE | re.DOTALL)
+            if not headers:
+                first_tr = re.search(r'<tr[^>]*>(.*?)</tr>', text, re.IGNORECASE | re.DOTALL)
+                if first_tr:
+                    headers = re.findall(r'<td[^>]*>(.*?)</td>', first_tr.group(1), re.IGNORECASE | re.DOTALL)
+            headers = [re.sub(r'<[^>]+>', '', h).strip() for h in headers if re.sub(r'<[^>]+>', '', h).strip()]
+            
+            rows = re.findall(r'<tr[^>]*>(.*?)</tr>', text, re.IGNORECASE | re.DOTALL)
+            cols = {i: [] for i in range(len(headers))}
+            for r in rows:
+                if "<th" in r.lower() and "<td" not in r.lower():
+                    continue
+                tds = re.findall(r'<td[^>]*>(.*?)</td>', r, re.IGNORECASE | re.DOTALL)
+                if tds:
+                    for i, td in enumerate(tds):
+                        clean_td = re.sub(r'<[^>]+>', '', td).strip()
+                        if clean_td and i in cols:
+                            cols[i].append(clean_td)
+            
+            out = []
+            if intro:
+                out.append(intro)
+                out.append("")
+            for i, h in enumerate(headers):
+                items = cols.get(i, [])
+                out.append(f"[ {h} ]")
+                for it in items:
+                    it_clean = re.sub(r'^\*+|\*+$', '', it.strip().lstrip("-*•").strip()).strip()
+                    if it_clean:
+                        out.append(f"• *{it_clean}*")
+                out.append("")
+                
+            dis_m = re.search(r'(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)', text, re.IGNORECASE)
+            if dis_m:
+                out.append(dis_m.group(0).strip())
+            return "\n".join(out).strip()
+
+        # 2. Check for Category format (Kategorie: / Spalte: / Gruppe: )
         cat_matches = list(re.finditer(r'(?:^|\n)(?:Kategorie|Gruppe|Spalte|Category):\s*([^\n]+)', text, re.IGNORECASE))
         if len(cat_matches) >= 2:
-            categories = []
+            intro = text[:cat_matches[0].start()].strip()
+            out = []
+            if intro:
+                out.append(intro)
+                out.append("")
             for i, m in enumerate(cat_matches):
                 cat_name = m.group(1).strip()
                 start = m.end()
@@ -180,75 +230,58 @@ class H5PGenerator:
                 dis_m = re.search(r'(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)', chunk, re.IGNORECASE)
                 if dis_m:
                     chunk = chunk[:dis_m.start()]
-                items = []
+                out.append(f"[ {cat_name} ]")
                 for line in chunk.split("\n"):
                     line = line.strip().lstrip("-*•").strip()
                     if line:
-                        if not line.startswith("*") and not line.endswith("*"):
-                            line = f"*{line}*"
-                        items.append(line)
-                categories.append({"name": cat_name, "items": items})
-            
-            max_items = max(len(c["items"]) for c in categories) if categories else 0
-            if max_items > 0:
-                html = ['<table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; background:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #cbd5e1;">']
-                html.append('  <thead><tr style="background:#f1f5f9;">')
-                for c in categories:
-                    html.append(f'    <th style="padding:10px 12px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:#1e293b;">{c["name"]}</th>')
-                html.append('  </tr></thead><tbody>')
-                for r in range(max_items):
-                    bg = "#ffffff" if r % 2 == 0 else "#f8fafc"
-                    html.append(f'    <tr style="background:{bg};">')
-                    for c in categories:
-                        item_str = c["items"][r] if r < len(c["items"]) else ""
-                        html.append(f'      <td style="padding:12px; border:1px solid #cbd5e1; text-align:center;">{item_str}</td>')
-                    html.append('    </tr>')
-                html.append('  </tbody></table>')
-                intro = text[:cat_matches[0].start()].strip()
-                dis_full = re.search(r'(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)', text, re.IGNORECASE)
-                dis_str = f"\n\n{dis_full.group(0)}" if dis_full else ""
-                return f"{intro}\n\n{''.join(html)}{dis_str}".strip()
+                        line_clean = re.sub(r'^\*+|\*+$', '', line).strip()
+                        if line_clean:
+                            out.append(f"• *{line_clean}*")
+                out.append("")
+            dis_full = re.search(r'(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)', text, re.IGNORECASE)
+            if dis_full:
+                out.append(dis_full.group(0).strip())
+            return "\n".join(out).strip()
 
-        # Check for Markdown table
+        # 3. Check for Markdown table
         lines = [l.strip() for l in text.strip().split("\n") if l.strip()]
         table_lines = [l for l in lines if l.startswith("|") and l.endswith("|")]
         if len(table_lines) >= 2:
             non_table_before = []
-            non_table_after = []
             is_table = False
             for l in lines:
                 if l.startswith("|") and l.endswith("|"):
                     is_table = True
-                else:
-                    if not is_table:
-                        non_table_before.append(l)
-                    else:
-                        non_table_after.append(l)
+                elif not is_table:
+                    non_table_before.append(l)
+                    
             header_line = table_lines[0]
             headers = [c.strip() for c in header_line.strip("|").split("|")]
             data_start = 2 if len(table_lines) > 1 and re.match(r'^\|[\s\-:|]+\|$', table_lines[1]) else 1
             
-            html = ['<table style="width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; background:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #cbd5e1;">']
-            html.append('  <thead><tr style="background:#f1f5f9;">')
-            for h in headers:
-                html.append(f'    <th style="padding:10px 12px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:#1e293b;">{h}</th>')
-            html.append('  </tr></thead><tbody>')
-            for r_idx, r_line in enumerate(table_lines[data_start:]):
+            cols = {i: [] for i in range(len(headers))}
+            for r_line in table_lines[data_start:]:
                 cells = [c.strip() for c in r_line.strip("|").split("|")]
-                bg = "#ffffff" if r_idx % 2 == 0 else "#f8fafc"
-                html.append(f'    <tr style="background:{bg};">')
-                for c in cells:
-                    html.append(f'      <td style="padding:12px; border:1px solid #cbd5e1; text-align:center;">{c}</td>')
-                html.append('    </tr>')
-            html.append('  </tbody></table>')
-            
-            parts = []
+                for i, c in enumerate(cells):
+                    clean_c = re.sub(r'^\*+|\*+$', '', c).strip()
+                    if clean_c and i in cols:
+                        cols[i].append(clean_c)
+                        
+            out = []
             if non_table_before:
-                parts.append("\n".join(non_table_before))
-            parts.append("".join(html))
-            if non_table_after:
-                parts.append("\n".join(non_table_after))
-            return "\n\n".join(parts)
+                out.append("\n".join(non_table_before))
+                out.append("")
+            for i, h in enumerate(headers):
+                items = cols.get(i, [])
+                out.append(f"[ {h} ]")
+                for it in items:
+                    out.append(f"• *{it}*")
+                out.append("")
+                
+            dis_full = re.search(r'(?:Distraktoren|Zusatzwörter|Falsche Optionen):\s*(.*)', text, re.IGNORECASE)
+            if dis_full:
+                out.append(dis_full.group(0).strip())
+            return "\n".join(out).strip()
 
         return text
 
