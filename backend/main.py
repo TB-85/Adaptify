@@ -110,12 +110,16 @@ class ExportData(BaseModel):
     pdf_include_lehrplan: Optional[bool] = False
     pdf_include_level_c: Optional[bool] = False
     pdf_include_qr: Optional[bool] = True
+    pdf_variant: Optional[str] = "bundle"
     include_level_c: Optional[bool] = False
     video_mode: Optional[str] = None
     interactions: Optional[List[dict]] = None
     full_hefteintrag: Optional[str] = None
     youtube_url: Optional[str] = None
     video_filename: Optional[str] = None
+
+    class Config:
+        extra = "allow"
 
 class EssayEvaluationRequest(BaseModel):
     task_title: str
@@ -375,10 +379,20 @@ async def export_h5p(
 async def export_pdf(data: ExportData):
     """
     Takes the structured task JSON and generates a premium print-ready PDF worksheet.
+    Supports variants: 'bundle' (AB 1 + AB 2 + Lösungen), 'basic' (AB 1 + Lösungen), 'profi' (AB 2 + Lösungen).
     """
     try:
         is_video = (getattr(data, "video_mode", None) == "interactive_video" or (getattr(data, "interactions", None) and not getattr(data, "diagnostic", None)))
-        suffix = "hefteintrag_begleitblatt.pdf" if is_video else "arbeitsblatt.pdf"
+        variant = getattr(data, "pdf_variant", "bundle") or "bundle"
+        if is_video:
+            suffix = "hefteintrag_begleitblatt.pdf"
+        elif variant == "basic":
+            suffix = "arbeitsblatt_basis_levelA.pdf"
+        elif variant == "profi":
+            suffix = "arbeitsblatt_profi_levelB.pdf"
+        else:
+            suffix = "differenziertes_arbeitsblatt_paket.pdf"
+
         pdf_bytes = PDFGenerator.generate_worksheet_pdf(data.dict())
         disposition = make_content_disposition(data.title, suffix)
         

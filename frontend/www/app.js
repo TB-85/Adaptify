@@ -2940,66 +2940,77 @@ window.copyIframeEmbedCode = async function() {
     }
 };
 
-if (btnDownloadPDF) {
-    btnDownloadPDF.addEventListener('click', async () => {
-        const payload = getEditedData();
-        
-        // Inject PDF customization parameters
-        payload.pdf_teacher_name = document.getElementById('pdf-teacher-name')?.value || "";
-        payload.pdf_class_name = document.getElementById('pdf-class-name')?.value || "";
-        payload.pdf_accent_color = document.getElementById('pdf-accent-color')?.value || "#0284c7";
-        payload.pdf_include_lehrplan = document.getElementById('pdf-include-lehrplan')?.checked ?? false;
-        payload.pdf_include_level_c = document.getElementById('pdf-include-level-c')?.checked ?? false;
-        payload.pdf_logo_base64 = pdfLogoBase64;
-        
-        const includeQR = document.getElementById('pdf-include-qr')?.checked ?? true;
-        if (includeQR) {
-            try {
-                // Create session to generate live QR solution URL
-                const sessRes = await fetch(`${API_BASE}/api/sessions/create`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title: payload.title, data: payload })
-                });
-                if (sessRes.ok) {
-                    const sessData = await sessRes.json();
-                    payload.session_pin = sessData.pin;
-                    const baseOrigin = (window.location.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1') && window.location.protocol.startsWith('http')) 
-                        ? window.location.origin 
-                        : 'https://adaptify-xpym.onrender.com';
-                    payload.solution_url = `${baseOrigin}/solution.html?pin=${sessData.pin}`;
-                }
-            } catch (e) {
-                console.warn("Could not register live session for QR-Code:", e);
-            }
-        }
-        
+window.downloadPDFVariant = async function(requestedVariant = null) {
+    const payload = getEditedData();
+    
+    // Determine variant (argument overrides radio choice)
+    const radioVariant = document.querySelector('input[name="pdf-variant-option"]:checked')?.value || 'bundle';
+    payload.pdf_variant = requestedVariant || radioVariant || 'bundle';
+    
+    // Inject PDF customization parameters
+    payload.pdf_teacher_name = document.getElementById('pdf-teacher-name')?.value || "";
+    payload.pdf_class_name = document.getElementById('pdf-class-name')?.value || "";
+    payload.pdf_accent_color = document.getElementById('pdf-accent-color')?.value || "#0284c7";
+    payload.pdf_include_lehrplan = document.getElementById('pdf-include-lehrplan')?.checked ?? false;
+    payload.pdf_include_level_c = document.getElementById('pdf-include-level-c')?.checked ?? false;
+    payload.pdf_logo_base64 = pdfLogoBase64;
+    
+    const includeQR = document.getElementById('pdf-include-qr')?.checked ?? true;
+    if (includeQR) {
         try {
-            const response = await fetch(`${API_BASE}/api/export/pdf`, {
+            // Create session to generate live QR solution URL
+            const sessRes = await fetch(`${API_BASE}/api/sessions/create`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: payload.title, data: payload })
             });
-
-            if (!response.ok) throw new Error("Failed to download PDF");
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${payload.title.replace(/\s+/g, '_')}_arbeitsblatt.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-
-        } catch (err) {
-            console.error("PDF Download error:", err);
-            alert("Herunterladen des PDF-Arbeitsblattes fehlgeschlagen.");
+            if (sessRes.ok) {
+                const sessData = await sessRes.json();
+                payload.session_pin = sessData.pin;
+                const baseOrigin = (window.location.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1') && window.location.protocol.startsWith('http')) 
+                    ? window.location.origin 
+                    : 'https://adaptify-xpym.onrender.com';
+                payload.solution_url = `${baseOrigin}/solution.html?pin=${sessData.pin}`;
+            }
+        } catch (e) {
+            console.warn("Could not register live session for QR-Code:", e);
         }
-    });
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/export/pdf`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) throw new Error("Failed to download PDF");
+
+        let variantSuffix = 'differenziertes_arbeitsblatt_paket.pdf';
+        if (payload.pdf_variant === 'basic') variantSuffix = 'arbeitsblatt_basis_levelA.pdf';
+        else if (payload.pdf_variant === 'profi') variantSuffix = 'arbeitsblatt_profi_levelB.pdf';
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const cleanTitle = (payload.title || "arbeitsblatt").replace(/\s+/g, '_');
+        a.download = `${cleanTitle}_${variantSuffix}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+    } catch (err) {
+        console.error("PDF Download error:", err);
+        alert("Herunterladen des PDF-Arbeitsblattes fehlgeschlagen.");
+    }
+};
+
+if (btnDownloadPDF) {
+    btnDownloadPDF.addEventListener('click', () => window.downloadPDFVariant());
 }
 
 if (btnRestart) {

@@ -77,21 +77,49 @@ def test_3_pdf_worksheet_and_solution():
     ai = AIService()
     data = ai._get_mock_data(school_type="Grundschule", subject="Deutsch", focus_topic="Nomen und Verben")
     
-    # 1. Direct PDFGenerator test
+    # 1. Direct PDFGenerator test - Bundle (Level A + Level B + Lösungen)
     data["pdf_school_name"] = "Grundschule Musterstadt"
     data["pdf_teacher_name"] = "Hr. Benke"
     data["pdf_class_name"] = "3b"
+    data["pdf_variant"] = "bundle"
     
-    pdf_bytes = PDFGenerator.generate_worksheet_pdf(data)
-    assert len(pdf_bytes) > 1500, "PDF-Arbeitsblatt fehlerhaft!"
-    print(f"[TEST] Differenziertes PDF-Arbeitsblatt generiert ({len(pdf_bytes)} Bytes, DIN A4)")
+    pdf_bundle = PDFGenerator.generate_worksheet_pdf(data)
+    assert len(pdf_bundle) > 5000, "Bundle PDF-Arbeitsblatt fehlerhaft!"
+    print(f"[TEST] Bundle-Arbeitsblatt (Basis + Profi + Lösungen) generiert ({len(pdf_bundle)} Bytes, DIN A4)")
     
-    # 2. Test via HTTP Export API
-    resp = client.post("/api/export/pdf", json=data)
-    assert resp.status_code == 200, f"Export PDF API fehlgeschlagen: {resp.text}"
-    assert len(resp.content) > 1500, "API Rueckgabe ist zu klein"
-    print(f"[TEST] HTTP-Endpunkt /api/export/pdf erfolgreich ({len(resp.content)} Bytes)")
-    print("  [OK] Druckfaehige PDFs (Schueler- & Differenzierungs-Seiten) voll funktionsfaehig.")
+    # 2. Test Basic Variant (Level A + Lösungen)
+    data_basic = dict(data)
+    data_basic["pdf_variant"] = "basic"
+    pdf_basic = PDFGenerator.generate_worksheet_pdf(data_basic)
+    assert len(pdf_basic) > 3000, "Basic PDF-Arbeitsblatt fehlerhaft!"
+    assert len(pdf_basic) < len(pdf_bundle), "Basic PDF sollte kleiner als das Bundle sein!"
+    print(f"[TEST] Basis-Arbeitsblatt (Level A + Lösungen) generiert ({len(pdf_basic)} Bytes, DIN A4)")
+
+    # 3. Test Profi Variant (Level B + Lösungen)
+    data_profi = dict(data)
+    data_profi["pdf_variant"] = "profi"
+    pdf_profi = PDFGenerator.generate_worksheet_pdf(data_profi)
+    assert len(pdf_profi) > 3000, "Profi PDF-Arbeitsblatt fehlerhaft!"
+    print(f"[TEST] Profi-Arbeitsblatt (Level B + Lösungen) generiert ({len(pdf_profi)} Bytes, DIN A4)")
+
+    # 4. Test via HTTP Export API
+    resp_bundle = client.post("/api/export/pdf", json=data)
+    assert resp_bundle.status_code == 200, f"Export PDF API fehlgeschlagen: {resp_bundle.text}"
+    assert len(resp_bundle.content) > 5000, "API Rueckgabe ist zu klein"
+    assert "differenziertes_arbeitsblatt_paket.pdf" in resp_bundle.headers.get("Content-Disposition", "")
+    print(f"[TEST] HTTP-Endpunkt /api/export/pdf (Bundle) erfolgreich ({len(resp_bundle.content)} Bytes)")
+
+    resp_basic = client.post("/api/export/pdf", json=data_basic)
+    assert resp_basic.status_code == 200
+    assert "arbeitsblatt_basis_levelA.pdf" in resp_basic.headers.get("Content-Disposition", "")
+    print(f"[TEST] HTTP-Endpunkt /api/export/pdf (Basic) erfolgreich ({len(resp_basic.content)} Bytes)")
+
+    resp_profi = client.post("/api/export/pdf", json=data_profi)
+    assert resp_profi.status_code == 200
+    assert "arbeitsblatt_profi_levelB.pdf" in resp_profi.headers.get("Content-Disposition", "")
+    print(f"[TEST] HTTP-Endpunkt /api/export/pdf (Profi) erfolgreich ({len(resp_profi.content)} Bytes)")
+
+    print("  [OK] Druckfaehige PDFs (2 getrennte ABs ohne Einstufungsfragen & Loesungen) voll funktionsfaehig.")
 
 def test_4_live_classroom_stress():
     print_header("4. LIVE-UNTERRICHT: 30 SCHUELER-TABLETS PARALLEL")
