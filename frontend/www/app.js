@@ -3677,14 +3677,24 @@ function renderSimulator() {
                         </div>
                         <h4 class="text-base font-black text-slate-800">Experten-Zone (Zusatzaufgaben)</h4>
                         <p class="text-[10px] text-slate-500 max-w-sm mx-auto">
-                            Diese Aufgaben sind für Schnellarbeiter gedacht. Überlege dir eine Lösung im Kopf.
+                            Diese anspruchsvollen Transferaufgaben können digital bearbeitet und direkt per KI korrigiert werden.
                         </p>
                     </div>
-                    <div class="space-y-2.5 max-h-[220px] overflow-y-auto pr-2">
+                    <div class="space-y-2.5 max-h-[240px] overflow-y-auto pr-2">
                         ${experts.map((exp, idx) => `
-                            <div class="p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1">
-                                <h6 class="text-[10px] font-extrabold text-amber-900">${exp.title || `Experten-Aufgabe ${idx+1}`}</h6>
+                            <div class="p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-2 text-left">
+                                <div class="flex items-center justify-between">
+                                    <h6 class="text-[11px] font-extrabold text-amber-900">${exp.title || `Experten-Aufgabe ${idx+1}`}</h6>
+                                    <span class="text-[9px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <i class="fa-solid fa-robot text-[8px]"></i> KI-Korrektur aktiv
+                                    </span>
+                                </div>
                                 <p class="text-xs text-slate-600 font-medium leading-relaxed">${exp.task}</p>
+                                <div class="pt-1">
+                                    <a href="play.html?mode=essay&title=${encodeURIComponent(exp.title || `Experten-Aufgabe ${idx+1}`)}&instruction=${encodeURIComponent(exp.task)}" target="_blank" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-1.5 rounded-lg transition-colors shadow-sm">
+                                        <i class="fa-solid fa-pen-nib"></i> Im KI-Schreibcoach bearbeiten & prüfen ➔
+                                    </a>
+                                </div>
                             </div>
                         `).join('')}
                     </div>
