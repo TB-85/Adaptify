@@ -1103,156 +1103,203 @@
                     </p>
                 </div>
 
-                <!-- PDF Customization Settings -->
-                <div class="glass-panel p-6 rounded-3xl shadow-lg text-left space-y-4 max-w-lg mx-auto border-t-4 border-brand-500">
-                    <h4 class="font-bold text-slate-900 flex items-center gap-2">
-                        <i class="fa-solid fa-palette text-brand-600"></i> PDF-Design anpassen (Optional)
-                    </h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Klasse</label>
-                            <input type="text" id="pdf-class-name" placeholder="z.B. 6a" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Lehrkraft</label>
-                            <input type="text" id="pdf-teacher-name" placeholder="z.B. Frau Schmidt" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Akzentfarbe</label>
-                            <div class="flex items-center gap-2">
-                                <input type="color" id="pdf-accent-color" value="#0284c7" class="h-8 w-10 border border-slate-200 rounded-lg cursor-pointer">
-                                <span class="text-[10px] font-semibold text-slate-500">Farbe für Titel &amp; Linien</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Schullogo (PNG/JPG)</label>
-                            <input type="file" id="pdf-logo-file" accept="image/png, image/jpeg" class="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-brand-50 file:text-brand-700">
-                        </div>
-                    </div>
-                    <div class="pt-2 border-t border-slate-100 flex flex-col gap-2">
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">PDF-Exportumfang</label>
-                        <div class="grid grid-cols-1 gap-1.5">
-                            <label class="flex items-center gap-2.5 p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl cursor-pointer text-xs font-semibold text-slate-700">
-                                <input type="radio" name="pdf-variant-option" value="bundle" checked class="text-brand-600 focus:ring-brand-500 cursor-pointer">
-                                <span><b class="text-slate-900">Beide Arbeitsblätter (Basis &amp; Profi)</b> + Lösungsblatt</span>
-                            </label>
-                            <label class="flex items-center gap-2.5 p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl cursor-pointer text-xs font-semibold text-slate-700">
-                                <input type="radio" name="pdf-variant-option" value="basic" class="text-brand-600 focus:ring-brand-500 cursor-pointer">
-                                <span><b class="text-slate-900">Nur Basis (Level A)</b> + Lösungsblatt</span>
-                            </label>
-                            <label class="flex items-center gap-2.5 p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl cursor-pointer text-xs font-semibold text-slate-700">
-                                <input type="radio" name="pdf-variant-option" value="profi" class="text-brand-600 focus:ring-brand-500 cursor-pointer">
-                                <span><b class="text-slate-900">Nur Profi (Level B)</b> + Lösungsblatt</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="pt-2 border-t border-slate-100 flex flex-col gap-2">
-                        <div class="flex items-center gap-2.5">
-                            <input type="checkbox" id="pdf-include-qr" checked class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer">
-                            <label for="pdf-include-qr" class="text-xs font-semibold text-slate-700 cursor-pointer flex items-center gap-1.5">
-                                <i class="fa-solid fa-qrcode text-emerald-600"></i>
-                                Lösungs-QR-Code aufdrucken (Selbstkontrolle per Handy/Tablet)
-                            </label>
-                        </div>
-                        <div class="flex items-center gap-2.5">
-                            <input type="checkbox" id="pdf-include-level-c" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer">
-                            <label for="pdf-include-level-c" class="text-xs font-semibold text-slate-700 cursor-pointer flex items-center gap-1.5">
-                                <i class="fa-solid fa-hands-holding-child text-emerald-600"></i>
-                                Level C im PDF aufdrucken
-                            </label>
-                        </div>
-                    </div>
+                <!-- ==================== EXPORT VIEW B: BRANCHING & WORKSHEET HUB ==================== -->
+            <div id="export-branching-section" class="space-y-6 hidden">
+                <div class="bg-teal-50 text-teal-700 h-16 w-16 rounded-full flex items-center justify-center mx-auto shadow-inner text-2xl pulse-soft">
+                    <i class="fa-solid fa-circle-check"></i>
                 </div>
-
-                <!-- Differentiated H5P Downloads (Two files: Basic & Profi) -->
-                <div class="glass-panel p-5 rounded-3xl shadow-lg max-w-lg mx-auto border-2 border-emerald-300/80 bg-gradient-to-br from-emerald-50/50 via-white to-teal-50/30 space-y-3.5">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-9 h-9 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-sm">
-                                <i class="fa-solid fa-file-zipper"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-xs text-slate-900">2 getrennte H5P-Dateien (ByCS / mebis)</h4>
-                                <p class="text-[10px] text-slate-500 font-medium">Direkt in den Inhaltsspeicher (Course Presentation 1.25)</p>
-                            </div>
-                        </div>
-                        <span class="text-[9px] bg-emerald-100 text-emerald-800 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Ohne Branching</span>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        <!-- Basic (Level A) -->
-                        <button type="button" onclick="downloadH5PVariant('basic')" class="flex items-center gap-3 p-3 bg-white hover:bg-emerald-50/70 border border-emerald-200/90 rounded-2xl shadow-xs transition-all duration-200 hover:-translate-y-0.5 group text-left cursor-pointer">
-                            <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-xs shrink-0 group-hover:scale-105 transition-all">A</span>
-                            <div class="min-w-0">
-                                <span class="font-bold text-xs text-slate-800 block truncate">Basic (Level A)</span>
-                                <span class="text-[10px] text-slate-500 block truncate">Fördern &amp; Merkkasten</span>
-                            </div>
-                        </button>
-
-                        <!-- Profi (Level B) -->
-                        <button type="button" onclick="downloadH5PVariant('profi')" class="flex items-center gap-3 p-3 bg-white hover:bg-brand-50/70 border border-brand-200/90 rounded-2xl shadow-xs transition-all duration-200 hover:-translate-y-0.5 group text-left cursor-pointer">
-                            <span class="w-8 h-8 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center font-black text-xs shrink-0 group-hover:scale-105 transition-all">B</span>
-                            <div class="min-w-0">
-                                <span class="font-bold text-xs text-slate-800 block truncate">Profi (Level B)</span>
-                                <span class="text-[10px] text-slate-500 block truncate">Fordern &amp; Vertiefung</span>
-                            </div>
-                        </button>
-                    </div>
-
-                    <!-- Bundle Download Button -->
-                    <button type="button" onclick="downloadH5PVariant('bundle')" class="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg">
-                        <i class="fa-solid fa-box-archive"></i>
-                        <span>Beide Dateien als ZIP herunterladen (Basic + Profi)</span>
-                    </button>
-                </div>
-
-                <!-- Further Export Formats: Branching, PDF, SCORM, iFrame -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
-                    <!-- Branching Scenario H5P -->
-                    <button type="button" id="btn-download-h5p" class="flex flex-col items-center gap-1.5 p-4 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl border border-slate-200 shadow-sm transition-all duration-200 group hover:-translate-y-0.5 cursor-pointer text-center">
-                        <i class="fa-solid fa-diagram-project text-2xl text-brand-600 group-hover:scale-110 transition-all"></i>
-                        <span class="font-bold text-xs text-slate-800">Adaptives Branching-Paket</span>
-                        <span class="text-[10px] text-slate-400">1 Datei mit Einstufungsquiz</span>
-                    </button>
-
-                    <!-- PDF Worksheet -->
-                    <button id="btn-download-pdf" class="flex flex-col items-center gap-1.5 p-4 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl border border-slate-200 shadow-sm transition-all duration-200 group hover:-translate-y-0.5 cursor-pointer text-center">
-                        <i class="fa-solid fa-file-pdf text-2xl text-brand-500 group-hover:scale-110 transition-all"></i>
-                        <span class="font-bold text-xs text-slate-800">Arbeitsblätter (PDF)</span>
-                        <span class="text-[10px] text-slate-400">2 getrennte ABs (Basis &amp; Profi) + Lösungen</span>
-                    </button>
-
-                    <!-- SCORM 1.2 -->
-                    <button id="btn-download-scorm" onclick="downloadSCORMPackage()" class="flex flex-col items-center gap-1.5 p-4 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl border border-slate-200 shadow-sm transition-all duration-200 group hover:-translate-y-0.5 cursor-pointer text-center">
-                        <i class="fa-solid fa-box-archive text-2xl text-brand-600 group-hover:scale-110 transition-all"></i>
-                        <span class="font-bold text-xs text-slate-800">SCORM 1.2 Paket (.zip)</span>
-                        <span class="text-[10px] text-brand-600">Mit Notenübermittlung</span>
-                    </button>
-
-                    <!-- ByCS iFrame -->
-                    <button id="btn-copy-embed" onclick="copyIframeEmbedCode()" class="flex flex-col items-center gap-1.5 p-4 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl border border-slate-200 shadow-sm transition-all duration-200 group hover:-translate-y-0.5 cursor-pointer text-center">
-                        <i class="fa-solid fa-code text-2xl text-amber-600 group-hover:scale-110 transition-all"></i>
-                        <span class="font-bold text-xs text-slate-800">ByCS iFrame</span>
-                        <span class="text-[10px] text-amber-700">1-Klick Einbettungscode</span>
-                    </button>
-                </div>
-
-                <!-- Schüler-Direktspiel (Live-Session) Panel -->
-                <div class="glass-panel p-6 rounded-3xl shadow-lg text-left space-y-4 max-w-lg mx-auto border-t-4 border-emerald-500">
-                    <h4 class="font-bold text-slate-900 flex items-center gap-2">
-                        <i class="fa-solid fa-gamepad text-emerald-600 "></i> Schüler-Direktspiel (Klassenzimmer Live)
-                    </h4>
-                    <p class="text-xs text-slate-500 font-medium">
-                        Lass deine Schüler diese Übung live am Tablet oder Smartphone machen. Sie scannen einfach den QR-Code und spielen los. Du siehst ihre Ergebnisse in Echtzeit!
+                
+                <div class="space-y-2 text-center">
+                    <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Dein Unterrichtspaket ist fertig!</h2>
+                    <p class="text-slate-600 max-w-lg mx-auto text-xs sm:text-sm">
+                        Lade deine druckfertigen Arbeitsblätter herunter, exportiere H5P-Dateien für ByCS &amp; mebis oder starte eine Live-Sitzung.
                     </p>
-                    
-                    <div id="live-session-setup" class="text-center py-2">
-                        <button id="btn-start-live-session" onclick="startLiveSession()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 text-xs cursor-pointer">
-                            <i class="fa-solid fa-play"></i> Live-Sitzung starten (QR-Code generieren)
+                </div>
+
+                <div class="max-w-xl mx-auto space-y-4">
+                    <!-- CARD 1: 📄 Differenzierte Arbeitsblätter (PDF & Druck) -->
+                    <div class="glass-panel p-5 sm:p-6 rounded-3xl shadow-lg border-2 border-brand-200/90 bg-gradient-to-br from-brand-50/40 via-white to-sky-50/20 text-left space-y-3.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-brand-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                                    <i class="fa-solid fa-file-pdf"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-extrabold text-sm sm:text-base text-slate-900">Arbeitsblätter (Druckfertiges PDF)</h3>
+                                    <p class="text-[11px] text-slate-500 font-medium">2 getrennte ABs (Basis &amp; Profi) + Lösungsblatt • DIN A4</p>
+                                </div>
+                            </div>
+                            <span class="text-[9px] bg-brand-100 text-brand-800 font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">Mit Lösungs-QR</span>
+                        </div>
+
+                        <!-- Direct Quick Download Buttons for Level A & B -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                            <!-- Basis (Level A) PDF -->
+                            <button type="button" onclick="downloadPDFVariant('basic')" class="flex items-center gap-3 p-3 bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl shadow-xs transition-all duration-200 hover:-translate-y-0.5 group text-left cursor-pointer">
+                                <span class="w-8 h-8 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-black text-xs shrink-0 group-hover:scale-105 transition-all">A</span>
+                                <div class="min-w-0">
+                                    <span class="font-bold text-xs text-slate-800 block truncate">Nur Basis (Level A)</span>
+                                    <span class="text-[10px] text-slate-500 block truncate">Fördern + Lösungsblatt</span>
+                                </div>
+                            </button>
+
+                            <!-- Profi (Level B) PDF -->
+                            <button type="button" onclick="downloadPDFVariant('profi')" class="flex items-center gap-3 p-3 bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl shadow-xs transition-all duration-200 hover:-translate-y-0.5 group text-left cursor-pointer">
+                                <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs shrink-0 group-hover:scale-105 transition-all">B</span>
+                                <div class="min-w-0">
+                                    <span class="font-bold text-xs text-slate-800 block truncate">Nur Profi (Level B)</span>
+                                    <span class="text-[10px] text-slate-500 block truncate">Fordern + Lösungsblatt</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        <!-- Primary Bundle Download Button -->
+                        <button type="button" id="btn-download-pdf" onclick="downloadPDFVariant('bundle')" class="w-full py-3 px-4 bg-gradient-to-r from-brand-600 via-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white rounded-2xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Beide Arbeitsblätter + Lösungen herunterladen (PDF-Paket)</span>
+                        </button>
+
+                        <!-- Clean Collapsible Customization Accordion (Closed by default) -->
+                        <details class="group pt-2 border-t border-slate-200/70">
+                            <summary class="flex items-center justify-between text-xs font-bold text-slate-600 hover:text-brand-600 cursor-pointer list-none py-1 select-none">
+                                <span class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-sliders text-slate-400 group-hover:text-brand-600 transition-colors"></i>
+                                    <span>Kopfzeile &amp; Druckdesign anpassen (Klasse, Name, Logo)</span>
+                                </span>
+                                <i class="fa-solid fa-chevron-down text-slate-400 text-[10px] group-open:rotate-180 transition-transform duration-200"></i>
+                            </summary>
+                            
+                            <div class="pt-3 pb-1 space-y-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 mb-1">Klasse</label>
+                                        <input type="text" id="pdf-class-name" placeholder="z. B. 6a" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 mb-1">Lehrkraft</label>
+                                        <input type="text" id="pdf-teacher-name" placeholder="z. B. Frau Schmidt" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 mb-1">Akzentfarbe</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="color" id="pdf-accent-color" value="#0284c7" class="h-8 w-10 border border-slate-200 rounded-lg cursor-pointer bg-white">
+                                            <span class="text-[10px] text-slate-500">Farbe für Titel &amp; Linien</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 mb-1">Schullogo (PNG/JPG)</label>
+                                        <input type="file" id="pdf-logo-file" accept="image/png, image/jpeg" class="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-white file:border file:border-slate-200 file:text-slate-700 hover:file:bg-slate-50">
+                                    </div>
+                                </div>
+
+                                <div class="pt-2 border-t border-slate-100 flex flex-col gap-2">
+                                    <label class="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-slate-700">
+                                        <input type="checkbox" id="pdf-include-qr" checked class="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer">
+                                        <span class="flex items-center gap-1.5">
+                                            <i class="fa-solid fa-qrcode text-brand-600"></i>
+                                            Lösungs-QR-Code aufdrucken (Selbstkontrolle per Handy/Tablet)
+                                        </span>
+                                    </label>
+                                    <label class="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-slate-700">
+                                        <input type="checkbox" id="pdf-include-level-c" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer">
+                                        <span class="flex items-center gap-1.5">
+                                            <i class="fa-solid fa-hands-holding-child text-emerald-600"></i>
+                                            Level C im PDF aufdrucken (Inklusion &amp; DaZ)
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+
+                    <!-- CARD 2: 📱 Interaktive H5P-Dateien (ByCS / mebis) -->
+                    <div class="glass-panel p-5 sm:p-6 rounded-3xl shadow-lg border-2 border-emerald-300/80 bg-gradient-to-br from-emerald-50/50 via-white to-teal-50/30 text-left space-y-3.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                                    <i class="fa-solid fa-file-zipper"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-extrabold text-sm sm:text-base text-slate-900">2 getrennte H5P-Dateien (ByCS / mebis)</h3>
+                                    <p class="text-[11px] text-slate-500 font-medium">Direkt in den Inhaltsspeicher (Course Presentation 1.25)</p>
+                                </div>
+                            </div>
+                            <span class="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">Ohne Branching</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                            <!-- Basic (Level A) -->
+                            <button type="button" onclick="downloadH5PVariant('basic')" class="flex items-center gap-3 p-3 bg-white hover:bg-emerald-50/70 border border-emerald-200/90 rounded-2xl shadow-xs transition-all duration-200 hover:-translate-y-0.5 group text-left cursor-pointer">
+                                <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-xs shrink-0 group-hover:scale-105 transition-all">A</span>
+                                <div class="min-w-0">
+                                    <span class="font-bold text-xs text-slate-800 block truncate">Basic (Level A)</span>
+                                    <span class="text-[10px] text-slate-500 block truncate">Fördern &amp; Merkkasten</span>
+                                </div>
+                            </button>
+
+                            <!-- Profi (Level B) -->
+                            <button type="button" onclick="downloadH5PVariant('profi')" class="flex items-center gap-3 p-3 bg-white hover:bg-brand-50/70 border border-brand-200/90 rounded-2xl shadow-xs transition-all duration-200 hover:-translate-y-0.5 group text-left cursor-pointer">
+                                <span class="w-8 h-8 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center font-black text-xs shrink-0 group-hover:scale-105 transition-all">B</span>
+                                <div class="min-w-0">
+                                    <span class="font-bold text-xs text-slate-800 block truncate">Profi (Level B)</span>
+                                    <span class="text-[10px] text-slate-500 block truncate">Fordern &amp; Vertiefung</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        <!-- Bundle Download Button -->
+                        <button type="button" onclick="downloadH5PVariant('bundle')" class="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg">
+                            <i class="fa-solid fa-box-archive"></i>
+                            <span>Beide Dateien als ZIP herunterladen (Basic + Profi)</span>
                         </button>
                     </div>
+
+                    <!-- CARD ROW 3: Weitere Exportformate (Branching, SCORM, iFrame) -->
+                    <div class="pt-1">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <!-- Branching Scenario H5P -->
+                            <button type="button" id="btn-download-h5p" class="flex flex-col items-center gap-1.5 p-3.5 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl border border-slate-200 shadow-xs transition-all duration-200 group hover:-translate-y-0.5 cursor-pointer text-center">
+                                <i class="fa-solid fa-diagram-project text-xl text-brand-600 group-hover:scale-110 transition-all"></i>
+                                <span class="font-bold text-xs text-slate-800">Branching-Paket</span>
+                                <span class="text-[10px] text-slate-400">1 Datei mit Einstufungsquiz</span>
+                            </button>
+
+                            <!-- SCORM 1.2 -->
+                            <button id="btn-download-scorm" onclick="downloadSCORMPackage()" class="flex flex-col items-center gap-1.5 p-3.5 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl border border-slate-200 shadow-xs transition-all duration-200 group hover:-translate-y-0.5 cursor-pointer text-center">
+                                <i class="fa-solid fa-box-archive text-xl text-brand-600 group-hover:scale-110 transition-all"></i>
+                                <span class="font-bold text-xs text-slate-800">SCORM 1.2 Paket</span>
+                                <span class="text-[10px] text-brand-600">Mit Notenübermittlung</span>
+                            </button>
+
+                            <!-- ByCS iFrame -->
+                            <button id="btn-copy-embed" onclick="copyIframeEmbedCode()" class="flex flex-col items-center gap-1.5 p-3.5 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl border border-slate-200 shadow-xs transition-all duration-200 group hover:-translate-y-0.5 cursor-pointer text-center">
+                                <i class="fa-solid fa-code text-xl text-amber-600 group-hover:scale-110 transition-all"></i>
+                                <span class="font-bold text-xs text-slate-800">ByCS iFrame</span>
+                                <span class="text-[10px] text-amber-700">1-Klick Einbettungscode</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- CARD 4: Schüler-Direktspiel (Live-Session) Panel -->
+                    <div class="glass-panel p-5 rounded-3xl shadow-md text-left space-y-3 border-t-4 border-emerald-500">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-xs sm:text-sm text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-gamepad text-emerald-600"></i> Schüler-Direktspiel (Klassenzimmer Live)
+                            </h4>
+                            <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">Ohne Login</span>
+                        </div>
+                        <p class="text-xs text-slate-500">
+                            Lass deine Schüler diese Übung live am Tablet oder Smartphone machen. Sie scannen einfach den QR-Code und spielen los. Du siehst ihre Ergebnisse in Echtzeit!
+                        </p>
+                        
+                        <div id="live-session-setup" class="text-center pt-1">
+                            <button id="btn-start-live-session" onclick="startLiveSession()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs cursor-pointer">
+                                <i class="fa-solid fa-play"></i> Live-Sitzung starten (QR-Code generieren)
+                            </button>
+                        </div>
                     
                     <div id="live-session-active" class="hidden space-y-4 border-t pt-4">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
@@ -2116,6 +2163,6 @@
     </div>
 
     <!-- App JavaScript -->
-    <script src="app.js?v=64"></script>
+    <script src="app.js?v=65"></script>
 </body>
 </html>
