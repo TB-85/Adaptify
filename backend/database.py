@@ -23,10 +23,10 @@ def init_db():
     except Exception as e:
         logger.error(f"Error initializing SQLite cache DB: {e}")
 
-def compute_cache_hash(file_content: bytes, subject: str, school_type: str, focus_topic: str, task_count: int, target_format: str, hefteintrag_topic: str) -> str:
+def compute_cache_hash(file_content: bytes, subject: str, school_type: str, focus_topic: str, task_count: int, target_format: str, hefteintrag_topic: str, grade: str = "") -> str:
     hasher = hashlib.sha256()
     hasher.update(file_content or b"")
-    param_str = f"{subject}|{school_type}|{focus_topic}|{task_count}|{target_format}|{hefteintrag_topic}"
+    param_str = f"{subject}|{school_type}|{focus_topic}|{task_count}|{target_format}|{hefteintrag_topic}|{grade}"
     hasher.update(param_str.encode('utf-8'))
     return hasher.hexdigest()
 

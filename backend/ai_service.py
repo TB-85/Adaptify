@@ -621,6 +621,7 @@ class AIService:
         task_count: int = 1,
         subject: str = "Deutsch",
         school_type: str = "Grundschule",
+        grade: str = "",
         focus_topic: str = "",
         hefteintrag_topic: str = "",
         api_key: str = None,
@@ -640,6 +641,41 @@ class AIService:
         if context and any(p in context.lower() for p in ["ki wählt schwerpunkte", "automatisch aus dem"]):
             context = ""
 
+        # Math detection & automatic subject alignment
+        math_keywords = [
+            "zins", "prozent", "bruch", "rechnen", "mathe", "geometrie", "dreisatz",
+            "pythagoras", "gleichung", "funktion", "stochastik", "terme", "fläch", "umfang",
+            "volumen", "körper", "potenz", "wurzel", "lineare", "quadratisch", "zuordnung",
+            "wahrscheinlichkeit", "statistik", "trigonometrie", "sinus", "cosinus", "tangens",
+            "vektor", "ableitung", "integral", "kurvendiskussion"
+        ]
+        topic_corpus = f"{focus_topic} {context} {hefteintrag_topic}".lower()
+        is_math = (subject.strip().lower() == "mathematik") or any(kw in topic_corpus for kw in math_keywords)
+        if is_math and (not subject or subject in ["Deutsch", "KI (Automatisch)", "Allgemein"]):
+            subject = "Mathematik"
+
+        # Determine / sanitize grade level
+        effective_grade = grade.strip() if grade else ""
+        if not effective_grade or effective_grade.lower().startswith("automatisch"):
+            grade_match = re.search(r'(\d+)\s*\.?\s*(?:klasse|jahrgang|stufe)', topic_corpus)
+            if grade_match:
+                effective_grade = f"{grade_match.group(1)}. Klasse"
+            elif is_math:
+                if any(w in topic_corpus for w in ["zins", "prozent"]):
+                    effective_grade = "7./8. Klasse" if school_type in ["Mittelschule", "Realschule", "Gymnasium"] else "8. Klasse"
+                elif "bruch" in topic_corpus:
+                    effective_grade = "6. Klasse"
+                elif "dreisatz" in topic_corpus:
+                    effective_grade = "6./7. Klasse"
+                elif any(w in topic_corpus for w in ["pythagoras", "quadratisch"]):
+                    effective_grade = "9. Klasse"
+                elif any(w in topic_corpus for w in ["terme", "gleichung"]):
+                    effective_grade = "7./8. Klasse"
+                else:
+                    effective_grade = "7. Klasse" if school_type != "Grundschule" else "4. Klasse"
+            else:
+                effective_grade = "Klasse 5-10"
+
         # Check SQLite Generation Cache first
         try:
             try:
@@ -647,7 +683,7 @@ class AIService:
             except ImportError:
                 from backend.database import compute_cache_hash, get_cached_generation, set_cached_generation
             combined_content = b"".join([f.get('content') or b"" for f in files])
-            cache_hash = compute_cache_hash(combined_content, subject, school_type, focus_topic, task_count, target_format, f"{hefteintrag_topic}|{differentiation_mode}")
+            cache_hash = compute_cache_hash(combined_content, subject, school_type, focus_topic, task_count, target_format, f"{hefteintrag_topic}|{differentiation_mode}", grade=effective_grade)
             cached_res = get_cached_generation(cache_hash)
             if cached_res:
                 return cached_res
@@ -670,17 +706,30 @@ class AIService:
         if not client:
             logger.warning("Gemini Client not initialized (missing GEMINI_API_KEY). Returning high-quality mock data.")
             self._cleanup_gemini_files(client, uploaded_gemini_files, temp_files_to_remove)
-            return self._get_mock_data(context, target_format, task_count, subject=subject, school_type=school_type, focus_topic=focus_topic, hefteintrag_topic=hefteintrag_topic, differentiation_mode=differentiation_mode)
+            return self._get_mock_data(context, target_format, task_count, subject=subject, school_type=school_type, grade=effective_grade, focus_topic=focus_topic, hefteintrag_topic=hefteintrag_topic, differentiation_mode=differentiation_mode)
 
-        format_instruction = (
-            "4. Formuliere die Aufgaben für Level A und Level B. Wähle für das Feld 'format' jedes Tasks das Format, "
-            "das am besten zum jeweiligen Inhalt passt ('Lückentext', 'Drag the Words', 'Tabellen-Zuordnung', 'Wörter markieren', 'Freies Schreiben', 'Wahr/Falsch', 'Multiple Choice' oder 'Vokabelkarten'). "
-            "Pädagogische Vorgabe für KI-Mix: Wähle für das niedrigere Niveau (Level A) einfachere Aufgaben-Formate, z. B. 'Drag the Words' anstelle eines 'Lückentextes', da vorgegebene Wörter leichter zuzuordnen sind. "
-            "Für das höhere Niveau (Level B) verwende anspruchsvollere Formate, bei denen die Schüler selbst die Antworten tippen müssen (z. B. 'Lückentext'), oder nutze bei 'Multiple Choice' deutlich anspruchsvollere und mehrere Distraktoren. "
-            "Variiere die Formate ganz gezielt, um die Übungen abwechslungsreich zu gestalten."
-        ) if target_format == "KI-Mix" else (
-            f"4. Formuliere die Aufgaben für Level A und Level B. Setze das Feld 'format' für alle Tasks zwingend auf '{target_format}'."
-        )
+        if is_math and target_format == "KI-Mix":
+            format_instruction = (
+                f"🚨 STRIKTE MATHEMATIK-VORGABE FÜR DIE AUFGABEN-FORMATE (KI-MIX PROGRESSION FÜR {school_type}, {effective_grade}):\n"
+                f"- Erzeuge KEINESFALLS monotone Aufgaben desselben Typs (z. B. nicht nur Lückentext oder nur Drag the Words)!\n"
+                f"- Die {task_count} Aufgaben pro Niveau MÜSSEN ZWINGEND eine abwechslungsreiche Progression über verschiedene H5P-Typen bilden:\n"
+                f"  * Aufgabe 1: BEGRIFFSZUORDNUNG / FORMELWISSEN ('Tabellen-Zuordnung' oder 'Multiple Choice') -> Fachbegriffe, Formelzeichen (K, p, Z, t) oder Werte den Spalten zuordnen.\n"
+                f"  * Aufgabe 2: GRUNDBERECHNUNG MIT SCHRITTWEISEM RECHENWEG ('Lückentext') -> Schrittweise Berechnung mit Lücken für Zwischenschritte und das Endergebnis mit Einheit (*120 €*).\n"
+                f"  * Aufgabe 3: FORMELUMSTELLUNG / ANDERE GRÖSSE GESUCHT ('Multiple Choice' oder 'Lückentext') -> Z. B. Kapital K oder Zinssatz p berechnen.\n"
+                f"  * Aufgabe 4: ZEITLICHE VARIANTEN ('Drag the Words' oder 'Lückentext') -> Monatszinsen (m/12) oder Tageszinsen (t/360 deutsche Zinsmethode).\n"
+                f"  * Aufgabe 5: REALISTISCHE SACHAUFGABE / ALLTAGSVERGLEICH ('Multiple Choice' oder 'Wahr/Falsch' oder 'Freies Schreiben') -> Praxisnahe Finanz- oder Sachaufgabe (z. B. Dispokredit vs. Ratenkredit, Vergleich zweier Bankangebote).\n"
+                f"- Setze NIEMALS alle Aufgaben auf dasselbe Format! Jede Aufgabe muss eine eigenständige, didaktisch abwechslungsreiche Übung sein!"
+            )
+        elif target_format == "KI-Mix":
+            format_instruction = (
+                "4. Formuliere die Aufgaben für Level A und Level B. Wähle für das Feld 'format' jedes Tasks das Format, "
+                "das am besten zum jeweiligen Inhalt passt ('Lückentext', 'Drag the Words', 'Tabellen-Zuordnung', 'Wörter markieren', 'Freies Schreiben', 'Wahr/Falsch', 'Multiple Choice' oder 'Vokabelkarten'). "
+                "Pädagogische Vorgabe für KI-Mix: Wähle für das niedrigere Niveau (Level A) einfachere Aufgaben-Formate, z. B. 'Drag the Words' anstelle eines 'Lückentextes', da vorgegebene Wörter leichter zuzuordnen sind. "
+                "Für das höhere Niveau (Level B) verwende anspruchsvollere Formate, bei denen die Schüler selbst die Antworten tippen müssen (z. B. 'Lückentext'), oder nutze bei 'Multiple Choice' deutlich anspruchsvollere und mehrere Distraktoren. "
+                "Variiere die Formate ganz gezielt, um die Übungen abwechslungsreich zu gestalten."
+            )
+        else:
+            format_instruction = f"4. Formuliere die Aufgaben für Level A und Level B. Setze das Feld 'format' für alle Tasks zwingend auf '{target_format}'." 
 
         # Multi-subject / cross-curricular detection
         subjects_list = [s.strip() for s in subject.split(",") if s.strip()]
@@ -757,15 +806,31 @@ class AIService:
             )
         focus_instruction += extra_block
         hefteintrag_raw = hefteintrag_topic if hefteintrag_topic else (focus_topic if focus_topic else "Hauptthema des Dokuments")
-        hefteintrag_instruction = (
-            f"Thema für den Hefteintrag / Merkkasten: {hefteintrag_raw}.\n"
-            f"STRIKTE DIDAKTISCHE UNTERSCHEIDUNG FÜR DEN HEFTEINTRAG (SACHINHALT VS. METHODE):\n"
-            f"- Wenn der Fokus/Text ein SACHTEXT oder ein inhaltliches Thema ist (z. B. 'Information about the Great Barrier Reef', Sachtext, Natur, Erdkunde, Geschichte, Landeskunde, Müll im Ozean):\n"
-            f"  -> Der Hefteintrag MUSS zwingend die REINEN FACHINHALTE, FAKTEN und KERNAUSSAGEN des Textes festhalten (z. B. Steckbrief, Merkmale, wichtige Zahlen/Daten, Ursachen und Folgen)! Erfinde NIEMALS eine meta-didaktische Regelschablone ('Wie wende ich die Regeln zu ... an? Schritt 2: Formel anwenden') für einen Sachtext!\n"
-            f"  -> Titel: z. B. '{hefteintrag_raw} – Wichtige Fakten im Überblick' (oder auf Englisch '{hefteintrag_raw} – Key Facts') bzw. eine themenbezogene Leitfrage.\n"
-            f"- NUR wenn der Fokus explizit eine METHODE oder REGEL ist (z. B. 'Wie entnehme ich Informationen aus einem Sachtext?', 'Lesestrategien', 'Bruchrechnen', 'Grammatikregel: Pronomen'):\n"
-            f"  -> DANN und nur dann beschreibt der Hefteintrag eine Vorgehensweise / Regel in nummerierten Schritten mit Musterbeispiel."
-        )
+        if is_math:
+            hefteintrag_instruction = (
+                f"Thema für den Hefteintrag / Merkkasten: {hefteintrag_raw}.\n"
+                f"🚨 STRIKTE MATHEMATIK-VORGABE FÜR DEN HEFTEINTRAG / TAFELBILD ({school_type}, {effective_grade}):\n"
+                f"Der Hefteintrag im Feld 'hefteintrag.summary' MUSS zwingend als didaktisch vollständiges, strukturiertes Merkheft-Tafelbild im sauberen HTML-Format formuliert werden mit folgenden 4 Abschnitten:\n"
+                f"1. 📌 SYSTEMATISCHE ÜBERSICHT DER RECHENARTEN / VARIANTEN:\n"
+                f"   - Erkläre glasklar, WELCHE ARTEN / FÄLLE dieses Rechenthemas existieren (z. B. bei Zinsrechnung: Jahreszinsen Z, Monatszinsen Z_m, Tageszinsen Z_t mit deutscher 30/360-Bankenmethode; bei Prozentrechnung: Grundwert G, Prozentwert W, Prozentsatz p%; bei Bruchrechnen: Erweitern/Kürzen, Grundrechenarten; bei Gleichungen: lineare Gleichungen, Äquivalenzumformungen).\n"
+                f"   - Alle Grundbegriffe, Formelzeichen und Einheiten klar erklären (z. B. K = Kapital in €, p% = Zinssatz, Z = Zinsen in €, t bzw. m = Laufzeit).\n"
+                f"2. 📐 DIE MATHEMATISCHEN FORMELN & FORMELUMSTELLUNGEN:\n"
+                f"   - Vollständige Übersicht aller Rechenformeln inklusive der Umstellungen nach jeder gesuchten Variablen (z. B. Z = (K · p) / 100, K = (Z · 100) / p, p = (Z · 100) / K, Monatszinsen Z = (K · p · m) / (100 · 12), Tageszinsen Z = (K · p · t) / (100 · 360)).\n"
+                f"3. 🔍 SCHRITT-FÜR-SCHRITT-ANLEITUNG: „WIE MAN DAS BERECHNET“:\n"
+                f"   - Vier klare Rechenschritte für Schüler: Schritt 1: Gegeben und Gesucht mit Einheiten notieren -> Schritt 2: Formel wählen & ggf. umstellen -> Schritt 3: Zahlenwerte einsetzen und berechnen -> Schritt 4: Antwortsatz mit korrekter Einheit (€, cm, %) und Plausibilitätscheck.\n"
+                f"4. 💡 DURCHGERECHNETES PRAXISBEISPIEL:\n"
+                f"   - Ein realistisches, lebensnahes Zahlenbeispiel mit allen Rechenschritten und vollständigem Antwortsatz."
+            )
+        else:
+            hefteintrag_instruction = (
+                f"Thema für den Hefteintrag / Merkkasten: {hefteintrag_raw}.\n"
+                f"STRIKTE DIDAKTISCHE UNTERSCHEIDUNG FÜR DEN HEFTEINTRAG (SACHINHALT VS. METHODE):\n"
+                f"- Wenn der Fokus/Text ein SACHTEXT oder ein inhaltliches Thema ist (z. B. 'Information about the Great Barrier Reef', Sachtext, Natur, Erdkunde, Geschichte, Landeskunde, Müll im Ozean):\n"
+                f"  -> Der Hefteintrag MUSS zwingend die REINEN FACHINHALTE, FAKTEN und KERNAUSSAGEN des Textes festhalten (z. B. Steckbrief, Merkmale, wichtige Zahlen/Daten, Ursachen und Folgen)! Erfinde NIEMALS eine meta-didaktische Regelschablone ('Wie wende ich die Regeln zu ... an? Schritt 2: Formel anwenden') für einen Sachtext!\n"
+                f"  -> Titel: z. B. '{hefteintrag_raw} – Wichtige Fakten im Überblick' (oder auf Englisch '{hefteintrag_raw} – Key Facts') bzw. eine themenbezogene Leitfrage.\n"
+                f"- NUR wenn der Fokus explizit eine METHODE oder REGEL ist (z. B. 'Wie entnehme ich Informationen aus einem Sachtext?', 'Lesestrategien', 'Bruchrechnen', 'Grammatikregel: Pronomen'):\n"
+                f"  -> DANN und nur dann beschreibt der Hefteintrag eine Vorgehensweise / Regel in nummerierten Schritten mit Musterbeispiel."
+            )
 
         # Check if media (image/pdf) was uploaded, or if this is a topic/prompt-driven unit (ISB quality rubric)
         has_media = any(
@@ -813,19 +878,28 @@ class AIService:
         else:
             # NO MEDIA (Prompt / Topic-only Mode)
             if not explicit_reading:
-                role_description = (
-                    f"Du bist eine didaktisch herausragende Fachlehrkraft an einer {school_type} nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau.\n"
-                    f"Die Lehrkraft plant eine gezielte Übungs- und Trainingseinheit und hat KEIN Dokument hochgeladen, sondern ein konkretes Thema / Grammatikthema vorgegeben: '{focus_topic or context}'.\n\n"
-                    f"🚨 WICHTIGSTE DIDAKTISCHE VORGABE – STRIKTES TEXTVERSTÄNDNIS-VERBOT:\n"
-                    f"- Die Lehrkraft hat KEIN Textverständnis und KEIN Leseverstehen angefordert!\n"
-                    f"- Es ist STRENGSTENS UNTERSAGT, Textverständnisfragen, Fragen zum Sinn oder zur Handlung eines fiktiven Textes zu stellen!\n"
-                    f"- ALLE {task_count} Aufgaben in 'level_a.tasks' und ALLE {task_count} Aufgaben in 'level_b.tasks' MÜSSEN ZU 100% DIREKTE FACHÜBUNGEN ZU DEN GEFORDERTEN SCHWERPUNKTEN SEIN ({focus_topic or context})!\n"
-                    f"- Beispiele:\n"
-                    f"  * Wenn 'Wortarten' gefordert ist: Jede einzelne der {task_count} Aufgaben trainiert Wortarten (Nomen erkennen, Verben beugen, Adjektive steigern, Wortarten bestimmen, Tabelle nach Wortarten sortieren, Wörter markieren)!\n"
-                    f"  * Wenn 'If clauses' (Type 1, Type 2 etc.) gefordert ist: Jede einzelne der {task_count} Aufgaben trainiert Bedingungssätze (Verbformen in if-Satz und Hauptsatz einsetzen, Zeitenfolge prüfen, Halbsätze verbinden)!\n"
-                    f"  * Wenn 'Simple Past' gefordert ist: Jede Aufgabe trainiert Simple Past (unregelmäßige Verben, Signalwörter, Verneinung, Fragen)!\n"
-                    f"  * Wenn 'Vokabeln und If-clauses' gefordert ist: Die Aufgaben verteilen sich gleichmäßig auf Vokabeln und If-clauses!"
-                )
+                if is_math:
+                    role_description = (
+                        f"Du bist eine didaktisch herausragende Fachlehrkraft für Mathematik an einer {school_type} ({effective_grade}) nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau.\n"
+                        f"Die Lehrkraft plant eine differenzierte mathematische Trainingseinheit zum Thema: '{focus_topic or context}'.\n"
+                        f"Deine didaktische Kernaufgabe ist es, für die Schulart {school_type} ({effective_grade}) ein hochgradig abwechslungsreiches, "
+                        f"mathematisch präzises und lebensnahes Lernpaket mit echten Rechenschritten, Formelanwendungen und Sachkontexten zu erstellen.\n"
+                        f"WICHTIG: KEINE fiktiven Lesegeschichten oder Textverständnisfragen! Alle {task_count} Aufgaben sind echte, greifbare mathematische Übungen zum Thema '{focus_topic or context}'!"
+                    )
+                else:
+                    role_description = (
+                        f"Du bist eine didaktisch herausragende Fachlehrkraft an einer {school_type} nach dem bayerischen LehrplanPLUS und dem ISB-Qualitätstableau.\n"
+                        f"Die Lehrkraft plant eine gezielte Übungs- und Trainingseinheit und hat KEIN Dokument hochgeladen, sondern ein konkretes Thema / Grammatikthema vorgegeben: '{focus_topic or context}'.\n\n"
+                        f"🚨 WICHTIGSTE DIDAKTISCHE VORGABE – STRIKTES TEXTVERSTÄNDNIS-VERBOT:\n"
+                        f"- Die Lehrkraft hat KEIN Textverständnis und KEIN Leseverstehen angefordert!\n"
+                        f"- Es ist STRENGSTENS UNTERSAGT, Textverständnisfragen, Fragen zum Sinn oder zur Handlung eines fiktiven Textes zu stellen!\n"
+                        f"- ALLE {task_count} Aufgaben in 'level_a.tasks' und ALLE {task_count} Aufgaben in 'level_b.tasks' MÜSSEN ZU 100% DIREKTE FACHÜBUNGEN ZU DEN GEFORDERTEN SCHWERPUNKTEN SEIN ({focus_topic or context})!\n"
+                        f"- Beispiele:\n"
+                        f"  * Wenn 'Wortarten' gefordert ist: Jede einzelne der {task_count} Aufgaben trainiert Wortarten (Nomen erkennen, Verben beugen, Adjektive steigern, Wortarten bestimmen, Tabelle nach Wortarten sortieren, Wörter markieren)!\n"
+                        f"  * Wenn 'If clauses' (Type 1, Type 2 etc.) gefordert ist: Jede einzelne der {task_count} Aufgaben trainiert Bedingungssätze (Verbformen in if-Satz und Hauptsatz einsetzen, Zeitenfolge prüfen, Halbsätze verbinden)!\n"
+                        f"  * Wenn 'Simple Past' gefordert ist: Jede Aufgabe trainiert Simple Past (unregelmäßige Verben, Signalwörter, Verneinung, Fragen)!\n"
+                        f"  * Wenn 'Vokabeln und If-clauses' gefordert ist: Die Aufgaben verteilen sich gleichmäßig auf Vokabeln und If-clauses!"
+                    )
                 source_instruction = (
                     "1. BEISPIELSÄTZE / KURZE THEMENEINFÜHRUNG IM FELD 'extracted_text':\n"
                     f"   - Formuliere im Feld 'extracted_text' eine kurze thematische Übersicht und didaktische Beispielsätze passend zu '{focus_topic or context}' (ca. 60-120 Wörter).\n"
@@ -1026,7 +1100,7 @@ Generiere genau folgendes JSON-Schema:
       {{
         "title": "Titel der Aufgabe (Verweise hier explizit auf einen der geforderten Übungsschwerpunkte)",
         "text": "Aufgabentext. WICHTIG FÜR LÜCKENTEXT / DRAG THE WORDS: Erstelle einen SUBSTANTIELLEN, ZUSAMMENHÄNGENDEN FLIESSTEXT aus 4 bis 6 Sätzen mit 4 bis 6 Lücken (*Lücke/Synonym1/Synonym2*). Bei Multiple-Choice: Frage\\n[ ] Falsch\\n[X] Richtig. Bei Wahr/Falsch zwingend exakt so: Aussage: [Behauptung]\\nAntwort: [Wahr/Falsch]",
-        "format": "{ 'Drag the Words' if target_format == 'KI-Mix' else target_format }",
+        "format": "{ 'Tabellen-Zuordnung' if (target_format == 'KI-Mix' and is_math) else ('Drag the Words' if target_format == 'KI-Mix' else target_format) }",
         "hint": "Hilfreicher Vorab-Tipp für Level A",
         "explanation": "Erklärung der richtigen Lösung bei einer falschen Antwort"
       }}
@@ -1038,7 +1112,7 @@ Generiere genau folgendes JSON-Schema:
       {{
         "title": "Titel der Aufgabe (Verweise hier explizit auf einen der geforderten Übungsschwerpunkte)",
         "text": "Anspruchsvollerer Aufgabentext. Format-Regeln exakt wie bei Level A beachten! Zwingend: Aussage: [Behauptung]\\nAntwort: [Wahr/Falsch]",
-        "format": "{ 'Drag the Words' if target_format == 'KI-Mix' else target_format }",
+        "format": "{ 'Lückentext' if (target_format == 'KI-Mix' and is_math) else ('Drag the Words' if target_format == 'KI-Mix' else target_format) }",
         "distractors": ["Plausibles falsches Zusatzwort 1", "Plausibles falsches Zusatzwort 2", "Plausibles falsches Zusatzwort 3"],
         "hint": "",
         "explanation": "Fachlicher Denkanstoß / Regelhinweis bei falscher Antwort"
@@ -1297,7 +1371,7 @@ Generiere genau dieses JSON:
 
         return ["Unzutreffende Option", "Ausnahme-Regel", "Zusatzklausel"]
 
-    def _get_mock_data(self, context: str = "", target_format: str = "KI-Mix", task_count: int = 2, subject: str = "Deutsch", school_type: str = "Grundschule", focus_topic: str = "", hefteintrag_topic: str = "", error_message: str = None, differentiation_mode: str = "differentiated") -> dict:
+    def _get_mock_data(self, context: str = "", target_format: str = "KI-Mix", task_count: int = 2, subject: str = "Deutsch", school_type: str = "Grundschule", grade: str = "", focus_topic: str = "", hefteintrag_topic: str = "", error_message: str = None, differentiation_mode: str = "differentiated") -> dict:
         """Returns beautiful default mock data in case API key is missing or fails."""
         import re
 
@@ -1330,6 +1404,16 @@ Generiere genau dieses JSON:
         lower_heft = (heft_str or "").lower()
         title = clean_title_topic
 
+        math_keywords = [
+            "zins", "prozent", "bruch", "rechnen", "mathe", "geometrie", "dreisatz",
+            "pythagoras", "gleichung", "funktion", "stochastik", "terme"
+        ]
+        topic_corpus = f"{clean_title_topic} {lower_heft} {parsed_str}".lower()
+        is_zins = any(w in topic_corpus for w in ["zins", "kapital"])
+        is_math = (subject == "Mathematik") or is_zins or any(kw in topic_corpus for kw in math_keywords)
+        if is_math and (not subject or subject in ["Deutsch", "KI (Automatisch)", "Allgemein"]):
+            subject = "Mathematik"
+
         is_jasg = "jugendarbeitsschutz" in (clean_title_topic + " " + lower_heft).lower()
         
         extracted = f"[DEMO-MODUS] Hier steht der extrahierte Text der Buchseite für {subject}.\n\n"
@@ -1345,6 +1429,27 @@ Generiere genau dieses JSON:
                 "3. Freizeit und Nachtruhe: Nach der täglichen Arbeit müssen mindestens 12 Stunden ununterbrochene Freizeit liegen. Arbeit vor 6:00 Uhr morgens und nach 20:00 Uhr abends ist verboten.\n\n"
                 "4. Wochenende: Samstags- und Sonntagsarbeit ist für Jugendliche grundsätzlich verboten, außer in gesetzlichen Ausnahmen wie Gastronomie oder Pflege."
             )
+        elif is_zins:
+            title = "Zinsrechnung (Jahres-, Monats- und Tageszinsen)"
+            clean_title_topic = "Zinsrechnung"
+            heft_str = "Zinsrechnung"
+            extracted = (
+                "Die Zinsrechnung ist eine zeitbezogene Form der Prozentrechnung aus dem Wirtschafts- und Alltagswissen.\n\n"
+                "1. Grundbegriffe:\n"
+                "• Kapital (K): Das geliehene oder angelegte Geld in Euro.\n"
+                "• Zinssatz (p %): Der prozentuale Anteil der Zinsen bezogen auf ein Jahr (p = Zinszahl).\n"
+                "• Zinsen (Z): Der konkrete Zinsertrag oder die Leihgebühr in Euro.\n"
+                "• Laufzeit: Dauer in Tagen (t) oder Monaten (m).\n\n"
+                "2. Formeln im Überblick:\n"
+                "• Jahreszinsen (1 ganzes Jahr): Z = (K · p) / 100\n"
+                "• Monatszinsen (m Monate): Z = (K · p · m) / (100 · 12)\n"
+                "• Tageszinsen (t Tage): Z = (K · p · t) / (100 · 360) (Deutsche Zinsmethode: 1 Bankjahr = 360 Tage, 1 Monat = 30 Tage)\n\n"
+                "3. Berechnungs-Schritte:\n"
+                "Schritt 1: Gegeben und Gesucht mit Einheiten notieren.\n"
+                "Schritt 2: Passende Formel auswählen und ggf. nach K oder p umstellen.\n"
+                "Schritt 3: Werte einsetzen und ausrechnen.\n"
+                "Schritt 4: Antwortsatz mit der Einheit Euro (€) formulieren."
+            )
         elif subject == "Mathematik":
             extracted += "Beispiel: 'Ein Kuchen wird in 8 gleiche Teile geschnitten. Anna isst 2 Teile, Ben isst 3 Teile. Welcher Anteil bleibt übrig?'\n"
         elif subject == "Deutsch":
@@ -1357,6 +1462,193 @@ Generiere genau dieses JSON:
         tasks_a = []
         tasks_b = []
         tasks_c = []
+
+        # Rich pools for Mathematics (Zinsrechnung & General)
+        math_counter = 0
+        math_pool_zins = [
+            {
+                "format": "Tabellen-Zuordnung", "suffix": "Grundbegriffe & Werte zuordnen",
+                "a_text": (
+                    "Ordne die mathematischen Größen und Werte der passenden Spalte zu:\n"
+                    "Frau Weber legt ein Sparguthaben von 3.000 € zu einem Zinssatz von 2,5 % für 1 Jahr an.\n\n"
+                    "[ Kapital K ]\n• *3.000 €*\n• *Sparguthaben*\n\n"
+                    "[ Zinssatz p% ]\n• *2,5 %*\n• *Zinssatz pro Jahr*\n\n"
+                    "[ Zinsen Z ]\n• *75 €*\n• *Zinsertrag*"
+                ),
+                "b_text": (
+                    "Ordne die Begriffe und Formelzeichen der zutreffenden Spalte zu:\n\n"
+                    "[ Grundbegriffe ]\n• *Kapital K*\n• *Zinssatz p%*\n• *Zinsen Z*\n\n"
+                    "[ Zeitfaktoren ]\n• *Jahreszinsen (1 Jahr)*\n• *Monatszinsen (m/12)*\n• *Tageszinsen (t/360)*"
+                ),
+                "hint": "💡 Tipp: K ist das Kapital in Euro, p% der Zinssatz und Z der Zinsbetrag.",
+                "exp": "Kapital (K) ist das angelegte/geliehene Geld, p% der Zinssatz und Z der Zinsbetrag.",
+                "distractors": ["365 Tage", "100 %", "Grundwert"]
+            },
+            {
+                "format": "Lückentext", "suffix": "Jahreszinsen schrittweise berechnen",
+                "a_text": (
+                    "Berechne die Jahreszinsen Schritt für Schritt:\n"
+                    "Gegeben: Kapital K = 4.000 €, Zinssatz p = 3 %\n"
+                    "Gesucht: Jahreszinsen Z\n\n"
+                    "Formel: Z = (K · p) / 100\n"
+                    "Rechnung: Z = (*4000* · *3*) / 100 = *12000* / 100\n"
+                    "Z = *120 €/120 Euro*\n"
+                    "Antwort: Die Zinsen nach einem Jahr betragen *120 €*."
+                ),
+                "b_text": (
+                    "Berechne die Jahreszinsen für ein Geschäftsdarlehen:\n"
+                    "Gegeben: K = 8.500 €, p = 4,5 %\n"
+                    "Formel: Z = (K · p) / 100\n"
+                    "Rechnung: Z = (*8500* · *4,5*) / 100 = *38250* / 100\n"
+                    "Z = *382,50 €/382,5 €*\n"
+                    "Antwort: Nach einem vollen Zinsjahr fallen Zinsen in Höhe von *382,50 €* an."
+                ),
+                "hint": "💡 Tipp: Multipliziere Kapital und Zinssatz, teile das Ergebnis anschließend durch 100.",
+                "exp": "Jahreszinsen berechnet man mit Z = (K · p) / 100.",
+                "distractors": ["38,25 €", "850 €", "3825 €"]
+            },
+            {
+                "format": "Multiple Choice", "suffix": "Formelumstellung nach Kapital K",
+                "a_text": (
+                    "Frage: Herr Braun erhält nach einem Jahr genau 90 € Zinsen bei einem Zinssatz von 3 %. Wie hoch war sein angelegtes Kapital K?\n"
+                    "Formel: K = (Z · 100) / p\n"
+                    "[ ] 2.000 €\n"
+                    "[X] 3.000 €\n"
+                    "[ ] 3.500 €\n"
+                    "[ ] 2.700 €"
+                ),
+                "b_text": (
+                    "Frage: Ein Sparkapital von 5.000 € erbringt in einem Jahr 175 € Zinsen. Welchem Zinssatz p entspricht dies?\n"
+                    "Formel: p = (Z · 100) / K\n"
+                    "[ ] 2,5 %\n"
+                    "[ ] 3,0 %\n"
+                    "[X] 3,5 %\n"
+                    "[ ] 4,0 %"
+                ),
+                "hint": "💡 Tipp: Stelle die Formel um: K = (Z · 100) / p bzw. p = (Z · 100) / K.",
+                "exp": "K = (Z · 100) / p = (90 · 100) / 3 = 3.000 €.",
+                "distractors": []
+            },
+            {
+                "format": "Drag the Words", "suffix": "Monats- und Tageszinsen (30/360-Bankenmethode)",
+                "a_text": (
+                    "Berechne die Zinsen für 4 Monate (m = 4):\n"
+                    "Gegeben: K = 6.000 €, p = 2 %\n"
+                    "Formel: Z = (K · p · m) / (100 · 12)\n"
+                    "Rechnung: Z = (6000 · 2 · 4) / 1200 = *48000* / 1200\n"
+                    "Ergebnis: Z = *40 €*\n"
+                    "Ein Bankjahr hat im kaufmännischen Rechnen *360* Tage und jeder Monat *30* Tage."
+                ),
+                "b_text": (
+                    "Berechne die Tageszinsen für einen Dispositionskredit über 60 Tage:\n"
+                    "Gegeben: K = 1.200 €, Überziehungszins p = 12 %, t = 60 Tage\n"
+                    "Formel: Z = (K · p · t) / (100 · 360)\n"
+                    "Rechnung: Z = (1200 · 12 · 60) / 36000 = *864000* / 36000\n"
+                    "Ergebnis: Z = *24 €*\n"
+                    "Die deutsche Zinsmethode rechnet mit *30* Zinstagen pro Monat und *360* Zinstagen im Jahr."
+                ),
+                "hint": "💡 Tipp: Monatszinsen: mal m geteilt durch 12. Tageszinsen: mal t geteilt durch 360.",
+                "exp": "Tageszinsen Z = (K · p · t) / (100 · 360).",
+                "distractors": ["365 Tage", "31 Tage", "120 €", "48 €"]
+            },
+            {
+                "format": "Wahr/Falsch", "suffix": "Sachaufgabe: Girokonto-Überziehung (Dispo)",
+                "a_text": (
+                    "Aussage: Wenn ein Girokonto für 30 Tage um 500 € überzogen wird (Dispozins 12 %), sind die anfallenden Zinsen höher als 10 €.\n"
+                    "Antwort: Falsch"
+                ),
+                "b_text": (
+                    "Aussage: Ein Dispositionskredit mit 11 % Zinsen für 90 Tage ist bei 1.000 € Überziehung teurer als ein Festkredit mit 4 % Jahreszinsen für ein volles Jahr.\n"
+                    "Antwort: Falsch"
+                ),
+                "hint": "💡 Tipp: Berechne Z = (500 · 12 · 30) / 36000 = 5 €.",
+                "exp": "Z = (500 · 12 · 30) / 36000 = 5 €. 5 € sind weniger als 10 €.",
+                "distractors": []
+            }
+        ]
+
+        math_pool_general = [
+            {
+                "format": "Tabellen-Zuordnung", "suffix": "Grundbegriffe & Zuordnung",
+                "a_text": (
+                    f"Ordne die mathematischen Begriffe zu '{clean_title_topic}' der richtigen Spalte zu:\n\n"
+                    "[ Gegebene Werte ]\n• *Ausgangsgröße*\n• *Einheit*\n\n"
+                    "[ Gesuchte Werte ]\n• *Ergebnis*\n• *Zielgröße*"
+                ),
+                "b_text": (
+                    f"Ordne die Rechenschritte zu '{clean_title_topic}' den Phasen zu:\n\n"
+                    "[ Vorbereitung ]\n• *Gegeben und Gesucht notieren*\n• *Formel auswählen*\n\n"
+                    "[ Durchführung ]\n• *Zahlenwerte einsetzen*\n• *Ergebnis berechnen*"
+                ),
+                "hint": "💡 Tipp: Strukturiere den Rechenweg nach Gegeben und Gesucht.",
+                "exp": "Systematisches Vorgehen erleichtert mathematische Berechnungen.",
+                "distractors": ["Schätzurteil", "Zufallsauswahl"]
+            },
+            {
+                "format": "Lückentext", "suffix": "Rechenweg schrittweise durchführen",
+                "a_text": (
+                    f"Berechne die Aufgabe zu '{clean_title_topic}' Schritt für Schritt:\n"
+                    "Schritt 1: Formel aufschreiben: *Rechnung* vorbereiten.\n"
+                    "Schritt 2: Werte einsetzen und *ausrechnen*.\n"
+                    "Schritt 3: Das Endergebnis mit passender *Einheit* notieren."
+                ),
+                "b_text": (
+                    f"Führe die Berechnung zu '{clean_title_topic}' durch:\n"
+                    "Zuerst bestimmen wir die *gegebene* Größe, danach stellen wir die *Formel* nach der gesuchten Größe um. "
+                    "Das exakte Ergebnis lautet *vollständig* mit Einheit."
+                ),
+                "hint": "💡 Tipp: Achte auf die Rechenregeln und die Einheiten.",
+                "exp": "Präzises Einsetzen in die Formel führt zum richtigen Ergebnis.",
+                "distractors": ["Schätzen", "Runden"]
+            },
+            {
+                "format": "Multiple Choice", "suffix": "Formelanwendung & Umstellung",
+                "a_text": (
+                    f"Frage: Wie gehst du vor, um die gesuchte Größe bei '{clean_title_topic}' zu berechnen?\n"
+                    "[X] Die passende Formel wählen, Zahlenwerte einsetzen und ausrechnen\n"
+                    "[ ] Eine beliebige Zahl raten\n"
+                    "[ ] Nur die gegebenen Zahlen addieren"
+                ),
+                "b_text": (
+                    f"Frage: Welcher Rechenschritt ist bei '{clean_title_topic}' entscheidend für die Probe?\n"
+                    "[X] Das berechnete Ergebnis in die Ausgangsformel einsetzen und die Gleichheit prüfen\n"
+                    "[ ] Die Aufgabe nochmals abschreiben\n"
+                    "[ ] Die Einheiten weglassen"
+                ),
+                "hint": "💡 Tipp: Wähle die Formel passend zur gesuchten Variablen.",
+                "exp": "Formeln strukturieren den mathematischen Lösungsweg.",
+                "distractors": []
+            },
+            {
+                "format": "Drag the Words", "suffix": "Rechenregeln & Schritte einsetzen",
+                "a_text": (
+                    f"Vervollständige die Rechenregel zu '{clean_title_topic}':\n"
+                    "Beim Berechnen müssen alle Größen in derselben *Einheit* angegeben sein. "
+                    "Vor dem Multiplizieren kann man oft geschickt *kürzen*. Das Endergebnis wird *unterstrichen*."
+                ),
+                "b_text": (
+                    f"Wende die mathematische Regel zu '{clean_title_topic}' an:\n"
+                    "Die Umkehrung der Rechnung dient als *Probe*. Bei Sachaufgaben gehört stets ein *Antwortsatz* zum vollständigen Lösungsweg."
+                ),
+                "hint": "💡 Tipp: Achte auf saubere Notation und Einheiten.",
+                "exp": "Mathematische Regeln sichern nachvollziehbare Lösungswege.",
+                "distractors": ["ignorieren", "verdoppeln"]
+            },
+            {
+                "format": "Wahr/Falsch", "suffix": "Sachaufgabe & Plausibilitätsprüfung",
+                "a_text": (
+                    f"Aussage: Bei mathematischen Sachaufgaben zu '{clean_title_topic}' muss das Ergebnis immer mit einer sinnvollen Einheit versehen sein.\n"
+                    "Antwort: Wahr"
+                ),
+                "b_text": (
+                    f"Aussage: Eine Plausibilitätsprüfung durch Überschlag oder Probe ist bei '{clean_title_topic}' überflüssig.\n"
+                    "Antwort: Falsch"
+                ),
+                "hint": "💡 Tipp: Eine Probe zeigt, ob das Rechenergebnis stimmig ist.",
+                "exp": "Die Plausibilitätsprüfung schützt vor Leichtsinnsfehlern.",
+                "distractors": []
+            }
+        ]
 
         # Rich pool for Reading Comprehension
         reading_pool_de = [
@@ -1563,6 +1855,12 @@ Generiere genau dieses JSON:
 
             if is_jasg:
                 pool_item = jasg_pool[i % len(jasg_pool)]
+            elif is_zins:
+                pool_item = math_pool_zins[math_counter % len(math_pool_zins)]
+                math_counter += 1
+            elif is_math:
+                pool_item = math_pool_general[math_counter % len(math_pool_general)]
+                math_counter += 1
             elif is_reading_focus:
                 pool_item = reading_pool_de[reading_counter % len(reading_pool_de)]
                 reading_counter += 1
@@ -1575,13 +1873,23 @@ Generiere genau dieses JSON:
             b_title = f"Transfer & Anwendung - {t_focus}" if is_last else f"Fordern - {t_focus} ({pool_item['suffix']})"
 
             # Level C (Inklusion & DaZ)
+            if is_zins:
+                c_text = "Leichte Sprache (Mathematik):\nZinsen sind eine Leihgebühr für *Geld*.\nMan zahlt oder bekommt *Zinsen* nach einem *Jahr*."
+                c_distractors = ["Monat", "Gesetz"]
+            elif is_math:
+                c_text = f"Leichte Sprache (Mathematik):\nWir rechnen Schritt für Schritt mit den *Zahlen*.\nAm Ende steht das richtige *Ergebnis*."
+                c_distractors = ["Wort", "Buchstabe"]
+            else:
+                c_text = f"Leichte Sprache ({subject}):\nDas Gesetz schützt Jugendliche bei der *Arbeit*.\nJugendliche machen regelmäßig *Pausen*."
+                c_distractors = ["Überstunden", "Nachtschicht"]
+
             tasks_c.append({
                 "title": f"Inklusion/DaZ - {t_focus} (Aufgabe {i+1})",
-                "text": f"Leichte Sprache ({subject}):\nDas Gesetz schützt Jugendliche bei der *Arbeit*.\nJugendliche machen regelmäßig *Pausen*.",
+                "text": c_text,
                 "format": "Drag the Words",
                 "hint": "💡 Sprachhilfe: Konzentriere dich auf die Schlüsselbegriffe im Text.",
                 "explanation": "Sehr einfache Sprache unterstützt das Textverständnis.",
-                "distractors": ["Überstunden", "Nachtschicht"]
+                "distractors": c_distractors
             })
 
             b_distractors = list(pool_item.get("distractors", []))
@@ -1684,6 +1992,53 @@ Generiere genau dieses JSON:
                     f"3. MERKSATZ FÜRS HEFT:\n"
                     f"• Der wichtigste Gedanke als Merksatz zum dauerhaften Behalten."
                 )
+        elif is_zins:
+            mock_heft_title = "Zinsrechnung – Grundbegriffe, Formeln & Berechnung"
+            mock_heft_summary = (
+                "<h3 style='color:#1d4ed8; margin-top:0;'>📌 Zinsrechnung – Grundbegriffe, Formeln &amp; Berechnung</h3>"
+                "<p><strong>1. Was gibt es für Zinsrechnungen? (Systematische Übersicht)</strong><br/>"
+                "Die Zinsrechnung ist eine zeitbezogene Anwendung der Prozentrechnung:<br/>"
+                "• <strong>Jahreszinsen (Z):</strong> Zinsen für genau ein ganzes Jahr (1 Jahr).<br/>"
+                "• <strong>Monatszinsen (Z_m):</strong> Zinsen für m Monate (1 Jahr = 12 Monate).<br/>"
+                "• <strong>Tageszinsen (Z_t):</strong> Zinsen für t Tage (Deutsche Zinsmethode: Bankjahr = 360 Tage, jeder Monat = 30 Tage).<br/>"
+                "• <strong>Grundbegriffe im Überblick:</strong><br/>"
+                "  - K = <strong>Kapital</strong> (angelegter oder geliehener Geldbetrag in €)<br/>"
+                "  - p % = <strong>Zinssatz</strong> (Prozentsatz pro Jahr, z. B. 3,5 %; p = Zinszahl)<br/>"
+                "  - Z = <strong>Zinsen</strong> (der Zinsbetrag in €, den man erhält oder zahlen muss)<br/>"
+                "  - t bzw. m = <strong>Laufzeit</strong> (in Tagen t bzw. Monaten m)</p>"
+                "<p><strong>2. Die mathematischen Formeln &amp; Formelumstellungen</strong><br/>"
+                "• <strong>Jahreszinsen:</strong> Z = (K · p) / 100<br/>"
+                "• <strong>Kapital berechnen (K):</strong> K = (Z · 100) / p<br/>"
+                "• <strong>Zinssatz berechnen (p):</strong> p = (Z · 100) / K<br/>"
+                "• <strong>Monatszinsen:</strong> Z = (K · p · m) / (100 · 12)<br/>"
+                "• <strong>Tageszinsen:</strong> Z = (K · p · t) / (100 · 360)</p>"
+                "<p><strong>3. Wie man das berechnet (Schritt-für-Schritt-Anleitung)</strong><br/>"
+                "• <strong>Schritt 1 (Gegeben &amp; Gesucht):</strong> Notiere alle Werte mit ihren Einheiten (z. B. K = 4.000 €, p = 3 %, gesucht: Z).<br/>"
+                "• <strong>Schritt 2 (Formel wählen &amp; umstellen):</strong> Wähle die passende Formel (Jahr, Monate oder Tage) und stelle sie bei Bedarf nach der gesuchten Größe um.<br/>"
+                "• <strong>Schritt 3 (Einsetzen &amp; Ausrechnen):</strong> Zahlenwerte einsetzen, vor dem Ausrechnen geschickt kürzen.<br/>"
+                "• <strong>Schritt 4 (Antwortsatz &amp; Plausibilität):</strong> Vollständigen Antwortsatz mit Einheit (€) formulieren und das Ergebnis prüfen.</p>"
+                "<p><strong>4. Durchgerechnetes Musterbeispiel</strong><br/>"
+                "<em>Aufgabe:</em> Frau Schmidt legt 6.000 € zu einem Zinssatz von 2,5 % für 8 Monate an.<br/>"
+                "<em>Gegeben:</em> K = 6.000 €, p = 2,5 %, m = 8 Monate. <em>Gesucht:</em> Z<br/>"
+                "<em>Rechnung:</em> Z = (6.000 · 2,5 · 8) / (100 · 12) = 120.000 / 1.200 = 100 €<br/>"
+                "<em>Antwort:</em> Nach 8 Monaten erhält Frau Schmidt Zinsen in Höhe von 100 €.</p>"
+            )
+        elif is_math:
+            mock_heft_title = f"{heft_str} – Formeln, Regeln & Berechnung"
+            mock_heft_summary = (
+                f"<h3 style='color:#1d4ed8; margin-top:0;'>📌 {heft_str} – Übersicht, Formeln &amp; Berechnung</h3>"
+                f"<p><strong>1. Was gibt es für Rechenarten / Fälle? (Systematische Übersicht)</strong><br/>"
+                f"Strukturierte Übersicht aller mathematischen Fälle und Grundbegriffe zu '{heft_str}'.</p>"
+                f"<p><strong>2. Mathematische Formeln &amp; Rechenregeln</strong><br/>"
+                f"Übersichtliche Darstellung aller relevanten Rechengesetze, Variablen und Formelumstellungen.</p>"
+                f"<p><strong>3. Wie man das berechnet (Schritt-für-Schritt-Anleitung)</strong><br/>"
+                f"• Schritt 1: Gegeben und Gesucht mit Einheiten herausschreiben.<br/>"
+                f"• Schritt 2: Passende Formel auswählen und ggf. umstellen.<br/>"
+                f"• Schritt 3: Werte einsetzen und systematisch ausrechnen.<br/>"
+                f"• Schritt 4: Antwortsatz mit korrekter Einheit formulieren und Plausibilität prüfen.</p>"
+                f"<p><strong>4. Durchgerechnetes Musterbeispiel</strong><br/>"
+                f"Anschauliches Zahlenbeispiel mit vollständigem Rechenweg und Antwortsatz für das Merkheft.</p>"
+            )
         else:
             mock_heft_title = heft_str if lower_heft.startswith("wie ") else f"Wie wende ich die Regeln zu '{heft_str}' richtig an?"
             mock_heft_summary = (
@@ -1818,6 +2173,21 @@ Generiere genau dieses JSON:
                             }
                         ]
                     }
+                elif is_zins:
+                    mock_diagnostic = {
+                        "questions": [
+                            {
+                                "question": "Was bedeutet die Abkürzung K in der Zinsrechnung?",
+                                "options": ["Kapital (der angelegte oder geliehene Geldbetrag in €)", "Kaufpreis der Zinsen"],
+                                "correct": 0
+                            },
+                            {
+                                "question": "Mit wie vielen Tagen rechnet die deutsche kaufmännische Zinsmethode für ein volles Bankjahr?",
+                                "options": ["360 Tage (jeder Monat zählt genau 30 Tage)", "365 Tage"],
+                                "correct": 0
+                            }
+                        ]
+                    }
                 elif subject == "Mathematik" or "bruch" in lower_ct:
                     mock_diagnostic = {
                         "questions": [
@@ -1874,10 +2244,16 @@ Generiere genau dieses JSON:
             "hefteintrag": mock_hefteintrag,
             "zusatzaufgaben": [
                 {
+                    "title": "⭐ Experten-Aufgabe 1 (Transfer: Kreditvergleich)",
+                    "task": "Ein Kunde überlegt, eine Anschaffung von 1.500 € über einen Dispokredit (12 % Zinsen für 60 Tage) oder einen Ratenkredit (6 % Jahreszins für 1 ganzes Jahr) zu finanzieren. Berechne beide Zinsbeträge und begründe deine Empfehlung."
+                } if is_zins else {
                     "title": "⭐ Experten-Aufgabe 1 (Transfer)",
                     "task": f"Verbinde das Thema '{heft_str}' mit einer eigenen Alltagssituation und erstelle ein Rätsel für deine Mitschüler."
                 },
                 {
+                    "title": "⭐ Experten-Aufgabe 2 (Erweiterung: Zinseszins)",
+                    "task": "Erkläre das Prinzip des Zinseszinses: Was passiert mit den Zinsen am Jahresende, wenn sie auf dem Sparkonto verbleiben und im nächsten Jahr mitverzinst werden?"
+                } if is_zins else {
                     "title": "⭐ Experten-Aufgabe 2 (Erweiterung)",
                     "task": f"Finde 3 weitere Beispiele zum Thema '{heft_str}' aus deiner eigenen Lektüre und begründe deine Auswahl."
                 }

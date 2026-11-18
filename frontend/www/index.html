@@ -585,7 +585,7 @@
                             </p>
                         </div>
                         
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div class="space-y-1.5">
                                 <label for="input-school-type" class="block text-xs font-semibold text-slate-700">Schulart:</label>
                                 <select id="input-school-type" onchange="handleSchoolTypeChange()" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
@@ -594,6 +594,23 @@
                                     <option value="Realschule">Realschule</option>
                                     <option value="Gymnasium">Gymnasium</option>
                                     <option value="Förderschule">Förderschule</option>
+                                    <option value="Berufsschule">Berufsschule / FOS</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label for="input-grade" class="block text-xs font-semibold text-slate-700">Jahrgangsstufe:</label>
+                                <select id="input-grade" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
+                                    <option value="" selected>Automatisch (Lehrplan)</option>
+                                    <option value="5. Klasse">5. Klasse</option>
+                                    <option value="6. Klasse">6. Klasse</option>
+                                    <option value="7. Klasse">7. Klasse</option>
+                                    <option value="8. Klasse">8. Klasse</option>
+                                    <option value="9. Klasse">9. Klasse</option>
+                                    <option value="10. Klasse">10. Klasse</option>
+                                    <option value="1. Klasse">1. Klasse</option>
+                                    <option value="2. Klasse">2. Klasse</option>
+                                    <option value="3. Klasse">3. Klasse</option>
+                                    <option value="4. Klasse">4. Klasse</option>
                                 </select>
                             </div>
                             <div class="space-y-1.5">
@@ -2163,6 +2180,6 @@
     </div>
 
     <!-- App JavaScript -->
-    <script src="app.js?v=68"></script>
+    <script src="app.js?v=69"></script>
 </body>
 </html>

@@ -2221,7 +2221,9 @@ btnSubmit.addEventListener('click', async (e) => {
             effectiveContext = effectiveContext ? `${effectiveContext} | Anforderung: ${topicPromptVal}` : topicPromptVal;
         }
 
+        const inputGrade = document.getElementById('input-grade');
         formData.append('school_type', (typeof inputSchoolType !== 'undefined' && inputSchoolType) ? inputSchoolType.value : 'Mittelschule');
+        formData.append('grade', (inputGrade && inputGrade.value) ? inputGrade.value : '');
         formData.append('subject', (Array.isArray(selectedSubjects) && selectedSubjects.length > 0) ? selectedSubjects.join(', ') : 'Deutsch');
         formData.append('focus_topic', effectiveFocusTopic);
         formData.append('hefteintrag_topic', (typeof inputHefteintragTopic !== 'undefined' && inputHefteintragTopic) ? inputHefteintragTopic.value : '');
